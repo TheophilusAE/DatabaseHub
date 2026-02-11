@@ -58,8 +58,22 @@ if not exist "node_modules" (
     echo Node dependencies installed ✓
 )
 
+REM Check if assets are built
+if not exist "public\build" (
+    echo.
+    echo [4/5] Building assets for production...
+    call cmd /c "npm run build"
+    if errorlevel 1 (
+        echo WARNING: Asset build failed
+        echo The app may not display correctly
+        pause
+    )
+) else (
+    echo [4/4] Assets already built ✓
+)
+
 echo.
-echo [4/4] Starting servers...
+echo [5/5] Starting servers...
 echo.
 echo ================================================
 echo Backend API should be running at:
@@ -69,9 +83,12 @@ echo Frontend will be available at:
 echo http://localhost:8000
 echo ================================================
 echo.
-echo Opening 2 terminals:
+echo TIP: If you only want Laravel server (no hot reload):
+echo      Just run: php artisan serve
+echo.
+echo Opening 2 terminals for DEVELOPMENT MODE:
 echo   Terminal 1: Laravel Server (php artisan serve)
-echo   Terminal 2: Vite Dev Server (npm run dev)
+echo   Terminal 2: Vite Dev Server (npm run dev - hot reload)
 echo.
 echo Press Ctrl+C in each terminal to stop
 echo ================================================

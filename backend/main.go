@@ -63,6 +63,7 @@ func main() {
 	db := config.GetDB()
 	fmt.Println("Running database migrations...")
 	if err := db.AutoMigrate(
+		&models.User{},
 		&models.DataRecord{},
 		&models.Document{},
 		&models.ImportLog{},
@@ -74,11 +75,14 @@ func main() {
 	fmt.Println()
 
 	// Initialize repositories
+	userRepo := repository.NewUserRepository(db)
 	dataRecordRepo := repository.NewDataRecordRepository(db)
 	documentRepo := repository.NewDocumentRepository(db)
 	importLogRepo := repository.NewImportLogRepository(db)
 
 	// Initialize handlers
+	authHandler := handlers.NewAuthHandler(userRepo)
+	userHandler := handlers.NewUserHandler(userRepo)
 	dataRecordHandler := handlers.NewDataRecordHandler(dataRecordRepo)
 	documentHandler := handlers.NewDocumentHandler(documentRepo)
 	importHandler := handlers.NewImportHandler(dataRecordRepo, importLogRepo)
@@ -98,6 +102,8 @@ func main() {
 		documentHandler,
 		importHandler,
 		exportHandler,
+		authHandler,
+		userHandler,
 	)
 	router.Setup(engine, cfg.AllowedOrigins)
 

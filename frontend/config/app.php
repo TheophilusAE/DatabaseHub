@@ -56,6 +56,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | API Base URL (Go Backend)
+    |--------------------------------------------------------------------------
+    |
+    | This URL points to the Go backend API server that handles all data
+    | operations, authentication, and user management. The Laravel frontend
+    | communicates with this API for all backend operations.
+    |
+    */
+
+    'api_base_url' => env('API_BASE_URL', 'http://localhost:8080'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

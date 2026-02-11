@@ -52,6 +52,28 @@ A full-stack application for managing data records, documents, and file imports/
 - ✅ Detailed logging
 - ✅ Pagination and search
 
+### 🔐 Role-Based Access Control (RBAC)
+- ✅ **User Registration**: New users default to 'user' role
+- ✅ **Admin Management**: Full CRUD access to all features
+- ✅ **User Management**: Admins can create, edit, and delete users
+- ✅ **Role Management**: Admins can promote/demote users
+- ✅ **Access Control**: Role-based permissions for all features
+- ✅ **Secure by Default**: Users cannot self-promote to admin
+
+#### Admin Permissions (👑 Administrator)
+- Full CRUD access to users, data records, and documents
+- Complete import/export capabilities
+- User role management
+- Access to admin dashboard
+
+#### User Permissions (👤 Regular User)
+- View-only access to data records
+- View-only access to documents
+- Can download documents
+- Access to user dashboard
+
+📖 **See [RBAC_GUIDE.md](RBAC_GUIDE.md) for complete documentation**
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -89,6 +111,34 @@ cd frontend
 The frontend will open automatically at: `http://localhost:8000`
 
 That's it! 🎉
+
+#### 3. Create Your First Admin User
+
+**Option A: Use the Helper Script (Recommended)**
+```powershell
+cd frontend
+.\create-admin.bat
+```
+Follow the prompts to create your admin account.
+
+**Option B: Register and Manually Promote**
+1. Register a new account at `http://localhost:8000/register`
+2. Login as that user (you'll have user role by default)
+3. Then manually promote via database or have another admin promote you
+
+**Option C: Manual Database Update**
+```powershell
+cd frontend
+php artisan tinker
+```
+Then run:
+```php
+$user = \App\Models\User::where('email', 'your-email@example.com')->first();
+$user->role = 'admin';
+$user->save();
+```
+
+Once you have an admin account, you can manage all users through the web interface!
 
 ## 📁 Project Structure
 

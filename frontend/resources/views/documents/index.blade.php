@@ -20,14 +20,16 @@
                     <p class="mt-1 text-blue-100">Manage your uploaded documents and files</p>
                 </div>
             </div>
+            @if(session('user.role') === 'admin')
             <div class="mt-4 sm:mt-0">
-                <a href="{{ route('documents.create') }}" class="inline-flex items-center px-6 py-3 bg-white text-blue-600 rounded-xl text-sm font-bold hover:bg-blue-50 transition-all transform hover:-translate-y-0.5 shadow-lg">
+                <a href="{{ route('admin.documents.create') }}" class="inline-flex items-center px-6 py-3 bg-white text-blue-600 rounded-xl text-sm font-bold hover:bg-blue-50 transition-all transform hover:-translate-y-0.5 shadow-lg">
                     <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                     </svg>
                     Upload Document
                 </a>
             </div>
+            @endif
         </div>
     </div>
 
