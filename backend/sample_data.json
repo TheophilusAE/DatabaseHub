@@ -1,0 +1,49 @@
+[
+  {
+    "name": "Gaming Laptop ASUS ROG",
+    "description": "High-end gaming laptop with RTX 4080",
+    "category": "electronics",
+    "value": 2499.99,
+    "status": "active",
+    "metadata": "brand: ASUS, gpu: RTX 4080, ram: 32GB"
+  },
+  {
+    "name": "Mechanical Keyboard",
+    "description": "RGB mechanical keyboard with cherry MX switches",
+    "category": "accessories",
+    "value": 149.99,
+    "status": "active",
+    "metadata": "switches: Cherry MX Red, backlight: RGB"
+  },
+  {
+    "name": "Standing Desk",
+    "description": "Electric height-adjustable standing desk",
+    "category": "furniture",
+    "value": 599.99,
+    "status": "active"
+  },
+  {
+    "name": "Noise Cancelling Headphones",
+    "description": "Premium wireless headphones with ANC",
+    "category": "electronics",
+    "value": 349.99,
+    "status": "active",
+    "metadata": "brand: Sony, battery: 30 hours, anc: true"
+  },
+  {
+    "name": "Web Development Course",
+    "description": "Complete full-stack web development course",
+    "category": "education",
+    "value": 199.99,
+    "status": "active",
+    "metadata": "duration: 40 hours, level: intermediate"
+  },
+  {
+    "name": "Office Chair",
+    "description": "Ergonomic office chair with lumbar support",
+    "category": "furniture",
+    "value": 299.99,
+    "status": "active",
+    "metadata": null
+  }
+]

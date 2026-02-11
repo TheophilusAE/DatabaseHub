@@ -1,0 +1,9 @@
+name,description,category,value,status,metadata
+Laptop Dell XPS,High performance laptop,electronics,1299.99,active,"{""brand"":""Dell"",""warranty"":""2 years""}"
+iPhone 14 Pro,Latest smartphone,electronics,999.99,active,"{""brand"":""Apple"",""storage"":""256GB""}"
+Office Chair,Ergonomic office chair,furniture,299.99,active,"{""color"":""black"",""adjustable"":true}"
+Python Programming Book,Learn Python programming,books,49.99,active,"{""author"":""John Smith"",""pages"":500}"
+Wireless Mouse,Bluetooth wireless mouse,accessories,29.99,active,"{""brand"":""Logitech"",""battery"":""AAA""}"
+Monitor 27 inch,4K UHD Monitor,electronics,449.99,active,"{""resolution"":""3840x2160"",""refresh_rate"":""60Hz""}"
+Desk Lamp,LED desk lamp with dimmer,accessories,39.99,active,"{""wattage"":""10W"",""adjustable"":true}"
+Coffee Maker,Automatic coffee maker,appliances,129.99,active,"{""capacity"":""12 cups"",""programmable"":true}"

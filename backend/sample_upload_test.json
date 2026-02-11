@@ -1,0 +1,25 @@
+[
+  {
+    "name": "Test Product 1",
+    "description": "Simple test product",
+    "category": "test",
+    "value": 99.99,
+    "status": "active"
+  },
+  {
+    "name": "Test Product 2",
+    "description": "Another test product",
+    "category": "test",
+    "value": 149.99,
+    "status": "active",
+    "metadata": "color: blue, size: large"
+  },
+  {
+    "name": "Test Product 3",
+    "description": "Test with null metadata",
+    "category": "test",
+    "value": 199.99,
+    "status": "active",
+    "metadata": null
+  }
+]
