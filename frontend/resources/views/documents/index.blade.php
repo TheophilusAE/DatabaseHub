@@ -336,7 +336,11 @@ async function confirmDelete() {
     
     try {
         const response = await fetch(`http://localhost:8080/documents/${deleteDocumentId}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
         });
         
         if (response.ok) {
