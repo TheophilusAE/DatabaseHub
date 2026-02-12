@@ -16,8 +16,8 @@
             </div>
             <div class="hidden md:block">
                 <div class="bg-white bg-opacity-25 backdrop-blur-sm rounded-2xl px-6 py-4 border border-white border-opacity-40">
-                    <p class="text-sm font-semibold text-black opacity-90">Role</p>
-                    <p class="text-2xl font-bold text-black">Administrator</p>
+                    <p class="text-sm font-semibold text-red-500 opacity-90">Role</p>
+                    <p class="text-2xl font-bold text-red-500">Administrator</p>
                 </div>
             </div>
         </div>

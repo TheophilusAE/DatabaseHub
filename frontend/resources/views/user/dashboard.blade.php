@@ -16,15 +16,15 @@
             </div>
             <div class="hidden md:block">
                 <div class="bg-white bg-opacity-25 backdrop-blur-sm rounded-2xl px-6 py-4 border border-white border-opacity-40">
-                    <p class="text-sm font-semibold text-white opacity-90">Role</p>
-                    <p class="text-2xl font-bold text-white">User</p>
+                    <p class="text-sm font-semibold text-blue-500 opacity-90">Role</p>
+                    <p class="text-2xl font-bold text-blue-500">User</p>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Info Banner -->
-    <div class="bg-blue-50 border-l-4 border-blue-500 rounded-r-2xl p-6 shadow-lg">
+    <!-- <div class="bg-blue-50 border-l-4 border-blue-500 rounded-r-2xl p-6 shadow-lg">
         <div class="flex items-start">
             <div class="flex-shrink-0">
                 <svg class="h-6 w-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
@@ -38,7 +38,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div> -->
 
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -88,11 +88,101 @@
             </div>
         </div>
     </div>
+    
+    <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 mt-6">
+        <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
+            <svg class="h-6 w-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            Quick Access
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- View Data Records -->
+            <a href="{{ route('user.data-records.index') }}" class="flex items-center p-4 bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200 rounded-xl hover:shadow-lg transition-all group">
+                <div class="flex items-center">
+                    <svg class="h-6 w-6 text-blue-700 mr-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <div>
+                        <p class="font-bold text-blue-900">View Data Records</p>
+                        <p class="text-xs text-blue-700">Browse all available records</p>
+                    </div>
+                </div>
+                <svg class="h-5 w-5 text-blue-600 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+            </a>
+
+            <!-- Browse Documents -->
+            <a href="{{ route('user.documents.index') }}" class="flex items-center p-4 bg-gradient-to-r from-green-50 to-green-100 border-2 border-green-200 rounded-xl hover:shadow-lg transition-all group">
+                <div class="flex items-center">
+                    <svg class="h-6 w-6 text-green-700 mr-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    <div>
+                        <p class="font-bold text-green-900">Browse Documents</p>
+                        <p class="text-xs text-green-700">View and download documents</p>
+                    </div>
+                </div>
+                <svg class="h-5 w-5 text-green-600 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+            </a>
+
+            <!-- Import Data -->
+            <a href="{{ route('user.import.index') }}" class="flex items-center p-4 bg-gradient-to-r from-teal-50 to-cyan-50 border-2 border-teal-200 rounded-xl hover:shadow-lg transition-all group">
+                <div class="flex items-center">
+                    <svg class="h-6 w-6 text-teal-700 mr-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <div>
+                        <p class="font-bold text-teal-900">Import Data</p>
+                        <p class="text-xs text-teal-700">Upload CSV or JSON files</p>
+                    </div>
+                </div>
+                <svg class="h-5 w-5 text-teal-700 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+            </a>
+
+            <!-- Export Data -->
+            <a href="{{ route('user.export.index') }}" class="flex items-center p-4 bg-gradient-to-r from-orange-50 to-amber-50 border-2 border-orange-200 rounded-xl hover:shadow-lg transition-all group">
+                <div class="flex items-center">
+                    <svg class="h-6 w-6 text-orange-600 mr-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    <div>
+                        <p class="font-bold text-orange-900">Export Data</p>
+                        <p class="text-xs text-orange-600">Download data as CSV or JSON</p>
+                    </div>
+                </div>
+                <svg class="h-5 w-5 text-orange-600 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+            </a>
+
+            <!-- Import History -->
+            <a href="{{ route('user.import.history') }}" class="flex items-center p-4 bg-gradient-to-r from-gray-50 to-slate-50 border-2 border-gray-200 rounded-xl hover:shadow-lg transition-all group">
+                <div class="flex items-center">
+                    <svg class="h-6 w-6 text-gray-600 mr-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                        <p class="font-bold text-gray-900">Import History</p>
+                        <p class="text-xs text-gray-600">View your import logs</p>
+                    </div>
+                </div>
+                <svg class="h-5 w-5 text-gray-600 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+            </a>
+        </div>
+    </div>
 
     <!-- Quick Access -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- <div class="grid grid-cols-1 lg:grid-cols-2 gap-6"> -->
         <!-- Available Actions -->
-        <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
+        <!-- <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
             <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
                 <svg class="h-6 w-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -175,10 +265,10 @@
                     </svg>
                 </a>
             </div>
-        </div>
+        </div> -->
 
         <!-- User Permissions -->
-        <div class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl shadow-xl p-6 border border-blue-200">
+        <!-- <div class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl shadow-xl p-6 border border-blue-200">
             <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
                 <svg class="h-6 w-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
@@ -216,7 +306,7 @@
                     <strong>💡 Tip:</strong> You can import and export data freely. Contact an administrator if you need full CRUD access.
                 </p>
             </div>
-        </div>
+        </div> -->
     </div>
 </div>
 @endsection
