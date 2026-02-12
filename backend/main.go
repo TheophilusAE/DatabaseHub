@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"dataImportDashboard/config"
 	"dataImportDashboard/handlers"
 	"dataImportDashboard/models"
@@ -8,6 +9,11 @@ import (
 	"dataImportDashboard/routes"
 	"fmt"
 	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -93,8 +99,11 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	// Initialize Gin engine
+	// Initialize Gin engine with increased limits
 	engine := gin.Default()
+
+	// Configure max multipart memory (for file uploads)
+	engine.MaxMultipartMemory = 500 << 20 // 500MB
 
 	// Setup routes
 	router := routes.NewRouter(
@@ -107,8 +116,18 @@ func main() {
 	)
 	router.Setup(engine, cfg.AllowedOrigins)
 
-	// Start server
+	// Create HTTP server with extended timeouts for large uploads
 	addr := fmt.Sprintf(":%s", cfg.Port)
+	srv := &http.Server{
+		Addr:           addr,
+		Handler:        engine,
+		ReadTimeout:    15 * time.Minute, // Extended for very large file uploads
+		WriteTimeout:   15 * time.Minute, // Extended for large data processing
+		IdleTimeout:    300 * time.Second,
+		MaxHeaderBytes: 2 << 20, // 2 MB
+	}
+
+	// Start server
 	fmt.Println("=========================================")
 	fmt.Printf("✓ Server is ready and running!\n")
 	fmt.Println("=========================================")
@@ -116,11 +135,32 @@ func main() {
 	fmt.Printf("  Health:      http://localhost:%s/health\n", cfg.Port)
 	fmt.Printf("  API Docs:    See API_DOCUMENTATION.md\n")
 	fmt.Printf("  Environment: %s\n", cfg.Environment)
+	fmt.Printf("  Upload Limit: 500MB\n")
+	fmt.Printf("  Timeout:     15 minutes\n")
 	fmt.Println("=========================================")
 	fmt.Println()
 	log.Printf("Press Ctrl+C to stop the server")
 
-	if err := engine.Run(addr); err != nil {
-		log.Fatal("Failed to start server:", err)
+	// Graceful shutdown handling
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Failed to start server: %v", err)
+		}
+	}()
+
+	// Wait for interrupt signal
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	log.Println("Shutting down server...")
+
+	// Graceful shutdown with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Printf("Server forced to shutdown: %v", err)
 	}
+
+	log.Println("Server stopped gracefully")
 }

@@ -41,7 +41,7 @@ func LoadConfig() (*Config, error) {
 		DBPassword:     getEnv("DB_PASSWORD", ""),
 		DBName:         getEnv("DB_NAME", "data_import_db"),
 		UploadPath:     getEnv("UPLOAD_PATH", "./uploads"),
-		MaxUploadSize:  10485760, // 10MB default
+		MaxUploadSize:  524288000, // 500MB default
 		AllowedOrigins: getEnv("ALLOWED_ORIGINS", "http://localhost,http://localhost:8000"),
 	}
 

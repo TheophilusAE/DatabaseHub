@@ -19,9 +19,16 @@ func (r *DataRecordRepository) Create(record *models.DataRecord) error {
 	return r.db.Create(record).Error
 }
 
-// CreateBatch creates multiple data records
+// CreateBatch creates multiple data records in optimized batches
 func (r *DataRecordRepository) CreateBatch(records []models.DataRecord) error {
-	return r.db.CreateInBatches(records, 100).Error
+	// Use larger batch size for better performance with large datasets
+	batchSize := 1000 // Optimized for large imports
+	if len(records) < 100 {
+		batchSize = 50
+	} else if len(records) < 1000 {
+		batchSize = 250
+	}
+	return r.db.CreateInBatches(records, batchSize).Error
 }
 
 // FindAll retrieves all data records with pagination

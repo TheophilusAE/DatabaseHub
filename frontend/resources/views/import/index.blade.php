@@ -19,7 +19,7 @@
                 </div>
             </div>
             <div>
-                <a href="{{ route(session('user')['role'] === 'admin' ? 'admin.import.history' : 'user.import.history') }}" class="inline-flex items-center px-4 py-2.5 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-xl text-sm font-medium text-white hover:bg-opacity-30 transition-all transform hover:-translate-y-0.5 shadow-lg">
+                <a href="{{ route(session('user')['role'] === 'admin' ? 'admin.import.history' : 'user.import.history') }}" class="inline-flex items-center px-4 py-2.5 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-xl text-sm font-bold text-blue-600 hover:bg-opacity-30 transition-all transform hover:-translate-y-0.5 shadow-lg">
                     <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
@@ -179,7 +179,11 @@
                         </li>
                         <li class="flex items-start">
                             <span class="text-green-600 font-bold mr-2">✓</span>
-                            <span><strong>Maximum file size:</strong> 10MB per import</span>
+                            <span><strong>Maximum file size:</strong> 500MB per import (supports large datasets)</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-green-600 font-bold mr-2">✓</span>
+                            <span><strong>Processing time:</strong> Up to 15 minutes for very large files</span>
                         </li>
                     </ul>
                 </div>
@@ -220,6 +224,18 @@
 document.addEventListener('DOMContentLoaded', function() {
     loadRecentImports();
     
+    // Add file size validation
+    const csvFileInput = document.getElementById('csv-file');
+    const jsonFileInput = document.getElementById('json-file');
+    
+    csvFileInput.addEventListener('change', function() {
+        validateFileSize(this, 'csv');
+    });
+    
+    jsonFileInput.addEventListener('change', function() {
+        validateFileSize(this, 'json');
+    });
+    
     // CSV form handler
     document.getElementById('csv-form').addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -232,6 +248,35 @@ document.addEventListener('DOMContentLoaded', function() {
         await handleImport('json');
     });
 });
+
+function validateFileSize(input, type) {
+    const file = input.files[0];
+    if (file) {
+        const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+        const maxSizeMB = 500;
+        
+        // Create or update file size display
+        let sizeDisplay = document.getElementById(`${type}-file-size`);
+        if (!sizeDisplay) {
+            sizeDisplay = document.createElement('p');
+            sizeDisplay.id = `${type}-file-size`;
+            sizeDisplay.className = 'text-sm font-semibold mt-2 ml-1';
+            input.parentElement.appendChild(sizeDisplay);
+        }
+        
+        if (sizeMB > maxSizeMB) {
+            sizeDisplay.innerHTML = `<span class="text-red-600">⚠️ File size: ${sizeMB} MB (exceeds ${maxSizeMB} MB limit)</span>`;
+            showAlert(`File is too large (${sizeMB} MB). Maximum allowed is ${maxSizeMB} MB.`, 'error');
+            input.value = '';
+        } else if (sizeMB > 100) {
+            sizeDisplay.innerHTML = `<span class="text-orange-600">📊 Large file: ${sizeMB} MB (may take several minutes to process)</span>`;
+        } else if (sizeMB > 10) {
+            sizeDisplay.innerHTML = `<span class="text-blue-600">📁 File size: ${sizeMB} MB</span>`;
+        } else {
+            sizeDisplay.innerHTML = `<span class="text-green-600">✓ File size: ${sizeMB} MB</span>`;
+        }
+    }
+}
 
 async function handleImport(type) {
     const fileInput = document.getElementById(`${type}-file`);
@@ -259,10 +304,17 @@ async function handleImport(type) {
         progressPercent.textContent = '50%';
         statusText.textContent = 'Processing import...';
         
+        // Create AbortController for timeout (15 minutes)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 900000); // 15 minutes
+        
         const response = await fetch(`http://localhost:8080/upload/${type}`, {
             method: 'POST',
-            body: formData
+            body: formData,
+            signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
         
         const result = await response.json();
         
@@ -270,9 +322,20 @@ async function handleImport(type) {
         progressPercent.textContent = '100%';
         
         if (response.ok) {
-            statusText.textContent = `✅ Success! Imported ${result.success} of ${result.total} records`;
-            statusText.classList.add('text-green-600', 'font-bold');
-            showAlert(`Successfully imported ${result.success} records from ${type.toUpperCase()} file!`, 'success');
+            if (result.success > 0) {
+                statusText.textContent = `✅ Success! Imported ${result.success} of ${result.total} records`;
+                statusText.classList.add('text-green-600', 'font-bold');
+                showAlert(`Successfully imported ${result.success} records from ${type.toUpperCase()} file!`, 'success');
+            } else if (result.total > 0) {
+                // All records failed to import
+                statusText.textContent = `⚠️ Failed: 0 of ${result.total} records imported`;
+                statusText.classList.add('text-red-600', 'font-bold');
+                showAlert(`Import failed: ${result.message || 'No records were imported. Check your CSV headers (name, category, value, status) and data format.'}`, 'error');
+            } else {
+                statusText.textContent = `✅ File processed (no data rows found)`;
+                statusText.classList.add('text-yellow-600', 'font-bold');
+                showAlert('File processed but contained no data rows.', 'error');
+            }
             
             // Reset form
             fileInput.value = '';
@@ -281,9 +344,9 @@ async function handleImport(type) {
                 progressBar.style.width = '0%';
                 progressPercent.textContent = '0%';
                 statusText.textContent = '';
-                statusText.classList.remove('text-green-600', 'font-bold');
+                statusText.classList.remove('text-green-600', 'text-red-600', 'text-yellow-600', 'font-bold');
                 loadRecentImports();
-            }, 3000);
+            }, result.success > 0 ? 3000 : 8000); // Show error message longer
         } else {
             statusText.textContent = `❌ Failed: ${result.error || result.message || 'Import error'}`;
             statusText.classList.add('text-red-600', 'font-bold');
@@ -294,9 +357,16 @@ async function handleImport(type) {
         console.error('Import error:', error);
         progressBar.style.width = '100%';
         progressPercent.textContent = '100%';
-        statusText.textContent = '❌ Error during import';
+        
+        if (error.name === 'AbortError') {
+            statusText.textContent = '⏱️ Import timed out - File may be too large or complex';
+            showAlert('Import timed out after 15 minutes. Try splitting your file into smaller chunks.', 'error');
+        } else {
+            statusText.textContent = '❌ Error during import';
+            showAlert('Network error: Unable to import data. Check your connection and try again.', 'error');
+        }
+        
         statusText.classList.add('text-red-600', 'font-bold');
-        showAlert('Network error: Unable to import data', 'error');
         setTimeout(() => progressDiv.classList.add('hidden'), 5000);
     }
 }

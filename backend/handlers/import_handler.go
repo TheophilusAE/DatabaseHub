@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -49,23 +50,27 @@ func (h *ImportHandler) ImportCSV(c *gin.Context) {
 
 	// Parse CSV file
 	reader := csv.NewReader(file)
+	reader.TrimLeadingSpace = true // Automatically trim leading spaces
 
 	// Read header
 	headers, err := reader.Read()
 	if err != nil {
 		importLog.Status = "failed"
-		importLog.ErrorMessage = err.Error()
+		importLog.ErrorMessage = "Failed to read CSV headers: " + err.Error()
 		h.logRepo.Update(importLog)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to read CSV headers"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to read CSV headers", "details": err.Error()})
 		return
 	}
+
+	// Log headers for debugging
+	println("CSV Headers detected:", strings.Join(headers, ", "))
 
 	var records []models.DataRecord
 	successCount := 0
 	failureCount := 0
 	totalRecords := 0
 
-	// Read data rows
+	// Read data rows with memory-efficient processing
 	for {
 		row, err := reader.Read()
 		if err == io.EOF {
@@ -80,20 +85,32 @@ func (h *ImportHandler) ImportCSV(c *gin.Context) {
 		record := h.parseCSVRow(headers, row)
 		if record != nil {
 			records = append(records, *record)
-			successCount++
+
+			// Batch insert every 5000 records to manage memory for very large files
+			if len(records) >= 5000 {
+				if err := h.dataRepo.CreateBatch(records); err != nil {
+					failureCount += len(records)
+				} else {
+					successCount += len(records)
+				}
+				records = []models.DataRecord{} // Reset slice
+			}
 		} else {
 			failureCount++
 		}
 	}
 
-	// Batch insert records
+	// Batch insert remaining records
 	if len(records) > 0 {
 		if err := h.dataRepo.CreateBatch(records); err != nil {
+			failureCount += len(records)
 			importLog.Status = "failed"
 			importLog.ErrorMessage = err.Error()
 			h.logRepo.Update(importLog)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to import data"})
 			return
+		} else {
+			successCount += len(records)
 		}
 	}
 
@@ -104,8 +121,16 @@ func (h *ImportHandler) ImportCSV(c *gin.Context) {
 	importLog.FailureCount = failureCount
 	h.logRepo.Update(importLog)
 
+	// Prepare response message
+	responseMessage := "Import completed"
+	if successCount == 0 && totalRecords > 0 {
+		responseMessage = "Import failed - No records were imported. Please check your CSV format."
+	} else if failureCount > 0 {
+		responseMessage = "Import partially completed with some failures"
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"message":       "Import completed",
+		"message":       responseMessage,
 		"total":         totalRecords,
 		"success":       successCount,
 		"failed":        failureCount,
@@ -166,37 +191,48 @@ func (h *ImportHandler) ImportJSON(c *gin.Context) {
 		return
 	}
 
-	// Process and insert records one by one for better error handling
+	// Process and validate records, then batch insert for better performance
 	successCount := 0
 	failureCount := 0
 	totalRecords := len(records)
+	var validRecords []models.DataRecord
 
-	for i, record := range records {
+	for i := range records {
 		// Ensure timestamps are set
-		if record.CreatedAt.IsZero() {
-			record.CreatedAt = time.Now()
+		if records[i].CreatedAt.IsZero() {
+			records[i].CreatedAt = time.Now()
 		}
-		if record.UpdatedAt.IsZero() {
-			record.UpdatedAt = time.Now()
+		if records[i].UpdatedAt.IsZero() {
+			records[i].UpdatedAt = time.Now()
 		}
 
 		// Ensure required fields
-		if record.Name == "" {
+		if records[i].Name == "" {
 			failureCount++
 			continue
 		}
 
 		// Set default status if empty
-		if record.Status == "" {
-			record.Status = "active"
+		if records[i].Status == "" {
+			records[i].Status = "active"
 		}
 
-		// Insert record
-		if err := h.dataRepo.Create(&records[i]); err != nil {
-			failureCount++
-			continue
+		validRecords = append(validRecords, records[i])
+	}
+
+	// Batch insert all valid records
+	if len(validRecords) > 0 {
+		if err := h.dataRepo.CreateBatch(validRecords); err != nil {
+			importLog.Status = "failed"
+			importLog.ErrorMessage = "Failed to insert records: " + err.Error()
+			h.logRepo.Update(importLog)
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error":   "Failed to import data",
+				"details": err.Error(),
+			})
+			return
 		}
-		successCount++
+		successCount = len(validRecords)
 	}
 
 	// Update import log
@@ -242,7 +278,7 @@ func (h *ImportHandler) GetImportLogs(c *gin.Context) {
 	})
 }
 
-// parseCSVRow parses a CSV row into a DataRecord
+// parseCSVRow parses a CSV row into a DataRecord with flexible header matching
 func (h *ImportHandler) parseCSVRow(headers, row []string) *models.DataRecord {
 	if len(headers) != len(row) {
 		return nil
@@ -254,33 +290,52 @@ func (h *ImportHandler) parseCSVRow(headers, row []string) *models.DataRecord {
 		UpdatedAt: time.Now(),
 	}
 
+	// Create a map of lowercase headers to values for case-insensitive matching
+	dataMap := make(map[string]string)
 	for i, header := range headers {
-		value := row[i]
-		switch header {
-		case "name":
-			record.Name = value
-		case "description":
-			record.Description = value
-		case "category":
-			record.Category = value
-		case "value":
-			if v, err := strconv.ParseFloat(value, 64); err == nil {
-				record.Value = v
-			}
-		case "status":
-			if value != "" {
-				record.Status = value
-			}
-		case "metadata":
-			if value != "" {
-				record.Metadata = &value
-			}
+		// Trim whitespace and convert to lowercase for case-insensitive matching
+		cleanHeader := strings.ToLower(strings.TrimSpace(header))
+		if i < len(row) {
+			dataMap[cleanHeader] = strings.TrimSpace(row[i])
 		}
 	}
 
-	// Validate required fields
+	// Parse fields with case-insensitive matching
+	if val, ok := dataMap["name"]; ok && val != "" {
+		record.Name = val
+	}
+
+	if val, ok := dataMap["description"]; ok {
+		record.Description = val
+	}
+
+	if val, ok := dataMap["category"]; ok && val != "" {
+		record.Category = val
+	}
+
+	if val, ok := dataMap["value"]; ok && val != "" {
+		if v, err := strconv.ParseFloat(val, 64); err == nil {
+			record.Value = v
+		}
+	}
+
+	if val, ok := dataMap["status"]; ok && val != "" {
+		// Normalize status to lowercase
+		record.Status = strings.ToLower(val)
+	}
+
+	if val, ok := dataMap["metadata"]; ok && val != "" {
+		record.Metadata = &val
+	}
+
+	// Validate required fields: name is mandatory
 	if record.Name == "" {
 		return nil
+	}
+
+	// Set default category if empty
+	if record.Category == "" {
+		record.Category = "other"
 	}
 
 	return record
