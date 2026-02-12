@@ -11,9 +11,7 @@
         <div class="flex items-center justify-between">
             <div class="flex items-center space-x-4">
                 <div class="bg-white bg-opacity-20 backdrop-blur-sm p-3 rounded-xl">
-                    <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                    </svg>
+                    <img src="{{ asset('Logo/document_upload.svg') }}" alt="Company Logo" class="h-8 w-8">
                 </div>
                 <div>
                     <h2 class="text-3xl font-bold">
@@ -23,7 +21,7 @@
                 </div>
             </div>
             <div>
-                <a href="{{ route('documents.index') }}" class="inline-flex items-center px-4 py-2.5 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-xl text-sm font-medium text-white hover:bg-opacity-30 transition-all transform hover:-translate-y-0.5 shadow-lg">
+                <a href="{{ route('documents.index') }}" class="inline-flex items-center px-4 py-2.5 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-xl text-sm font-medium text-black hover:bg-opacity-30 transition-all transform hover:-translate-y-0.5 shadow-lg">
                     <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                     </svg>

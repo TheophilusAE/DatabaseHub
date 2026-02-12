@@ -15,7 +15,7 @@
                 <p class="mt-2 text-sm text-white opacity-85">Welcome back, <strong>{{ session('user')['name'] }}</strong>!</p>
             </div>
             <div class="hidden md:block">
-                <div class="bg-white bg-opacity-25 backdrop-blur-sm rounded-2xl px-6 py-4 border border-white border-opacity-40">
+                <div class="bg-orange-50 bg-opacity-25 backdrop-blur-sm rounded-2xl px-6 py-4 border border-red-400 border-opacity-40">
                     <p class="text-sm font-semibold text-red-500 opacity-90">Role</p>
                     <p class="text-2xl font-bold text-red-500">Administrator</p>
                 </div>
@@ -59,8 +59,8 @@
         </div>
     </div>
 
-    <!-- Stats Cards -->
-    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+   <!-- Stats Cards -->
+    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-2"> <!-- Changed to 2 columns on large screens -->
         <!-- Total Records -->
         <div class="group relative bg-white overflow-hidden shadow-xl rounded-2xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
             <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-400 to-blue-600 opacity-10 rounded-bl-full"></div>
@@ -102,42 +102,6 @@
                         <a href="{{ route('admin.documents.index') }}" class="text-xs text-green-600 hover:text-green-700 font-semibold mt-1 inline-block">
                             View All →
                         </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Electronics -->
-        <div class="group relative bg-white overflow-hidden shadow-xl rounded-2xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-            <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-green-400 to-teal-600 opacity-10 rounded-bl-full"></div>
-            <div class="p-6 relative">
-                <div class="flex items-center justify-between">
-                    <div class="flex-shrink-0">
-                        <div class="bg-gradient-to-br from-green-600 to-teal-700 p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform">
-                            <span class="text-2xl">📱</span>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-sm font-bold text-gray-500 uppercase tracking-wide">Electronics</p>
-                        <p class="text-3xl font-extrabold text-gray-900 mt-1">{{ $categoryData['electronics'] ?? 0 }}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Furniture -->
-        <div class="group relative bg-white overflow-hidden shadow-xl rounded-2xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-            <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-orange-400 to-orange-600 opacity-10 rounded-bl-full"></div>
-            <div class="p-6 relative">
-                <div class="flex items-center justify-between">
-                    <div class="flex-shrink-0">
-                        <div class="bg-gradient-to-br from-orange-500 to-orange-600 p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform">
-                            <span class="text-2xl">🪑</span>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-sm font-bold text-gray-500 uppercase tracking-wide">Furniture</p>
-                        <p class="text-3xl font-extrabold text-gray-900 mt-1">{{ $categoryData['furniture'] ?? 0 }}</p>
                     </div>
                 </div>
             </div>

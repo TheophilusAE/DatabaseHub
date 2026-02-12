@@ -138,7 +138,7 @@
                                     <p class="text-sm font-bold text-gray-900">{{ session('user')['name'] }}</p>
                                     <p class="text-xs text-gray-500">
                                         @if(session('user')['role'] === 'admin')
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-green-100 text-green-800">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-800">
                                             👑 Admin
                                         </span>
                                         @else

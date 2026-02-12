@@ -9,7 +9,8 @@
         <div class="flex items-center justify-between">
             <div>
                 <h1 class="text-4xl font-extrabold flex items-center text-white">
-                    <span class="mr-3">👤</span> My Dashboard
+                    <img src="{{ asset('Logo/User.svg') }}" class="w-10 h-10 mr-3 object-contain" alt="User Management">
+                    <span>User Management</span>
                 </h1>
                 <p class="mt-3 text-lg text-white opacity-90">Your personal data overview</p>
                 <p class="mt-2 text-sm text-white opacity-85">Welcome, <strong>{{ session('user')['name'] }}</strong>!</p>
