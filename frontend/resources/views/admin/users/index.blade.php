@@ -10,7 +10,7 @@
             <h1 class="text-3xl font-bold text-gray-900">👥 User Management</h1>
             <p class="text-gray-600 mt-1">Manage all users and their roles</p>
         </div>
-        <a href="{{ route('admin.users.create') }}" class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg">
+        <a href="{{ route('admin.users.create') }}" class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-700 to-green-600 text-white font-bold rounded-lg hover:from-blue-800 hover:to-green-700 transition-all shadow-lg">
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
             </svg>
@@ -80,12 +80,12 @@
                     <tr class="hover:bg-gray-50 transition-colors">
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
-                                <div class="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
-                                    {{ strtoupper(substr($user->name, 0, 1)) }}
+                                <div class="h-10 w-10 rounded-full bg-gradient-to-r from-blue-600 to-green-600 flex items-center justify-center text-white font-bold">
+                                    {{ strtoupper(substr(is_object($user) ? $user->name : $user['name'], 0, 1)) }}
                                 </div>
                                 <div class="ml-4">
                                     <div class="text-sm font-bold text-gray-900">{{ is_object($user) ? $user->name : $user['name'] }}</div>
-                                    @if ((is_object($user) ? $user->id : $user['id']) === session('user.id'))
+                                    @if ((is_object($user) ? $user->id : $user['id']) === session('user')['id'])
                                         <span class="text-xs text-blue-600 font-semibold">(You)</span>
                                     @endif
                                 </div>
@@ -96,7 +96,7 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             @if ((is_object($user) ? $user->role : $user['role']) === 'admin')
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-800">
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800">
                                     👑 Admin
                                 </span>
                             @else
@@ -112,7 +112,7 @@
                             <a href="{{ route('admin.users.edit', is_object($user) ? $user->id : $user['id']) }}" class="text-blue-600 hover:text-blue-900 font-bold mr-3">
                                 ✏️ Edit
                             </a>
-                            @if ((is_object($user) ? $user->id : $user['id']) !== session('user.id'))
+                            @if ((is_object($user) ? $user->id : $user['id']) !== session('user')['id'])
                                 <form action="{{ route('admin.users.destroy', is_object($user) ? $user->id : $user['id']) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this user?');">
                                     @csrf
                                     @method('DELETE')
@@ -161,10 +161,10 @@
             </div>
         </div>
 
-        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg">
+        <div class="bg-gradient-to-br from-green-600 to-green-700 rounded-2xl p-6 text-white shadow-lg">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-purple-100 text-sm font-semibold">Administrators</p>
+                    <p class="text-white opacity-90 text-sm font-semibold">Administrators</p>
                     <p class="text-3xl font-bold mt-2">{{ $stats['admins'] ?? 0 }}</p>
                 </div>
                 <div class="h-12 w-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">

@@ -7,7 +7,7 @@
     <!-- Alert Container -->
     <div id="alert-container" class="mb-4"></div>
     
-    <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-xl mb-6 p-8 text-white">
+    <div class="bg-gradient-to-r from-blue-800 to-green-700 rounded-2xl shadow-xl mb-6 p-8 text-white">
         <div class="flex items-center justify-between">
             <div class="flex items-center space-x-4">
                 <div class="bg-white bg-opacity-20 backdrop-blur-sm p-3 rounded-xl">
@@ -19,7 +19,7 @@
                     <h2 class="text-3xl font-bold">
                         Edit Record #<span id="record-id">{{ $id }}</span>
                     </h2>
-                    <p class="text-blue-100 mt-1">Update the details of this data record</p>
+                    <p class="text-white opacity-90 mt-1">Update the details of this data record</p>
                 </div>
             </div>
             <div>
@@ -59,13 +59,13 @@
 
             <div class="space-y-2">
                 <label for="description" class="block text-sm font-bold text-gray-700 flex items-center">
-                    <svg class="h-4 w-4 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="h-4 w-4 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
                     </svg>
                     Description
                 </label>
                 <textarea id="description" rows="4" placeholder="Add a detailed description (optional)"
-                          class="block w-full px-4 py-3 rounded-xl border-2 border-gray-200 shadow-sm focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all text-base"></textarea>
+                          class="block w-full px-4 py-3 rounded-xl border-2 border-gray-200 shadow-sm focus:border-green-500 focus:ring-4 focus:ring-green-100 transition-all text-base"></textarea>
                 <p class="text-xs text-gray-500 mt-1 ml-1">Provide additional context about this record</p>
             </div>
 
@@ -120,13 +120,13 @@
 
             <div class="space-y-2">
                 <label for="metadata" class="block text-sm font-bold text-gray-700 flex items-center">
-                    <svg class="h-4 w-4 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="h-4 w-4 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
                     </svg>
                     Metadata (JSON)
                 </label>
                 <textarea id="metadata" rows="5" placeholder='{&#10;  "key": "value",&#10;  "example": "data"&#10;}'
-                          class="block w-full px-4 py-3 rounded-xl border-2 border-gray-200 shadow-sm focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all text-sm font-mono"></textarea>
+                          class="block w-full px-4 py-3 rounded-xl border-2 border-gray-200 shadow-sm focus:border-green-500 focus:ring-4 focus:ring-green-100 transition-all text-sm font-mono"></textarea>
                 <p class="text-xs text-gray-500 mt-1 ml-1">Optional: Enter valid JSON data for additional attributes</p>
             </div>
 

@@ -7,7 +7,7 @@
     <!-- Alert Container -->
     <div id="alert-container" class="mb-4"></div>
     
-    <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-xl mb-6 p-8 text-white">
+    <div class="bg-gradient-to-r from-blue-800 to-green-700 rounded-2xl shadow-xl mb-6 p-8 text-white">
         <div class="flex items-center justify-between">
             <div class="flex items-center space-x-4">
                 <div class="bg-white bg-opacity-20 backdrop-blur-sm p-3 rounded-xl">
@@ -19,7 +19,7 @@
                     <h2 class="text-3xl font-bold">
                         Upload Document
                     </h2>
-                    <p class="text-blue-100 mt-1">Add a new file to your document library</p>
+                    <p class="text-white opacity-90 mt-1">Add a new file to your document library</p>
                 </div>
             </div>
             <div>
@@ -42,9 +42,9 @@
                     </svg>
                     Select File <span class="text-red-500 ml-1">*</span>
                 </label>
-                <div id="drop-zone" class="flex justify-center px-8 pt-10 pb-10 border-3 border-gray-300 border-dashed rounded-2xl hover:border-blue-500 hover:bg-gradient-to-br hover:from-blue-50 hover:to-purple-50 transition-all duration-300 cursor-pointer group">
+                <div id="drop-zone" class="flex justify-center px-8 pt-10 pb-10 border-3 border-gray-300 border-dashed rounded-2xl hover:border-blue-500 hover:bg-gradient-to-br hover:from-blue-50 hover:to-green-50 transition-all duration-300 cursor-pointer group">
                     <div class="space-y-3 text-center">
-                        <div class="mx-auto h-20 w-20 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <div class="mx-auto h-20 w-20 rounded-full bg-gradient-to-br from-blue-100 to-green-100 flex items-center justify-center group-hover:scale-110 transition-transform">
                             <svg class="h-10 w-10 text-blue-600" stroke="currentColor" fill="none" viewBox="0 0 48 48">
                                 <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                             </svg>
@@ -64,13 +64,13 @@
 
             <div class="space-y-2">
                 <label for="category" class="block text-sm font-bold text-gray-700 flex items-center">
-                    <svg class="h-4 w-4 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="h-4 w-4 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                     </svg>
                     Category <span class="text-red-500 ml-1">*</span>
                 </label>
                 <select id="category" required
-                        class="block w-full px-4 py-3 rounded-xl border-2 border-gray-200 shadow-sm focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all text-base">
+                        class="block w-full px-4 py-3 rounded-xl border-2 border-gray-200 shadow-sm focus:border-green-500 focus:ring-4 focus:ring-green-100 transition-all text-base">
                     <option value="">📂 Select a category</option>
                     <option value="reports">📊 Reports</option>
                     <option value="images">🖼️ Images</option>
@@ -108,7 +108,7 @@
             <div id="upload-progress" class="hidden space-y-3">
                 <div class="relative">
                     <div class="bg-gray-200 rounded-full h-4 overflow-hidden">
-                        <div id="progress-bar" class="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-blue-600 to-purple-600 relative" style="width: 0%">
+                        <div id="progress-bar" class="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-blue-700 to-green-600 relative" style="width: 0%">
                             <div class="absolute inset-0 bg-white opacity-30 animate-progressFlow"></div>
                         </div>
                     </div>
@@ -126,7 +126,7 @@
                     </svg>
                     Cancel
                 </a>
-                <button type="submit" id="submit-btn" class="inline-flex items-center px-8 py-3 border border-transparent rounded-xl shadow-lg text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all transform hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
+                <button type="submit" id="submit-btn" class="inline-flex items-center px-8 py-3 border border-transparent rounded-xl shadow-lg text-sm font-bold text-white bg-gradient-to-r from-blue-700 to-green-600 hover:from-blue-800 hover:to-green-700 transition-all transform hover:-translate-y-0.5 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
                     <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                     </svg>
@@ -137,7 +137,7 @@
     </div>
 
     <!-- Upload Tips -->
-    <div class="mt-6 bg-gradient-to-r from-blue-50 to-purple-50 border-l-4 border-blue-500 rounded-r-2xl p-6 shadow-lg">
+    <div class="mt-6 bg-gradient-to-r from-blue-50 to-green-50 border-l-4 border-blue-500 rounded-r-2xl p-6 shadow-lg">
         <div class="flex">
             <div class="flex-shrink-0">
                 <div class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">

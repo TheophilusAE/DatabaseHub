@@ -6,7 +6,7 @@
 <div class="space-y-8 animate-slide-in">
     <!-- Header -->
     <div class="text-center">
-        <h1 class="text-4xl font-extrabold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+        <h1 class="text-4xl font-extrabold bg-gradient-to-r from-blue-700 via-blue-600 to-green-600 bg-clip-text text-transparent">
             Welcome to Dashboard
         </h1>
         <p class="mt-3 text-lg text-gray-600">Monitor your data ecosystem in real-time</p>
@@ -111,7 +111,7 @@
                 Quick Actions
             </h3>
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <a href="{{ route('data-records.create') }}" class="group bg-white bg-opacity-20 hover:bg-opacity-30 backdrop-blur-sm rounded-xl p-4 transition-all duration-300 transform hover:scale-105 hover:shadow-lg">
+                <a href="{{ route('admin.data-records.create') }}" class="group bg-white bg-opacity-20 hover:bg-opacity-30 backdrop-blur-sm rounded-xl p-4 transition-all duration-300 transform hover:scale-105 hover:shadow-lg">
                     <div class="flex items-center">
                         <div class="bg-white bg-opacity-30 p-3 rounded-lg group-hover:bg-opacity-40 transition-all">
                             <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -121,7 +121,7 @@
                         <span class="ml-3 text-white font-semibold">Add Record</span>
                     </div>
                 </a>
-                <a href="{{ route('documents.create') }}" class="group bg-white bg-opacity-20 hover:bg-opacity-30 backdrop-blur-sm rounded-xl p-4 transition-all duration-300 transform hover:scale-105 hover:shadow-lg">
+                <a href="{{ route('admin.documents.create') }}" class="group bg-white bg-opacity-20 hover:bg-opacity-30 backdrop-blur-sm rounded-xl p-4 transition-all duration-300 transform hover:scale-105 hover:shadow-lg">
                     <div class="flex items-center">
                         <div class="bg-white bg-opacity-30 p-3 rounded-lg group-hover:bg-opacity-40 transition-all">
                             <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -131,7 +131,7 @@
                         <span class="ml-3 text-white font-semibold">Upload File</span>
                     </div>
                 </a>
-                <a href="{{ route('import.index') }}" class="group bg-white bg-opacity-20 hover:bg-opacity-30 backdrop-blur-sm rounded-xl p-4 transition-all duration-300 transform hover:scale-105 hover:shadow-lg">
+                <a href="{{ route(session('user')['role'] === 'admin' ? 'admin.import.index' : 'user.import.index') }}" class="group bg-white bg-opacity-20 hover:bg-opacity-30 backdrop-blur-sm rounded-xl p-4 transition-all duration-300 transform hover:scale-105 hover:shadow-lg">
                     <div class="flex items-center">
                         <div class="bg-white bg-opacity-30 p-3 rounded-lg group-hover:bg-opacity-40 transition-all">
                             <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -141,7 +141,7 @@
                         <span class="ml-3 text-white font-semibold">Import Data</span>
                     </div>
                 </a>
-                <a href="{{ route('export.index') }}" class="group bg-white bg-opacity-20 hover:bg-opacity-30 backdrop-blur-sm rounded-xl p-4 transition-all duration-300 transform hover:scale-105 hover:shadow-lg">
+                <a href="{{ route(session('user')['role'] === 'admin' ? 'admin.export.index' : 'user.export.index') }}" class="group bg-white bg-opacity-20 hover:bg-opacity-30 backdrop-blur-sm rounded-xl p-4 transition-all duration-300 transform hover:scale-105 hover:shadow-lg">
                     <div class="flex items-center">
                         <div class="bg-white bg-opacity-30 p-3 rounded-lg group-hover:bg-opacity-40 transition-all">
                             <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -173,7 +173,7 @@
             </div>
         </div>
         <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
-            <a href="{{ route('import.history') }}" class="text-blue-600 hover:text-blue-800 text-sm font-semibold flex items-center group">
+            <a href="{{ route(session('user')['role'] === 'admin' ? 'admin.import.history' : 'user.import.history') }}" class="text-blue-600 hover:text-blue-800 text-sm font-semibold flex items-center group">
                 View All Import History
                 <svg class="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />

@@ -32,7 +32,7 @@
             left: 0;
             width: 0;
             height: 2px;
-            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            background: linear-gradient(90deg, #0058A3, #8CC63F);
             transition: width 0.3s ease;
         }
         .nav-link:hover::after {
@@ -45,20 +45,20 @@
         }
     </style>
 </head>
-<body class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 min-h-screen">
+<body class="bg-gradient-to-br from-blue-50 via-green-50 to-blue-100 min-h-screen flex flex-col">
     <!-- Navigation -->
     <nav class="glass-effect sticky top-0 z-50 shadow-lg backdrop-blur-md">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex">
                     <div class="flex-shrink-0 flex items-center">
-                        <a href="{{ session()->has('user') ? (session('user.role') === 'admin' ? route('admin.dashboard') : route('user.dashboard')) : route('login') }}" class="flex items-center space-x-3 group">
-                            <div class="bg-gradient-to-r from-blue-600 to-purple-600 p-2 rounded-lg shadow-md group-hover:shadow-lg transition-shadow">
+                        <a href="{{ session()->has('user') ? (session('user')['role'] === 'admin' ? route('admin.dashboard') : route('user.dashboard')) : route('login') }}" class="flex items-center space-x-3 group">
+                            <div class="bg-gradient-to-r from-blue-700 to-green-600 p-2 rounded-lg shadow-md group-hover:shadow-lg transition-shadow">
                                 <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                                 </svg>
                             </div>
-                            <span class="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                            <span class="text-xl font-bold bg-gradient-to-r from-blue-700 to-green-600 bg-clip-text text-transparent">
                                 Data Import Dashboard
                             </span>
                         </a>
@@ -66,7 +66,7 @@
                     
                     @if(session()->has('user'))
                     <div class="hidden sm:ml-8 sm:flex sm:space-x-1">
-                        <a href="{{ session('user.role') === 'admin' ? route('admin.dashboard') : route('user.dashboard') }}" 
+                        <a href="{{ session('user')['role'] === 'admin' ? route('admin.dashboard') : route('user.dashboard') }}" 
                            class="nav-link text-gray-700 hover:text-blue-600 inline-flex items-center px-3 pt-1 text-sm font-medium transition-colors">
                             <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -74,7 +74,7 @@
                             Dashboard
                         </a>
                         
-                        @if(session('user.role') === 'admin')
+                        @if(session('user')['role'] === 'admin')
                         <a href="{{ route('admin.users.index') }}" 
                            class="nav-link text-gray-700 hover:text-blue-600 inline-flex items-center px-3 pt-1 text-sm font-medium transition-colors">
                             <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -99,29 +99,28 @@
                             Documents
                         </a>
                         
-                        @if(session('user.role') === 'admin')
-                        <a href="{{ route('admin.import.index') }}" 
+                        <a href="{{ route(session('user')['role'] === 'admin' ? 'admin.import.index' : 'user.import.index') }}" 
                            class="nav-link text-gray-700 hover:text-blue-600 inline-flex items-center px-3 pt-1 text-sm font-medium transition-colors">
                             <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                             </svg>
                             Import
                         </a>
-                        <a href="{{ route('admin.export.index') }}" 
+                        <a href="{{ route(session('user')['role'] === 'admin' ? 'admin.export.index' : 'user.export.index') }}" 
                            class="nav-link text-gray-700 hover:text-blue-600 inline-flex items-center px-3 pt-1 text-sm font-medium transition-colors">
                             <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
                             Export
                         </a>
-                        <a href="{{ route('admin.import.history') }}" 
+                        
+                        <a href="{{ route(session('user')['role'] === 'admin' ? 'admin.import.history' : 'user.import.history') }}" 
                            class="nav-link text-gray-700 hover:text-blue-600 inline-flex items-center px-3 pt-1 text-sm font-medium transition-colors">
                             <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                             History
                         </a>
-                        @endif
                     </div>
                     @endif
                 </div>
@@ -132,14 +131,14 @@
                     <div class="relative group">
                         <button class="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
                             <div class="flex items-center space-x-2">
-                                <div class="h-8 w-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm">
-                                    {{ strtoupper(substr(session('user.name'), 0, 1)) }}
+                                <div class="h-8 w-8 rounded-full bg-gradient-to-r from-blue-600 to-green-500 flex items-center justify-center text-white font-bold text-sm">
+                                    {{ strtoupper(substr(session('user')['name'], 0, 1)) }}
                                 </div>
                                 <div class="hidden md:block text-left">
-                                    <p class="text-sm font-bold text-gray-900">{{ session('user.name') }}</p>
+                                    <p class="text-sm font-bold text-gray-900">{{ session('user')['name'] }}</p>
                                     <p class="text-xs text-gray-500">
-                                        @if(session('user.role') === 'admin')
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-purple-100 text-purple-800">
+                                        @if(session('user')['role'] === 'admin')
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-green-100 text-green-800">
                                             👑 Admin
                                         </span>
                                         @else
@@ -158,8 +157,8 @@
                         <!-- Dropdown Menu -->
                         <div class="absolute right-0 mt-2 w-56 rounded-xl shadow-2xl bg-white ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform group-hover:translate-y-0 -translate-y-2">
                             <div class="p-3 border-b border-gray-100">
-                                <p class="text-sm font-bold text-gray-900">{{ session('user.name') }}</p>
-                                <p class="text-xs text-gray-500">{{ session('user.email') }}</p>
+                                <p class="text-sm font-bold text-gray-900">{{ session('user')['name'] }}</p>
+                                <p class="text-xs text-gray-500">{{ session('user')['email'] }}</p>
                             </div>
                             <div class="p-2">
                                 <form action="{{ route('logout') }}" method="POST">
@@ -179,11 +178,11 @@
                         <a href="{{ route('login') }}" class="px-4 py-2 text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors">
                             Login
                         </a>
-                        <a href="{{ route('register') }}" class="px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-md hover:shadow-lg">
+                        <a href="{{ route('register') }}" class="px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-blue-700 to-green-600 rounded-lg hover:from-blue-800 hover:to-green-700 transition-all shadow-md hover:shadow-lg">
                             Register
                         </a>
                     </div>
-                    @endauth
+                    @endif
                 </div>
             </div>
         </div>
@@ -193,7 +192,7 @@
     <div id="alert-container" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4"></div>
 
     <!-- Page Content -->
-    <main class="py-10 animate-fade-in">
+    <main class="py-10 animate-fade-in flex-grow">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             @yield('content')
         </div>

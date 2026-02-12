@@ -7,7 +7,7 @@
     <!-- Alert Container -->
     <div id="alert-container"></div>
     
-    <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-xl p-8 text-white">
+    <div class="bg-gradient-to-r from-blue-800 to-green-700 rounded-2xl shadow-xl p-8 text-white">
         <div class="sm:flex sm:items-center sm:justify-between">
             <div class="flex items-center space-x-4">
                 <div class="bg-white bg-opacity-20 backdrop-blur-sm p-3 rounded-xl">
@@ -17,10 +17,10 @@
                 </div>
                 <div>
                     <h1 class="text-3xl font-bold">Documents</h1>
-                    <p class="mt-1 text-blue-100">Manage your uploaded documents and files</p>
+                    <p class="mt-1 text-white opacity-90">Manage your uploaded documents and files</p>
                 </div>
             </div>
-            @if(session('user.role') === 'admin')
+            @if(session('user')['role'] === 'admin')
             <div class="mt-4 sm:mt-0">
                 <a href="{{ route('admin.documents.create') }}" class="inline-flex items-center px-6 py-3 bg-white text-blue-600 rounded-xl text-sm font-bold hover:bg-blue-50 transition-all transform hover:-translate-y-0.5 shadow-lg">
                     <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -53,13 +53,13 @@
             </div>
             <div class="space-y-2">
                 <label for="category-filter" class="block text-sm font-bold text-gray-700 flex items-center">
-                    <svg class="h-4 w-4 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="h-4 w-4 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                     </svg>
                     Filter by Category
                 </label>
                 <select id="category-filter" 
-                        class="block w-full px-4 py-3 rounded-xl border-2 border-gray-200 shadow-sm focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all text-base">
+                        class="block w-full px-4 py-3 rounded-xl border-2 border-gray-200 shadow-sm focus:border-green-500 focus:ring-4 focus:ring-green-100 transition-all text-base">
                     <option value="">📂 All Categories</option>
                     <option value="reports">📊 Reports</option>
                     <option value="images">🖼️ Images</option>
@@ -185,13 +185,13 @@ function displayDocuments(documents) {
     
     grid.innerHTML = documents.map((doc, index) => `
         <div class="bg-white shadow-lg rounded-2xl overflow-hidden border border-gray-100 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 group" style="animation: fadeIn 0.3s ease-out ${index * 0.05}s both">
-            <div class="bg-gradient-to-br from-blue-50 to-purple-50 p-6 border-b border-gray-100">
+            <div class="bg-gradient-to-br from-blue-50 to-green-50 p-6 border-b border-gray-100">
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center space-x-3">
                         <div class="p-2.5 bg-white rounded-xl shadow-sm group-hover:shadow-md transition-shadow">
                             ${getFileIcon(doc.file_type)}
                         </div>
-                        <span class="px-3 py-1 text-xs font-bold rounded-full text-white bg-gradient-to-r from-blue-500 to-purple-500 shadow-sm">
+                        <span class="px-3 py-1 text-xs font-bold rounded-full text-white bg-gradient-to-r from-blue-600 to-green-600 shadow-sm">
                             ${doc.file_type.toUpperCase().replace('.', '')}
                         </span>
                     </div>
@@ -259,7 +259,7 @@ function getFileIcon(fileType) {
         '.pdf': '<svg class="h-6 w-6 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path d="M4 18h12V6h-4V2H4v16zm-2 1V0h12l4 4v16H2z"/></svg>',
         '.jpg': '<svg class="h-6 w-6 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>',
         '.png': '<svg class="h-6 w-6 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>',
-        '.mp4': '<svg class="h-6 w-6 text-purple-500" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm12.553 1.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"/></svg>',
+        '.mp4': '<svg class="h-6 w-6 text-pink-500" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h6a2 2 0 012 6v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm12.553 1.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"/></svg>',
     };
     return icons[fileType] || '<svg class="h-6 w-6 text-gray-500" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg>';
 }
@@ -268,7 +268,7 @@ function getCategoryColor(category) {
     const colors = {
         'reports': 'bg-blue-100 text-blue-800',
         'images': 'bg-green-100 text-green-800',
-        'videos': 'bg-purple-100 text-purple-800',
+        'videos': 'bg-pink-100 text-pink-800',
         'pdfs': 'bg-red-100 text-red-800',
     };
     return colors[category] || 'bg-gray-100 text-gray-800';
@@ -300,7 +300,7 @@ function displayPagination(data) {
     paginationHTML += '<div class="flex space-x-3">';
     
     if (currentPage > 1) {
-        paginationHTML += `<button onclick="loadDocuments(${currentPage - 1})" class="inline-flex items-center px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold shadow-lg hover:from-blue-700 hover:to-purple-700 transition-all transform hover:-translate-y-0.5">
+        paginationHTML += `<button onclick="loadDocuments(${currentPage - 1})" class="inline-flex items-center px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-700 to-green-600 text-white font-bold shadow-lg hover:from-blue-800 hover:to-green-700 transition-all transform hover:-translate-y-0.5">
             <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
             </svg>
@@ -309,7 +309,7 @@ function displayPagination(data) {
     }
     
     if (currentPage < totalPages) {
-        paginationHTML += `<button onclick="loadDocuments(${currentPage + 1})" class="inline-flex items-center px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold shadow-lg hover:from-blue-700 hover:to-purple-700 transition-all transform hover:-translate-y-0.5">
+        paginationHTML += `<button onclick="loadDocuments(${currentPage + 1})" class="inline-flex items-center px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-700 to-green-600 text-white font-bold shadow-lg hover:from-blue-800 hover:to-green-700 transition-all transform hover:-translate-y-0.5">
             Next
             <svg class="h-4 w-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />

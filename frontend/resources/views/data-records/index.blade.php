@@ -7,14 +7,14 @@
     <!-- Header -->
     <div class="sm:flex sm:items-center sm:justify-between">
         <div>
-            <h1 class="text-4xl font-extrabold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <h1 class="text-4xl font-extrabold bg-gradient-to-r from-blue-700 to-green-600 bg-clip-text text-transparent">
                 Data Records
             </h1>
             <p class="mt-2 text-base text-gray-600">Manage and organize your data records efficiently</p>
         </div>
         <div class="mt-4 sm:mt-0 flex items-center space-x-3">
             <!-- Export Button (Available to all users) -->
-            <a href="{{ route(session('user.role') === 'admin' ? 'admin.export.index' : 'user.export.index') }}" 
+            <a href="{{ route(session('user')['role'] === 'admin' ? 'admin.export.index' : 'user.export.index') }}" 
                class="inline-flex items-center px-4 py-3 border border-gray-300 rounded-xl shadow-md text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg">
                 <svg class="-ml-1 mr-2 h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -23,7 +23,7 @@
             </a>
             
             <!-- Import Button (Available to all users) -->
-            <a href="{{ route(session('user.role') === 'admin' ? 'admin.import.index' : 'user.import.index') }}" 
+            <a href="{{ route(session('user')['role'] === 'admin' ? 'admin.import.index' : 'user.import.index') }}" 
                class="inline-flex items-center px-4 py-3 border border-gray-300 rounded-xl shadow-md text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg">
                 <svg class="-ml-1 mr-2 h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -31,10 +31,10 @@
                 Import
             </a>
             
-            @if(session('user.role') === 'admin')
+            @if(session('user')['role'] === 'admin')
             <!-- Add New Record Button (Admin only) -->
             <a href="{{ route('admin.data-records.create') }}" 
-               class="inline-flex items-center px-6 py-3 border border-transparent rounded-xl shadow-lg text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl">
+               class="inline-flex items-center px-6 py-3 border border-transparent rounded-xl shadow-lg text-sm font-semibold text-white bg-gradient-to-r from-blue-700 to-green-600 hover:from-blue-800 hover:to-green-700 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl">
                 <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
@@ -262,7 +262,7 @@ function displayRecords(records) {
     tbody.innerHTML = records.map((record, index) => `
         <tr class="hover:bg-blue-50 transition-all duration-200 cursor-pointer group" style="animation: fadeIn 0.3s ease-out ${index * 0.05}s both">
             <td class="px-6 py-4 whitespace-nowrap">
-                <span class="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500 text-white text-sm font-bold shadow-md">
+                <span class="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-br from-blue-600 to-green-600 text-white text-sm font-bold shadow-md">
                     ${record.id}
                 </span>
             </td>

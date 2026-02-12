@@ -7,7 +7,7 @@
     <!-- Alert Container -->
     <div id="alert-container"></div>
     
-    <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-xl p-8 text-white">
+    <div class="bg-gradient-to-r from-blue-800 to-green-700 rounded-2xl shadow-xl p-8 text-white">
         <div class="flex items-center space-x-4">
             <div class="bg-white bg-opacity-20 backdrop-blur-sm p-3 rounded-xl">
                 <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -16,7 +16,7 @@
             </div>
             <div>
                 <h1 class="text-3xl font-bold">Export Data</h1>
-                <p class="text-blue-100 mt-1">Download your data in various formats (CSV, JSON, Excel)</p>
+                <p class="text-white opacity-90 mt-1">Download your data in various formats (CSV, JSON, Excel)</p>
             </div>
         </div>
     </div>
@@ -67,7 +67,7 @@
 
         <!-- JSON Export -->
         <div class="bg-white shadow-xl rounded-2xl border border-gray-100 overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 border-b border-gray-100">
+            <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-6 border-b border-gray-100">
                 <div class="flex items-center space-x-3 mb-3">
                     <div class="p-3 bg-white rounded-xl shadow-sm">
                         <svg class="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -83,7 +83,7 @@
             </div>
             
             <div class="p-6 space-y-4">
-                <button onclick="exportData('json', '')" class="w-full inline-flex justify-center items-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all transform hover:-translate-y-0.5 hover:shadow-xl">
+                <button onclick="exportData('json', '')" class="w-full inline-flex justify-center items-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-sm font-bold text-white bg-gradient-to-r from-blue-700 to-green-600 hover:from-blue-800 hover:to-green-700 transition-all transform hover:-translate-y-0.5 hover:shadow-xl">
                     <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
@@ -153,7 +153,7 @@
     </div>
 
     <!-- Export Info -->
-    <div class="bg-gradient-to-r from-blue-50 to-purple-50 border-l-4 border-blue-500 rounded-r-2xl p-6 shadow-lg">
+    <div class="bg-gradient-to-r from-blue-50 to-green-50 border-l-4 border-blue-500 rounded-r-2xl p-6 shadow-lg">
         <div class="flex">
             <div class="flex-shrink-0">
                 <div class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
@@ -211,9 +211,9 @@
                 <div class="text-3xl font-bold text-green-600" id="total-furniture">-</div>
                 <p class="text-xs font-semibold text-green-700 mt-2">🪑 Furniture</p>
             </div>
-            <div class="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200 hover:shadow-md transition-all">
-                <div class="text-3xl font-bold text-purple-600" id="total-clothing">-</div>
-                <p class="text-xs font-semibold text-purple-700 mt-2">👕 Clothing</p>
+            <div class="text-center p-4 bg-gradient-to-br from-pink-50 to-pink-100 rounded-xl border border-pink-200 hover:shadow-md transition-all">
+                <div class="text-3xl font-bold text-pink-600" id="total-clothing">-</div>
+                <p class="text-xs font-semibold text-pink-700 mt-2">👕 Clothing</p>
             </div>
             <div class="text-center p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl border border-orange-200 hover:shadow-md transition-all">
                 <div class="text-3xl font-bold text-orange-600" id="total-books">-</div>

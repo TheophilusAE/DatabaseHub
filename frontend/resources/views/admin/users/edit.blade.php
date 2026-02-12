@@ -37,12 +37,12 @@
             </div>
         @endif
 
-        <form action="{{ route('admin.users.update', $user->id) }}" method="POST" class="space-y-6">
+        <form action="{{ route('admin.users.update', is_object($user) ? $user->id : $user['id']) }}" method="POST" class="space-y-6">
             @csrf
             @method('PUT')
 
             <!-- Current User Badge -->
-            @if ($user->id === session('user')['id'])
+            @if ((is_object($user) ? $user->id : $user['id']) === session('user')['id'])
                 <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-2xl">
                     <div class="flex items-center">
                         <svg class="h-5 w-5 text-blue-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
@@ -62,7 +62,7 @@
                     type="text" 
                     id="name" 
                     name="name" 
-                    value="{{ old('name', $user->name) }}" 
+                    value="{{ old('name', is_object($user) ? $user->name : $user['name']) }}" 
                     required
                     class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all"
                     placeholder="John Doe"
@@ -78,7 +78,7 @@
                     type="email" 
                     id="email" 
                     name="email" 
-                    value="{{ old('email', $user->email) }}" 
+                    value="{{ old('email', is_object($user) ? $user->email : $user['email']) }}" 
                     required
                     class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all"
                     placeholder="john@example.com"
@@ -96,8 +96,8 @@
                     required
                     class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all"
                 >
-                    <option value="user" {{ old('role', $user->role) == 'user' ? 'selected' : '' }}>👤 Regular User (View Only)</option>
-                    <option value="admin" {{ old('role', $user->role) == 'admin' ? 'selected' : '' }}>👑 Administrator (Full Access)</option>
+                    <option value="user" {{ old('role', is_object($user) ? $user->role : $user['role']) == 'user' ? 'selected' : '' }}>👤 Regular User (View Only)</option>
+                    <option value="admin" {{ old('role', is_object($user) ? $user->role : $user['role']) == 'admin' ? 'selected' : '' }}>👑 Administrator (Full Access)</option>
                 </select>
                 <p class="mt-2 text-sm text-gray-500">
                     Admins have full CRUD access to all features
@@ -159,11 +159,11 @@
         <div class="grid grid-cols-2 gap-4 text-sm">
             <div>
                 <p class="text-gray-600">Created</p>
-                <p class="font-semibold text-gray-900">{{ $user->created_at->format('M d, Y h:i A') }}</p>
+                <p class="font-semibold text-gray-900">{{ \Carbon\Carbon::parse(is_object($user) ? $user->created_at : $user['created_at'])->format('M d, Y h:i A') }}</p>
             </div>
             <div>
                 <p class="text-gray-600">Last Updated</p>
-                <p class="font-semibold text-gray-900">{{ $user->updated_at->format('M d, Y h:i A') }}</p>
+                <p class="font-semibold text-gray-900">{{ \Carbon\Carbon::parse(is_object($user) ? $user->updated_at : $user['updated_at'])->format('M d, Y h:i A') }}</p>
             </div>
         </div>
     </div>

@@ -7,7 +7,7 @@
     <!-- Alert Container -->
     <div id="alert-container"></div>
     
-    <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-xl p-8 text-white">
+    <div class="bg-gradient-to-r from-blue-800 to-green-700 rounded-2xl shadow-xl p-8 text-white">
         <div class="flex items-center justify-between">
             <div class="flex items-center space-x-4">
                 <div class="bg-white bg-opacity-20 backdrop-blur-sm p-3 rounded-xl">
@@ -17,11 +17,11 @@
                 </div>
                 <div>
                     <h1 class="text-3xl font-bold">Import Data</h1>
-                    <p class="text-blue-100 mt-1">Import data from CSV or JSON files into your database</p>
+                    <p class="text-white opacity-90 mt-1">Import data from CSV or JSON files into your database</p>
                 </div>
             </div>
             <div>
-                <a href="{{ route('import.history') }}" class="inline-flex items-center px-4 py-2.5 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-xl text-sm font-medium text-white hover:bg-opacity-30 transition-all transform hover:-translate-y-0.5 shadow-lg">
+                <a href="{{ route(session('user')['role'] === 'admin' ? 'admin.import.history' : 'user.import.history') }}" class="inline-flex items-center px-4 py-2.5 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-xl text-sm font-medium text-white hover:bg-opacity-30 transition-all transform hover:-translate-y-0.5 shadow-lg">
                     <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
@@ -91,7 +91,7 @@
 
         <!-- JSON Import -->
         <div class="bg-white shadow-xl rounded-2xl border border-gray-100 overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 border-b border-gray-100">
+            <div class="bg-gradient-to-br from-blue-50 to-green-50 p-6 border-b border-gray-100">
                 <div class="flex items-center space-x-3">
                     <div class="p-3 bg-white rounded-xl shadow-sm">
                         <svg class="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -114,7 +114,7 @@
                         Choose JSON File
                     </label>
                     <input type="file" id="json-file" accept=".json" required
-                           class="block w-full text-sm text-gray-700 border-2 border-gray-200 rounded-xl cursor-pointer focus:outline-none hover:border-blue-400 transition-colors file:mr-4 file:py-3 file:px-6 file:rounded-l-xl file:border-0 file:text-sm file:font-bold file:bg-gradient-to-r file:from-blue-600 file:to-indigo-600 file:text-white hover:file:from-blue-700 hover:file:to-indigo-700 file:cursor-pointer">
+                           class="block w-full text-sm text-gray-700 border-2 border-gray-200 rounded-xl cursor-pointer focus:outline-none hover:border-blue-400 transition-colors file:mr-4 file:py-3 file:px-6 file:rounded-l-xl file:border-0 file:text-sm file:font-bold file:bg-gradient-to-r file:from-blue-700 file:to-green-600 file:text-white hover:file:from-blue-800 hover:file:to-green-700 file:cursor-pointer">
                     <p class="text-xs text-gray-500 ml-1 mt-2 flex items-start">
                         <svg class="h-4 w-4 mr-1 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
@@ -123,7 +123,7 @@
                     </p>
                 </div>
                 
-                <button type="submit" class="w-full inline-flex justify-center items-center py-3.5 px-6 border border-transparent rounded-xl shadow-lg text-base font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all transform hover:-translate-y-0.5 hover:shadow-xl">
+                <button type="submit" class="w-full inline-flex justify-center items-center py-3.5 px-6 border border-transparent rounded-xl shadow-lg text-base font-bold text-white bg-gradient-to-r from-blue-700 to-green-600 hover:from-blue-800 hover:to-green-700 transition-all transform hover:-translate-y-0.5 hover:shadow-xl">
                     <svg class="-ml-1 mr-2 h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                     </svg>
@@ -134,7 +134,7 @@
             <div id="json-progress" class="hidden px-6 pb-6 space-y-3">
                 <div class="relative">
                     <div class="bg-gray-200 rounded-full h-4 overflow-hidden">
-                        <div id="json-progress-bar" class="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-blue-600 to-indigo-600 relative" style="width: 0%">
+                        <div id="json-progress-bar" class="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-blue-700 to-green-600 relative" style="width: 0%">
                             <div class="absolute inset-0 bg-white opacity-30 animate-progressFlow"></div>
                         </div>
                     </div>
@@ -148,7 +148,7 @@
     </div>
 
     <!-- Import Guidelines -->
-    <div class="bg-gradient-to-r from-blue-50 to-purple-50 border-l-4 border-blue-500 rounded-r-2xl p-6 shadow-lg">
+    <div class="bg-gradient-to-r from-blue-50 to-green-50 border-l-4 border-blue-500 rounded-r-2xl p-6 shadow-lg">
         <div class="flex">
             <div class="flex-shrink-0">
                 <div class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
@@ -208,7 +208,7 @@
             </div>
         </div>
         <div class="mt-6 pt-4 border-t border-gray-200">
-            <a href="{{ route('import.history') }}" class="inline-flex items-center text-blue-600 hover:text-blue-800 text-sm font-bold hover:underline">
+            <a href="{{ route(session('user')['role'] === 'admin' ? 'admin.import.history' : 'user.import.history') }}" class="inline-flex items-center text-blue-600 hover:text-blue-800 text-sm font-bold hover:underline">
                 View All Import History
                 <svg class="h-4 w-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
