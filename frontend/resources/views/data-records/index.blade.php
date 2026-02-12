@@ -3,6 +3,9 @@
 @section('title', 'Data Records')
 
 @section('content')
+<!-- Alert Container -->
+<div id="alert-container"></div>
+
 <div class="space-y-6 animate-slide-in">
     <!-- Header -->
     <div class="sm:flex sm:items-center sm:justify-between">
@@ -31,16 +34,14 @@
                 Import
             </a>
             
-            @if(session('user')['role'] === 'admin')
-            <!-- Add New Record Button (Admin only) -->
-            <a href="{{ route('admin.data-records.create') }}" 
+            <!-- Add New Record Button (Available to all users) -->
+            <a href="{{ route(session('user')['role'] === 'admin' ? 'admin.data-records.create' : 'user.data-records.create') }}" 
                class="inline-flex items-center px-6 py-3 border border-transparent rounded-xl shadow-lg text-sm font-semibold text-white bg-gradient-to-r from-blue-700 to-green-600 hover:from-blue-800 hover:to-green-700 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl">
                 <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
                 Add New Record
             </a>
-            @endif
         </div>
     </div>
 
@@ -195,6 +196,11 @@ let currentPage = 1;
 let currentLimit = 10;
 let deleteRecordId = null;
 
+// Helper function to get user role
+function getUserRole() {
+    return '{{ session("user")["role"] ?? "user" }}';
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     loadRecords();
     
@@ -288,13 +294,13 @@ function displayRecords(records) {
                 </span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                <a href="/data-records/${record.id}/edit" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-lg text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all transform hover:-translate-y-0.5">
+                <a href="${getUserRole() === 'admin' ? '/admin' : '/user'}/data-records/${record.id}/edit" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-lg text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all transform hover:-translate-y-0.5">
                     <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
                     Edit
                 </a>
-                <button onclick="showDeleteModal(${record.id})" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-lg text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all transform hover:-translate-y-0.5">
+                <button onclick="event.preventDefault(); event.stopPropagation(); showDeleteModal(${record.id}); return false;" type="button" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-lg text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all transform hover:-translate-y-0.5">
                     <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
@@ -408,17 +414,38 @@ async function confirmDelete() {
 
 function showAlert(message, type) {
     const alertContainer = document.getElementById('alert-container');
-    const alertClass = type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+    const icon = type === 'success' 
+        ? '<svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>'
+        : '<svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>';
+    const alertClass = type === 'success' 
+        ? 'bg-green-50 text-green-800 border-green-200' 
+        : 'bg-red-50 text-red-800 border-red-200';
     
     alertContainer.innerHTML = `
-        <div class="${alertClass} px-4 py-3 rounded relative mb-4">
-            ${message}
+        <div class="${alertClass} px-6 py-4 rounded-xl border-2 shadow-lg animate-slideIn flex items-center space-x-3 mb-4">
+            <div class="flex-shrink-0">
+                ${icon}
+            </div>
+            <div class="flex-1 font-semibold">
+                ${message}
+            </div>
+            <button onclick="this.parentElement.remove()" class="flex-shrink-0 text-gray-400 hover:text-gray-600">
+                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+            </button>
         </div>
     `;
     
     setTimeout(() => {
-        alertContainer.innerHTML = '';
-    }, 3000);
+        const alert = alertContainer.querySelector('div');
+        if (alert) {
+            alert.style.opacity = '0';
+            alert.style.transform = 'translateY(-20px)';
+            alert.style.transition = 'all 0.3s ease-out';
+            setTimeout(() => alert.remove(), 300);
+        }
+    }, 5000);
 }
 </script>
 @endsection

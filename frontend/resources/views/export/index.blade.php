@@ -10,9 +10,7 @@
     <div class="bg-gradient-to-r from-blue-800 to-green-700 rounded-2xl shadow-xl p-8 text-white">
         <div class="flex items-center space-x-4">
             <div class="bg-white bg-opacity-20 backdrop-blur-sm p-3 rounded-xl">
-                <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
+                <img src="{{ asset('logo/Download.svg') }}" alt="Company Logo" class="h-8 w-8">
             </div>
             <div>
                 <h1 class="text-3xl font-bold">Export Data</h1>

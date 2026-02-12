@@ -65,15 +65,22 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/export', [ExportController::class, 'index'])->name('export.index');
 });
 
-// User Routes (Read-only)
+// User Routes
 Route::middleware(['auth', 'user'])->prefix('user')->name('user.')->group(function () {
     Route::get('/dashboard', [UserDashboardController::class, 'index'])->name('dashboard');
     
-    // Data Records - View only
-    Route::get('/data-records', [DataRecordController::class, 'index'])->name('data-records.index');
+    // Data Records - Full CRUD for users
+    Route::prefix('data-records')->name('data-records.')->group(function () {
+        Route::get('/', [DataRecordController::class, 'index'])->name('index');
+        Route::get('/create', [DataRecordController::class, 'create'])->name('create');
+        Route::get('/{id}/edit', [DataRecordController::class, 'edit'])->name('edit');
+    });
 
-    // Documents - View only
-    Route::get('/documents', [DocumentController::class, 'index'])->name('documents.index');
+    // Documents - Users can upload
+    Route::prefix('documents')->name('documents.')->group(function () {
+        Route::get('/', [DocumentController::class, 'index'])->name('index');
+        Route::get('/create', [DocumentController::class, 'create'])->name('create');
+    });
 
     // Import - Users can import data
     Route::prefix('import')->name('import.')->group(function () {
