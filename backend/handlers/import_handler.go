@@ -1,14 +1,18 @@
 package handlers
 
 import (
+	"dataImportDashboard/config"
 	"dataImportDashboard/models"
 	"dataImportDashboard/repository"
 	"encoding/csv"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -26,7 +30,22 @@ func NewImportHandler(dataRepo *repository.DataRecordRepository, logRepo *reposi
 	}
 }
 
-// ImportCSV handles CSV file import
+// Progress tracking structure
+type ImportProgress struct {
+	TotalProcessed int64
+	SuccessCount   int64
+	FailureCount   int64
+	IsComplete     bool
+	ErrorMessage   string
+}
+
+// Worker job structure for parallel processing
+type ImportJob struct {
+	Records []models.DataRecord
+	JobID   int
+}
+
+// ImportCSV handles massive CSV file imports with streaming and worker pools
 func (h *ImportHandler) ImportCSV(c *gin.Context) {
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
@@ -48,9 +67,10 @@ func (h *ImportHandler) ImportCSV(c *gin.Context) {
 		return
 	}
 
-	// Parse CSV file
+	// Use streaming CSV parser
 	reader := csv.NewReader(file)
-	reader.TrimLeadingSpace = true // Automatically trim leading spaces
+	reader.TrimLeadingSpace = true
+	reader.ReuseRecord = true // Reuse memory for better performance
 
 	// Read header
 	headers, err := reader.Read()
@@ -63,70 +83,90 @@ func (h *ImportHandler) ImportCSV(c *gin.Context) {
 	}
 
 	// Log headers for debugging
-	println("CSV Headers detected:", strings.Join(headers, ", "))
+	fmt.Println("CSV Headers detected:", strings.Join(headers, ", "))
 
-	var records []models.DataRecord
-	successCount := 0
-	failureCount := 0
-	totalRecords := 0
+	// Atomic counters for thread-safe statistics
+	var totalRecords, successCount, failureCount int64
 
-	// Read data rows with memory-efficient processing
+	// Worker pool setup
+	numWorkers := config.AppConfig.ImportWorkers
+	batchSize := config.AppConfig.ImportBatchSize
+
+	jobQueue := make(chan ImportJob, numWorkers*2)
+	var wg sync.WaitGroup
+
+	// Start worker goroutines
+	for w := 0; w < numWorkers; w++ {
+		wg.Add(1)
+		go func(workerID int) {
+			defer wg.Done()
+			h.importWorker(jobQueue, &successCount, &failureCount)
+		}(w)
+	}
+
+	// Stream and batch records
+	recordBatch := make([]models.DataRecord, 0, batchSize)
+	jobID := 0
+
 	for {
 		row, err := reader.Read()
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			failureCount++
+			atomic.AddInt64(&failureCount, 1)
 			continue
 		}
 
-		totalRecords++
+		atomic.AddInt64(&totalRecords, 1)
 		record := h.parseCSVRow(headers, row)
-		if record != nil {
-			records = append(records, *record)
 
-			// Batch insert every 5000 records to manage memory for very large files
-			if len(records) >= 5000 {
-				if err := h.dataRepo.CreateBatch(records); err != nil {
-					failureCount += len(records)
-				} else {
-					successCount += len(records)
+		if record != nil {
+			recordBatch = append(recordBatch, *record)
+
+			// Send batch to workers when full
+			if len(recordBatch) >= batchSize {
+				job := ImportJob{
+					Records: make([]models.DataRecord, len(recordBatch)),
+					JobID:   jobID,
 				}
-				records = []models.DataRecord{} // Reset slice
+				copy(job.Records, recordBatch)
+				jobQueue <- job
+				recordBatch = recordBatch[:0] // Reset slice
+				jobID++
 			}
 		} else {
-			failureCount++
+			atomic.AddInt64(&failureCount, 1)
 		}
 	}
 
-	// Batch insert remaining records
-	if len(records) > 0 {
-		if err := h.dataRepo.CreateBatch(records); err != nil {
-			failureCount += len(records)
-			importLog.Status = "failed"
-			importLog.ErrorMessage = err.Error()
-			h.logRepo.Update(importLog)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to import data"})
-			return
-		} else {
-			successCount += len(records)
+	// Send remaining records
+	if len(recordBatch) > 0 {
+		job := ImportJob{
+			Records: make([]models.DataRecord, len(recordBatch)),
+			JobID:   jobID,
 		}
+		copy(job.Records, recordBatch)
+		jobQueue <- job
 	}
+
+	// Close job queue and wait for workers to finish
+	close(jobQueue)
+	wg.Wait()
 
 	// Update import log
 	importLog.Status = "completed"
-	importLog.TotalRecords = totalRecords
-	importLog.SuccessCount = successCount
-	importLog.FailureCount = failureCount
+	importLog.TotalRecords = int(totalRecords)
+	importLog.SuccessCount = int(successCount)
+	importLog.FailureCount = int(failureCount)
 	h.logRepo.Update(importLog)
 
 	// Prepare response message
-	responseMessage := "Import completed"
+	responseMessage := "Import completed successfully"
 	if successCount == 0 && totalRecords > 0 {
 		responseMessage = "Import failed - No records were imported. Please check your CSV format."
 	} else if failureCount > 0 {
-		responseMessage = "Import partially completed with some failures"
+		responseMessage = fmt.Sprintf("Import completed with %d successes and %d failures", successCount, failureCount)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -138,7 +178,19 @@ func (h *ImportHandler) ImportCSV(c *gin.Context) {
 	})
 }
 
-// ImportJSON handles JSON file import
+// importWorker processes import jobs from the queue
+func (h *ImportHandler) importWorker(jobs <-chan ImportJob, successCount, failureCount *int64) {
+	for job := range jobs {
+		if err := h.dataRepo.CreateBatch(job.Records); err != nil {
+			atomic.AddInt64(failureCount, int64(len(job.Records)))
+			fmt.Printf("Worker failed to insert batch %d: %v\n", job.JobID, err)
+		} else {
+			atomic.AddInt64(successCount, int64(len(job.Records)))
+		}
+	}
+}
+
+// ImportJSON handles massive JSON file imports with streaming decoder
 func (h *ImportHandler) ImportJSON(c *gin.Context) {
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
@@ -160,80 +212,104 @@ func (h *ImportHandler) ImportJSON(c *gin.Context) {
 		return
 	}
 
-	// Parse JSON file
-	var records []models.DataRecord
+	// Atomic counters
+	var totalRecords, successCount, failureCount int64
+
+	// Worker pool setup
+	numWorkers := config.AppConfig.ImportWorkers
+	batchSize := config.AppConfig.ImportBatchSize
+
+	jobQueue := make(chan ImportJob, numWorkers*2)
+	var wg sync.WaitGroup
+
+	// Start worker goroutines
+	for w := 0; w < numWorkers; w++ {
+		wg.Add(1)
+		go func(workerID int) {
+			defer wg.Done()
+			h.importWorker(jobQueue, &successCount, &failureCount)
+		}(w)
+	}
+
+	// Use streaming JSON decoder
 	decoder := json.NewDecoder(file)
 
-	// Decode the JSON array
-	if err := decoder.Decode(&records); err != nil {
+	// Expect array start
+	t, err := decoder.Token()
+	if err != nil {
 		importLog.Status = "failed"
-		importLog.ErrorMessage = "Failed to parse JSON: " + err.Error()
+		importLog.ErrorMessage = "Invalid JSON format: " + err.Error()
 		h.logRepo.Update(importLog)
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Failed to parse JSON file. Ensure it's a valid JSON array of records.",
-			"details": err.Error(),
-		})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON format", "details": err.Error()})
 		return
 	}
 
-	// Validate we have records
-	if len(records) == 0 {
-		importLog.Status = "completed"
-		importLog.TotalRecords = 0
-		importLog.SuccessCount = 0
-		importLog.FailureCount = 0
+	if delim, ok := t.(json.Delim); !ok || delim != '[' {
+		importLog.Status = "failed"
+		importLog.ErrorMessage = "JSON must be an array of records"
 		h.logRepo.Update(importLog)
-		c.JSON(http.StatusOK, gin.H{
-			"message":       "No records found in JSON file",
-			"total":         0,
-			"import_log_id": importLog.ID,
-		})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "JSON must be an array of records"})
 		return
 	}
 
-	// Process and validate records, then batch insert for better performance
-	successCount := 0
-	failureCount := 0
-	totalRecords := len(records)
-	var validRecords []models.DataRecord
+	// Stream records in batches
+	recordBatch := make([]models.DataRecord, 0, batchSize)
+	jobID := 0
 
-	for i := range records {
-		// Ensure timestamps are set
-		if records[i].CreatedAt.IsZero() {
-			records[i].CreatedAt = time.Now()
-		}
-		if records[i].UpdatedAt.IsZero() {
-			records[i].UpdatedAt = time.Now()
-		}
-
-		// Ensure required fields
-		if records[i].Name == "" {
-			failureCount++
+	for decoder.More() {
+		var record models.DataRecord
+		if err := decoder.Decode(&record); err != nil {
+			atomic.AddInt64(&failureCount, 1)
 			continue
 		}
 
-		// Set default status if empty
-		if records[i].Status == "" {
-			records[i].Status = "active"
+		atomic.AddInt64(&totalRecords, 1)
+
+		// Set defaults
+		if record.CreatedAt.IsZero() {
+			record.CreatedAt = time.Now()
+		}
+		if record.UpdatedAt.IsZero() {
+			record.UpdatedAt = time.Now()
+		}
+		if record.Status == "" {
+			record.Status = "active"
 		}
 
-		validRecords = append(validRecords, records[i])
+		// Validate required fields
+		if record.Name == "" {
+			atomic.AddInt64(&failureCount, 1)
+			continue
+		}
+
+		recordBatch = append(recordBatch, record)
+
+		// Send batch to workers when full
+		if len(recordBatch) >= batchSize {
+			job := ImportJob{
+				Records: make([]models.DataRecord, len(recordBatch)),
+				JobID:   jobID,
+			}
+			copy(job.Records, recordBatch)
+			jobQueue <- job
+			recordBatch = recordBatch[:0]
+			jobID++
+		}
 	}
 
-	// Batch insert all valid records
-	if len(validRecords) > 0 {
-		if err := h.dataRepo.CreateBatch(validRecords); err != nil {
-			importLog.Status = "failed"
-			importLog.ErrorMessage = "Failed to insert records: " + err.Error()
-			h.logRepo.Update(importLog)
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error":   "Failed to import data",
-				"details": err.Error(),
-			})
-			return
+	// Send remaining records
+	if len(recordBatch) > 0 {
+		job := ImportJob{
+			Records: make([]models.DataRecord, len(recordBatch)),
+			JobID:   jobID,
 		}
-		successCount = len(validRecords)
+		copy(job.Records, recordBatch)
+		jobQueue <- job
 	}
+
+	// Close job queue and wait for workers
+	close(jobQueue)
+	wg.Wait()
 
 	// Update import log
 	status := "completed"
@@ -244,9 +320,9 @@ func (h *ImportHandler) ImportJSON(c *gin.Context) {
 	}
 
 	importLog.Status = status
-	importLog.TotalRecords = totalRecords
-	importLog.SuccessCount = successCount
-	importLog.FailureCount = failureCount
+	importLog.TotalRecords = int(totalRecords)
+	importLog.SuccessCount = int(successCount)
+	importLog.FailureCount = int(failureCount)
 	h.logRepo.Update(importLog)
 
 	c.JSON(http.StatusOK, gin.H{

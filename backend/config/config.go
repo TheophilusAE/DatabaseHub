@@ -20,6 +20,14 @@ type Config struct {
 	UploadPath     string
 	MaxUploadSize  int64
 	AllowedOrigins string
+	// Performance tuning for large files
+	ImportWorkers    int   // Number of concurrent workers for import
+	ImportBatchSize  int   // Batch size for database inserts
+	ExportBatchSize  int   // Batch size for export queries
+	StreamBufferSize int   // Buffer size for streaming operations (bytes)
+	DBMaxOpenConns   int   // Maximum open database connections
+	DBMaxIdleConns   int   // Maximum idle database connections
+	ChunkSizeBytes   int64 // Chunk size for file operations
 }
 
 var AppConfig *Config
@@ -41,8 +49,16 @@ func LoadConfig() (*Config, error) {
 		DBPassword:     getEnv("DB_PASSWORD", ""),
 		DBName:         getEnv("DB_NAME", "data_import_db"),
 		UploadPath:     getEnv("UPLOAD_PATH", "./uploads"),
-		MaxUploadSize:  524288000, // 500MB default
+		MaxUploadSize:  1099511627776, // 1TB - theoretical max for large document handling
 		AllowedOrigins: getEnv("ALLOWED_ORIGINS", "http://localhost,http://localhost:8000"),
+		// Performance configurations for handling 1 billion+ rows
+		ImportWorkers:    32,                // Parallel workers for import processing
+		ImportBatchSize:  50000,             // Optimized batch size for massive imports
+		ExportBatchSize:  100000,            // Large batch reads for exports
+		StreamBufferSize: 10 * 1024 * 1024,  // 10MB streaming buffer
+		DBMaxOpenConns:   100,               // Max open database connections
+		DBMaxIdleConns:   10,                // Max idle connections
+		ChunkSizeBytes:   100 * 1024 * 1024, // 100MB chunks for file operations
 	}
 
 	AppConfig = config

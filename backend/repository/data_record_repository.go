@@ -81,3 +81,28 @@ func (r *DataRecordRepository) FindByCategory(category string) ([]models.DataRec
 func (r *DataRecordRepository) DeleteAll() error {
 	return r.db.Exec("DELETE FROM data_records").Error
 }
+
+// FindAllNoPagination retrieves data records with offset/limit but no total count (for streaming exports)
+func (r *DataRecordRepository) FindAllNoPagination(offset, limit int) ([]models.DataRecord, int64, error) {
+	var records []models.DataRecord
+
+	if err := r.db.Offset(offset).Limit(limit).Order("id asc").Find(&records).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return records, 0, nil
+}
+
+// FindByCategoryPaginated retrieves data records by category with pagination (for streaming exports)
+func (r *DataRecordRepository) FindByCategoryPaginated(category string, offset, limit int) ([]models.DataRecord, error) {
+	var records []models.DataRecord
+	if err := r.db.Where("category = ?", category).Offset(offset).Limit(limit).Order("id asc").Find(&records).Error; err != nil {
+		return nil, err
+	}
+	return records, nil
+}
+
+// CreateBatchOptimized creates multiple data records with optimized transaction handling
+func (r *DataRecordRepository) CreateBatchOptimized(records []models.DataRecord, batchSize int) error {
+	return r.db.CreateInBatches(records, batchSize).Error
+}
