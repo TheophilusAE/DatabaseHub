@@ -73,7 +73,7 @@ func (h *ImportHandler) ImportCSV(c *gin.Context) {
 	reader.ReuseRecord = true // Reuse memory for better performance
 
 	// Read header
-	headers, err := reader.Read()
+	headersTemp, err := reader.Read()
 	if err != nil {
 		importLog.Status = "failed"
 		importLog.ErrorMessage = "Failed to read CSV headers: " + err.Error()
@@ -81,6 +81,10 @@ func (h *ImportHandler) ImportCSV(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to read CSV headers", "details": err.Error()})
 		return
 	}
+
+	// IMPORTANT: Make a copy of headers because ReuseRecord=true will overwrite the slice
+	headers := make([]string, len(headersTemp))
+	copy(headers, headersTemp)
 
 	// Log headers for debugging
 	fmt.Println("CSV Headers detected:", strings.Join(headers, ", "))
