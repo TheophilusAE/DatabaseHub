@@ -226,4 +226,28 @@ class UserController extends Controller
                 ->with('error', 'Unable to connect to server');
         }
     }
+
+    /**
+     * Manage table permissions for a user
+     */
+    public function permissions($id)
+    {
+        try {
+            $response = Http::get("{$this->apiBaseUrl}/users/{$id}");
+
+            if ($response->successful() && $response->json('success')) {
+                $user = $response->json('data');
+                return view('admin.users.permissions', [
+                    'user' => $user,
+                ]);
+            }
+
+            return redirect()->route('admin.users.index')
+                ->with('error', 'User not found');
+
+        } catch (\Exception $e) {
+            return redirect()->route('admin.users.index')
+                ->with('error', 'Unable to connect to server');
+        }
+    }
 }

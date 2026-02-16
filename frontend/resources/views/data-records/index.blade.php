@@ -3,6 +3,39 @@
 @section('title', 'Data Records')
 
 @section('content')
+<style>
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.animate-fade-in {
+    animation: fade-in 0.3s ease-out forwards;
+    opacity: 0;
+}
+
+.tab-content {
+    animation: fadeIn 0.3s ease-out;
+}
+</style>
+
 <!-- Alert Container -->
 <div id="alert-container"></div>
 
@@ -45,8 +78,34 @@
         </div>
     </div>
 
-    <!-- Filters -->
-    <div class="bg-white shadow-lg rounded-2xl p-6 border border-gray-100">
+    <!-- Tab Navigation -->
+    <div class="bg-white shadow-lg rounded-2xl border border-gray-100 overflow-hidden">
+        <div class="flex border-b border-gray-200">
+            <button onclick="switchTab('records')" id="records-tab" 
+                    class="flex-1 px-6 py-4 text-sm font-bold transition-all duration-200 border-b-2 border-blue-600 text-blue-600 bg-blue-50">
+                <div class="flex items-center justify-center space-x-2">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>Data Records</span>
+                </div>
+            </button>
+            <button onclick="switchTab('tables')" id="tables-tab" 
+                    class="flex-1 px-6 py-4 text-sm font-bold transition-all duration-200 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50">
+                <div class="flex items-center justify-center space-x-2">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                    </svg>
+                    <span>All Database Tables</span>
+                </div>
+            </button>
+        </div>
+    </div>
+
+    <!-- Records Tab Content -->
+    <div id="records-content" class="tab-content">
+        <!-- Filters -->
+        <div class="bg-white shadow-lg rounded-2xl p-6 border border-gray-100">
         <div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
             <div class="relative">
                 <label for="search" class="block text-sm font-semibold text-gray-700 mb-2">Search Records</label>
@@ -152,6 +211,91 @@
 
     <!-- Pagination -->
     <div id="pagination" class="bg-white px-6 py-4 flex items-center justify-between border-t border-gray-200 rounded-2xl shadow-lg"></div>
+    </div>
+
+    <!-- All Tables Tab Content -->
+<div id="tables-content" class="tab-content hidden">
+    <div class="bg-white shadow-lg rounded-2xl p-6 border border-gray-100">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold text-gray-900">Database Tables</h3>
+            <button onclick="loadDatabaseTables()" class="px-4 py-2 bg-gradient-to-r from-blue-600 to-green-600 text-white rounded-lg hover:from-blue-700 hover:to-green-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                <div class="flex items-center space-x-2">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span>Refresh Tables</span>
+                </div>
+            </button>
+        </div>
+        
+        <div id="tables-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="col-span-full flex justify-center py-12">
+                <div class="text-center">
+                    <div class="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
+                    <p class="text-gray-500 font-medium">Loading tables...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Data Viewer Modal -->
+    <div id="table-viewer" class="hidden fixed z-50 inset-0 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-green-700 bg-opacity-75 transition-opacity" onclick="closeTableViewer()"></div>
+            
+            <!-- Centering trick -->
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            
+            <div class="relative inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-7xl sm:w-full z-50">
+                <div class="bg-gradient-to-r from-blue-600 to-green-600 px-6 py-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-2xl font-bold text-white flex items-center space-x-3">
+                            <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                            <span id="viewer-table-name">Table Data</span>
+                        </h3>
+                        <button onclick="closeTableViewer()" class="text-white hover:text-gray-200 transition-colors">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="bg-white px-6 py-4 max-h-[70vh] overflow-y-auto">
+                    <div class="mb-4 flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <label class="text-sm font-semibold text-gray-700">Rows per page:</label>
+                            <select id="page-size" onchange="changePageSize()" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                                <option value="250">250</option>
+                            </select>
+                        </div>
+                        <div id="table-pagination" class="flex items-center space-x-2"></div>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table id="table-data" class="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">
+                            <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-100">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 px-6 py-4">
+                    <button onclick="closeTableViewer()" class="w-full sm:w-auto px-6 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-all duration-200 shadow-md hover:shadow-lg font-semibold">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 </div>
 
 <!-- Delete Confirmation Modal -->
@@ -195,6 +339,235 @@
 let currentPage = 1;
 let currentLimit = 10;
 let deleteRecordId = null;
+
+// Tab switching functionality
+function switchTab(tab) {
+    const recordsTab = document.getElementById('records-tab');
+    const tablesTab = document.getElementById('tables-tab');
+    const recordsContent = document.getElementById('records-content');
+    const tablesContent = document.getElementById('tables-content');
+    
+    if (tab === 'records') {
+        recordsTab.classList.add('border-blue-600', 'text-blue-600', 'bg-blue-50');
+        recordsTab.classList.remove('border-transparent', 'text-gray-500');
+        tablesTab.classList.remove('border-blue-600', 'text-blue-600', 'bg-blue-50');
+        tablesTab.classList.add('border-transparent', 'text-gray-500');
+        recordsContent.classList.remove('hidden');
+        tablesContent.classList.add('hidden');
+    } else {
+        tablesTab.classList.add('border-blue-600', 'text-blue-600', 'bg-blue-50');
+        tablesTab.classList.remove('border-transparent', 'text-gray-500');
+        recordsTab.classList.remove('border-blue-600', 'text-blue-600', 'bg-blue-50');
+        recordsTab.classList.add('border-transparent', 'text-gray-500');
+        tablesContent.classList.remove('hidden');
+        recordsContent.classList.add('hidden');
+        loadDatabaseTables();
+    }
+}
+
+// Database tables functionality
+let currentTableName = '';
+let currentPageNum = 1;
+let currentPageSize = 25;
+
+async function loadDatabaseTables() {
+    const tablesList = document.getElementById('tables-list');
+    
+    try {
+        const response = await fetch('http://localhost:8080/simple-multi/tables');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+            throw new Error('Server returned non-JSON response');
+        }
+        
+        const data = await response.json();
+        
+        if (data.tables && data.tables.length > 0) {
+            tablesList.innerHTML = data.tables.map((table, index) => `
+                <div class="bg-white border-2 border-gray-200 rounded-xl p-5 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer animate-fade-in" 
+                     style="animation-delay: ${index * 0.05}s"
+                     onclick="viewTableData('${table.table_name}')">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-3 bg-gradient-to-br from-blue-500 to-green-500 rounded-lg shadow-md">
+                                <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                            <h4 class="text-lg font-bold text-gray-900">${table.table_name}</h4>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-600 font-medium">Rows:</span>
+                        <span class="px-3 py-1 bg-gradient-to-r from-blue-100 to-green-100 text-blue-700 rounded-full font-bold">${table.row_count.toLocaleString()}</span>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            tablesList.innerHTML = `
+                <div class="col-span-full text-center py-12">
+                    <svg class="h-16 w-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                    </svg>
+                    <p class="text-gray-500 font-semibold text-lg">No tables found</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error loading tables:', error);
+        tablesList.innerHTML = `
+            <div class="col-span-full text-center py-12">
+                <svg class="h-16 w-16 text-red-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p class="text-red-500 font-semibold text-lg">Error loading tables</p>
+            </div>
+        `;
+    }
+}
+
+async function viewTableData(tableName) {
+    currentTableName = tableName;
+    currentPageNum = 1;
+    document.getElementById('viewer-table-name').textContent = tableName;
+    document.getElementById('table-viewer').classList.remove('hidden');
+    await loadTableData();
+}
+
+async function loadTableData() {
+    // Validate table name before loading
+    if (!currentTableName || currentTableName === 'undefined') {
+        console.error('Invalid table name:', currentTableName);
+        return;
+    }
+    
+    const tableData = document.getElementById('table-data');
+    const tbody = tableData.querySelector('tbody');
+    const thead = tableData.querySelector('thead');
+    
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="100" class="px-6 py-8 text-center">
+                <div class="flex flex-col items-center justify-center">
+                    <div class="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+                    <p class="mt-4 text-gray-500 font-medium">Loading data...</p>
+                </div>
+            </td>
+        </tr>
+    `;
+    
+    try {
+        const response = await fetch(`http://localhost:8080/simple-multi/tables/${currentTableName}?page=${currentPageNum}&page_size=${currentPageSize}`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+            const text = await response.text();
+            console.error('Response is not JSON:', text);
+            throw new Error('Server returned non-JSON response');
+        }
+        
+        const data = await response.json();
+        
+        // Backend returns { data: [...], page, page_size, table, total_count, total_pages }
+        // Extract column names from the first row of data
+        if (data.data && data.data.length > 0) {
+            const columns = Object.keys(data.data[0]);
+            
+            // Build table header
+            thead.innerHTML = `
+                <tr>
+                    ${columns.map(col => `
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                            ${col}
+                        </th>
+                    `).join('')}
+                </tr>
+            `;
+            
+            // Build table body
+            tbody.innerHTML = data.data.map((row, index) => `
+                <tr class="hover:bg-blue-50 transition-colors" style="animation: fadeIn 0.3s ease-out ${index * 0.03}s both">
+                    ${columns.map(col => {
+                        let value = row[col];
+                        if (value === null) value = '<span class="text-gray-400 italic">null</span>';
+                        else if (typeof value === 'boolean') value = value ? '✅ true' : '❌ false';
+                        else if (typeof value === 'object') value = JSON.stringify(value);
+                        return `<td class="px-4 py-3 text-sm text-gray-900">${value}</td>`;
+                    }).join('')}
+                </tr>
+            `).join('');
+            
+            // Update pagination using total_count from backend
+            updateTablePagination(data.total_count, data.total_pages);
+        } else {
+            // No data in table
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="100" class="px-6 py-12 text-center">
+                        <p class="text-gray-500 font-semibold">No data found in this table</p>
+                    </td>
+                </tr>
+            `;
+            thead.innerHTML = '';
+        }
+    } catch (error) {
+        console.error('Error loading table data:', error);
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="100" class="px-6 py-12 text-center">
+                    <div class="text-red-500 font-semibold mb-2">Error loading table data</div>
+                    <div class="text-sm text-gray-600">${error.message}</div>
+                    <div class="text-xs text-gray-500 mt-2">Make sure the Go backend is running on localhost:8080</div>
+                </td>
+            </tr>
+        `;
+    }
+}
+
+function updateTablePagination(totalCount, totalPages) {
+    const pagination = document.getElementById('table-pagination');
+    
+    if (totalPages <= 1) {
+        pagination.innerHTML = '';
+        return;
+    }
+    
+    let html = `<span class="text-sm text-gray-600 mr-3">Page ${currentPageNum} of ${totalPages} (${totalCount.toLocaleString()} total rows)</span>`;
+    
+    if (currentPageNum > 1) {
+        html += `<button onclick="changePage(${currentPageNum - 1})" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm font-medium">Previous</button>`;
+    }
+    
+    if (currentPageNum < totalPages) {
+        html += `<button onclick="changePage(${currentPageNum + 1})" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm font-medium ml-2">Next</button>`;
+    }
+    
+    pagination.innerHTML = html;
+}
+
+function changePage(page) {
+    currentPageNum = page;
+    loadTableData();
+}
+
+function changePageSize() {
+    currentPageSize = parseInt(document.getElementById('page-size').value);
+    currentPageNum = 1;
+    loadTableData();
+}
+
+function closeTableViewer() {
+    document.getElementById('table-viewer').classList.add('hidden');
+}
 
 // Helper function to get user role
 function getUserRole() {

@@ -115,6 +115,11 @@
                             <a href="{{ route('admin.users.edit', is_object($user) ? $user->id : $user['id']) }}" class="text-blue-600 hover:text-blue-900 font-bold mr-3">
                                 ✏️ Edit
                             </a>
+                            @if ((is_object($user) ? $user->role : $user['role']) !== 'admin')
+                                <a href="{{ route('admin.users.permissions', is_object($user) ? $user->id : $user['id']) }}" class="text-purple-600 hover:text-purple-900 font-bold mr-3">
+                                    🔐 Permissions
+                                </a>
+                            @endif
                             @if ((is_object($user) ? $user->id : $user['id']) !== session('user')['id'])
                                 <form action="{{ route('admin.users.destroy', is_object($user) ? $user->id : $user['id']) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this user?');">
                                     @csrf

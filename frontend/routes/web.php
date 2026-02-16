@@ -37,6 +37,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::get('/create', [UserController::class, 'create'])->name('create');
         Route::post('/', [UserController::class, 'store'])->name('store');
         Route::get('/{id}/edit', [UserController::class, 'edit'])->name('edit');
+        Route::get('/{id}/permissions', [UserController::class, 'permissions'])->name('permissions');
         Route::put('/{id}', [UserController::class, 'update'])->name('update');
         Route::delete('/{id}', [UserController::class, 'destroy'])->name('destroy');
         Route::post('/bulk-delete', [UserController::class, 'bulkDelete'])->name('bulk-delete');
@@ -63,6 +64,25 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
     // Export
     Route::get('/export', [ExportController::class, 'index'])->name('export.index');
+
+    // Multi-Table Features
+    Route::prefix('multi-table')->name('multi-table.')->group(function () {
+        Route::get('/hub', [\App\Http\Controllers\MultiTableController::class, 'hub'])->name('hub');
+        Route::get('/databases', [\App\Http\Controllers\MultiTableController::class, 'databases'])->name('databases');
+        Route::get('/tables', [\App\Http\Controllers\MultiTableController::class, 'tables'])->name('tables');
+        Route::get('/joins', [\App\Http\Controllers\MultiTableController::class, 'joins'])->name('joins');
+        Route::get('/import-mappings', [\App\Http\Controllers\MultiTableController::class, 'importMappings'])->name('import-mappings');
+        Route::get('/export-configs', [\App\Http\Controllers\MultiTableController::class, 'exportConfigs'])->name('export-configs');
+        Route::get('/import', [\App\Http\Controllers\MultiTableController::class, 'import'])->name('import');
+        Route::get('/export', [\App\Http\Controllers\MultiTableController::class, 'export'])->name('export');
+    });
+
+    // Simple Multi-Table Operations
+    Route::prefix('simple-multi')->name('simple-multi.')->group(function () {
+        Route::get('/view-tables', [\App\Http\Controllers\SimpleMultiTableController::class, 'viewTables'])->name('view-tables');
+        Route::get('/multi-upload', [\App\Http\Controllers\SimpleMultiTableController::class, 'multiUpload'])->name('multi-upload');
+        Route::get('/selective-export', [\App\Http\Controllers\SimpleMultiTableController::class, 'selectiveExport'])->name('selective-export');
+    });
 });
 
 // User Routes
@@ -90,6 +110,25 @@ Route::middleware(['auth', 'user'])->prefix('user')->name('user.')->group(functi
 
     // Export - Users can export data
     Route::get('/export', [ExportController::class, 'index'])->name('export.index');
+
+    // Multi-Table Features
+    Route::prefix('multi-table')->name('multi-table.')->group(function () {
+        Route::get('/hub', [\App\Http\Controllers\MultiTableController::class, 'hub'])->name('hub');
+        Route::get('/databases', [\App\Http\Controllers\MultiTableController::class, 'databases'])->name('databases');
+        Route::get('/tables', [\App\Http\Controllers\MultiTableController::class, 'tables'])->name('tables');
+        Route::get('/joins', [\App\Http\Controllers\MultiTableController::class, 'joins'])->name('joins');
+        Route::get('/import-mappings', [\App\Http\Controllers\MultiTableController::class, 'importMappings'])->name('import-mappings');
+        Route::get('/export-configs', [\App\Http\Controllers\MultiTableController::class, 'exportConfigs'])->name('export-configs');
+        Route::get('/import', [\App\Http\Controllers\MultiTableController::class, 'import'])->name('import');
+        Route::get('/export', [\App\Http\Controllers\MultiTableController::class, 'export'])->name('export');
+    });
+
+    // Simple Multi-Table Operations
+    Route::prefix('simple-multi')->name('simple-multi.')->group(function () {
+        Route::get('/view-tables', [\App\Http\Controllers\SimpleMultiTableController::class, 'viewTables'])->name('view-tables');
+        Route::get('/multi-upload', [\App\Http\Controllers\SimpleMultiTableController::class, 'multiUpload'])->name('multi-upload');
+        Route::get('/selective-export', [\App\Http\Controllers\SimpleMultiTableController::class, 'selectiveExport'])->name('selective-export');
+    });
 });
 
 // Shared routes for backwards compatibility (will redirect based on role)

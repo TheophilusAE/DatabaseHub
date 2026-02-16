@@ -1,0 +1,75 @@
+package main
+
+import (
+	"dataImportDashboard/config"
+	"dataImportDashboard/models"
+	"fmt"
+	"log"
+
+	"golang.org/x/crypto/bcrypt"
+)
+
+func main() {
+	fmt.Println("Creating admin user...")
+
+	// Load configuration
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		log.Fatal("Failed to load configuration:", err)
+	}
+
+	// Initialize database
+	if err := config.InitDB(cfg); err != nil {
+		log.Fatal("Failed to connect to database:", err)
+	}
+
+	db := config.GetDB()
+
+	// Auto-migrate to ensure table exists
+	if err := db.AutoMigrate(&models.User{}); err != nil {
+		log.Fatal("Failed to migrate database:", err)
+	}
+
+	// Check if admin already exists
+	var existingUser models.User
+	result := db.Where("email = ?", "admin@example.com").First(&existingUser)
+
+	if result.Error == nil {
+		fmt.Println("Admin user already exists!")
+		fmt.Println("Email:", existingUser.Email)
+		fmt.Println("Name:", existingUser.Name)
+		fmt.Println("Role:", existingUser.Role)
+		fmt.Println("\nTo login, use:")
+		fmt.Println("  Email: admin@example.com")
+		fmt.Println("  Password: admin123")
+		return
+	}
+
+	// Hash the password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
+	if err != nil {
+		log.Fatal("Failed to hash password:", err)
+	}
+
+	// Create admin user
+	admin := models.User{
+		Name:     "Administrator",
+		Email:    "admin@example.com",
+		Password: string(hashedPassword),
+		Role:     "admin",
+	}
+
+	if err := db.Create(&admin).Error; err != nil {
+		log.Fatal("Failed to create admin user:", err)
+	}
+
+	fmt.Println("✅ Admin user created successfully!")
+	fmt.Println("\n┌─────────────────────────────────────┐")
+	fmt.Println("│  Login Credentials                  │")
+	fmt.Println("├─────────────────────────────────────┤")
+	fmt.Println("│  Email:    admin@example.com        │")
+	fmt.Println("│  Password: admin123                 │")
+	fmt.Println("│  Role:     admin                    │")
+	fmt.Println("└─────────────────────────────────────┘")
+	fmt.Println("\nYou can now login to the system!")
+}

@@ -73,6 +73,11 @@ func main() {
 		&models.DataRecord{},
 		&models.Document{},
 		&models.ImportLog{},
+		&models.TableConfig{},
+		&models.TableJoin{},
+		&models.ImportMapping{},
+		&models.ExportConfig{},
+		&models.UserTablePermission{},
 	); err != nil {
 		log.Fatal("Failed to migrate database:", err)
 	}
@@ -80,11 +85,33 @@ func main() {
 	log.Println("✓ Database migration completed successfully")
 	fmt.Println()
 
+	// Initialize multi-database manager
+	dbManager := config.InitMultiDatabaseManager()
+
+	// Add default connection
+	defaultConn := &config.DatabaseConnection{
+		Name:     "default",
+		Type:     cfg.DBType,
+		Host:     cfg.DBHost,
+		Port:     cfg.DBPort,
+		User:     cfg.DBUser,
+		Password: cfg.DBPassword,
+		DBName:   cfg.DBName,
+	}
+	if err := dbManager.AddConnection(defaultConn); err != nil {
+		log.Printf("Warning: Failed to add default connection to multi-database manager: %v", err)
+	}
+
 	// Initialize repositories
 	userRepo := repository.NewUserRepository(db)
 	dataRecordRepo := repository.NewDataRecordRepository(db)
 	documentRepo := repository.NewDocumentRepository(db)
 	importLogRepo := repository.NewImportLogRepository(db)
+	tableConfigRepo := repository.NewTableConfigRepository(db)
+	tableJoinRepo := repository.NewTableJoinRepository(db)
+	importMappingRepo := repository.NewImportMappingRepository(db)
+	exportConfigRepo := repository.NewExportConfigRepository(db)
+	userTablePermissionRepo := repository.NewUserTablePermissionRepository(db)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(userRepo)
@@ -93,6 +120,14 @@ func main() {
 	documentHandler := handlers.NewDocumentHandler(documentRepo)
 	importHandler := handlers.NewImportHandler(dataRecordRepo, importLogRepo)
 	exportHandler := handlers.NewExportHandler(dataRecordRepo)
+
+	// Initialize multi-table handlers
+	dbConfigHandler := handlers.NewDatabaseConfigHandler(dbManager)
+	tableConfigHandler := handlers.NewTableConfigHandler(tableConfigRepo, tableJoinRepo, userTablePermissionRepo)
+	multiTableImportHandler := handlers.NewMultiTableImportHandler(tableConfigRepo, importMappingRepo, importLogRepo, dbManager)
+	multiTableExportHandler := handlers.NewMultiTableExportHandler(tableConfigRepo, tableJoinRepo, exportConfigRepo, dbManager)
+	simpleMultiTableHandler := handlers.NewSimpleMultiTableHandler(db, userTablePermissionRepo, tableConfigRepo)
+	userTablePermissionHandler := handlers.NewUserTablePermissionHandler(userTablePermissionRepo, userRepo, tableConfigRepo)
 
 	// Set Gin mode
 	if cfg.Environment == "production" {
@@ -113,6 +148,12 @@ func main() {
 		exportHandler,
 		authHandler,
 		userHandler,
+		dbConfigHandler,
+		tableConfigHandler,
+		multiTableImportHandler,
+		multiTableExportHandler,
+		simpleMultiTableHandler,
+		userTablePermissionHandler,
 	)
 	router.Setup(engine, cfg.AllowedOrigins)
 
