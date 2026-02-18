@@ -1,0 +1,16 @@
+sku,product_name,description,category,subcategory,brand,unit_price,cost_price,quantity_in_stock,reorder_level,supplier,barcode,weight_kg,dimensions,is_active
+SKU-001,Wireless Mouse,Ergonomic wireless mouse with USB receiver,Electronics,Accessories,TechPro,29.99,15.00,150,20,TechSupplier Inc,123456789001,0.150,12x8x4,true
+SKU-002,Mechanical Keyboard,RGB mechanical gaming keyboard,Electronics,Peripherals,GameTech,89.99,45.00,75,15,TechSupplier Inc,123456789002,1.200,45x15x4,true
+SKU-003,Office Chair,Ergonomic office chair with lumbar support,Furniture,Chairs,ComfortPlus,299.99,150.00,30,5,Furniture World,123456789003,15.000,60x60x120,true
+SKU-004,Standing Desk,Electric height-adjustable standing desk,Furniture,Desks,ErgoWork,599.99,300.00,20,3,Furniture World,123456789004,45.000,150x75x120,true
+SKU-005,Monitor 27 inch,4K UHD LED monitor with HDR,Electronics,Displays,ViewMax,449.99,250.00,45,10,Display Solutions,123456789005,5.500,65x45x20,true
+SKU-006,USB-C Hub,7-in-1 USB-C hub with HDMI and card reader,Electronics,Accessories,ConnectTech,39.99,20.00,200,30,TechSupplier Inc,123456789006,0.100,10x5x2,true
+SKU-007,Desk Lamp,LED desk lamp with adjustable brightness,Lighting,Desk Lamps,BrightLife,49.99,25.00,100,15,LightCo,123456789007,0.800,40x15x15,true
+SKU-008,Ergonomic Mouse Pad,Gel wrist support mouse pad,Electronics,Accessories,ComfortTech,19.99,8.00,250,40,Office Supplies Co,123456789008,0.300,25x20x2,true
+SKU-009,Laptop Stand,Aluminum adjustable laptop stand,Electronics,Accessories,ErgoTech,59.99,30.00,85,12,TechSupplier Inc,123456789009,1.000,30x25x8,true
+SKU-010,Bookshelf,5-tier wooden bookshelf,Furniture,Storage,WoodCraft,189.99,95.00,15,5,Furniture World,123456789010,25.000,80x30x180,true
+SKU-011,Coffee Maker,Programmable 12-cup coffee maker,Appliances,Kitchen,BrewMaster,79.99,40.00,60,10,Appliance Depot,123456789011,3.500,30x20x35,true
+SKU-012,Whiteboard,Magnetic dry-erase whiteboard 48x36,Office,Boards,OfficeMax,89.99,45.00,40,8,Office Supplies Co,123456789012,4.000,122x92x3,true
+SKU-013,File Cabinet,2-drawer locking file cabinet,Furniture,Storage,SecureFile,149.99,75.00,25,5,Furniture World,123456789013,30.000,40x50x70,true
+SKU-014,Webcam HD,1080p HD webcam with microphone,Electronics,Peripherals,ClearView,69.99,35.00,90,15,TechSupplier Inc,123456789014,0.200,8x8x6,true
+SKU-015,Portable SSD,1TB portable solid state drive,Electronics,Storage,DataPro,119.99,60.00,120,20,Storage Solutions,123456789015,0.050,10x7x1,true

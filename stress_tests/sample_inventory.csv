@@ -1,0 +1,16 @@
+sku,warehouse_location,quantity_available,quantity_reserved,quantity_damaged,last_counted_date,reorder_point,max_stock_level,supplier_id,notes
+SKU-001,Warehouse A - Aisle 3,150,25,5,2024-02-01,20,300,SUP-001,Good stock level
+SKU-002,Warehouse A - Aisle 3,75,10,2,2024-02-01,15,200,SUP-001,Monitor inventory
+SKU-003,Warehouse B - Section 5,30,5,0,2024-02-01,5,50,SUP-002,Limited space item
+SKU-004,Warehouse B - Section 5,20,3,1,2024-02-01,3,40,SUP-002,High value item
+SKU-005,Warehouse A - Aisle 2,45,8,2,2024-02-01,10,100,SUP-003,Popular item
+SKU-006,Warehouse A - Aisle 4,200,30,10,2024-02-01,30,500,SUP-001,Fast moving
+SKU-007,Warehouse C - Zone 1,100,15,3,2024-02-01,15,200,SUP-004,Adequate stock
+SKU-008,Warehouse A - Aisle 4,250,40,5,2024-02-01,40,600,SUP-005,High volume item
+SKU-009,Warehouse A - Aisle 3,85,12,3,2024-02-01,12,180,SUP-001,Regular turnover
+SKU-010,Warehouse B - Section 6,15,2,1,2024-02-01,5,30,SUP-002,Bulky item - limited space
+SKU-011,Warehouse C - Zone 2,60,8,2,2024-02-01,10,120,SUP-006,Seasonal demand
+SKU-012,Warehouse A - Aisle 5,40,6,4,2024-02-01,8,80,SUP-005,Check for damages
+SKU-013,Warehouse B - Section 7,25,4,0,2024-02-01,5,50,SUP-002,Heavy item
+SKU-014,Warehouse A - Aisle 2,90,14,1,2024-02-01,15,180,SUP-001,Steady demand
+SKU-015,Warehouse A - Aisle 1,120,20,5,2024-02-01,20,250,SUP-007,Small footprint - high volume

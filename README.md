@@ -2,6 +2,22 @@
 
 A full-stack application for managing data records, documents, and file imports/exports. Built with Go (Backend) and Laravel (Frontend).
 
+## 🎉 NEW: Auto-Discovery Feature!
+
+**Zero Configuration Required!** Administrators can now automatically discover and sync tables from databases:
+
+- 🔍 **Automatic Table Detection**: Scans and identifies all tables in your database
+- 📊 **Schema Introspection**: Automatically detects columns, types, and primary keys  
+- ⚡ **One-Click Sync**: Configure dozens of tables in seconds
+- 🔄 **Easy Re-sync**: Update configurations when schema changes
+- 🔒 **Admin-Only**: Secure configuration management restricted to administrators
+
+**Quick Start (Admins):** Add database → Select database → Discover Tables → Sync All → **Done!** 🎊
+
+See [AUTO_DISCOVERY_QUICK_START.md](AUTO_DISCOVERY_QUICK_START.md) for complete guide.
+
+---
+
 ## 🏗️ Architecture
 
 ```

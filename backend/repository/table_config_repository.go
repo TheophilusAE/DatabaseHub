@@ -67,6 +67,15 @@ func (r *TableConfigRepository) FindByDatabase(dbName string) ([]models.TableCon
 	return configs, nil
 }
 
+// FindByDatabaseAndTable retrieves table configurations for a specific database and table
+func (r *TableConfigRepository) FindByDatabaseAndTable(dbName string, tableName string) ([]models.TableConfig, error) {
+	var configs []models.TableConfig
+	if err := r.db.Where("database_name = ? AND table_name = ? AND is_active = ?", dbName, tableName, true).Find(&configs).Error; err != nil {
+		return nil, err
+	}
+	return configs, nil
+}
+
 // Update updates a table configuration
 func (r *TableConfigRepository) Update(config *models.TableConfig) error {
 	return r.db.Save(config).Error

@@ -137,7 +137,7 @@ func (m *MultiDatabaseManager) GetConnection(name string) (*gorm.DB, error) {
 	return conn.Connection, nil
 }
 
-// GetConnectionInfo retrieves connection information
+// GetConnectionInfo retrieves connection information (returns error if not found)
 func (m *MultiDatabaseManager) GetConnectionInfo(name string) (*DatabaseConnection, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -150,6 +150,19 @@ func (m *MultiDatabaseManager) GetConnectionInfo(name string) (*DatabaseConnecti
 	return conn, nil
 }
 
+// GetConnectionInfoSafe retrieves connection information (returns nil if not found, no error)
+func (m *MultiDatabaseManager) GetConnectionInfoSafe(name string) *DatabaseConnection {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	conn, exists := m.connections[name]
+	if !exists {
+		return nil
+	}
+
+	return conn
+}
+
 // ListConnections returns all connection names
 func (m *MultiDatabaseManager) ListConnections() []string {
 	m.mu.RLock()
@@ -160,6 +173,29 @@ func (m *MultiDatabaseManager) ListConnections() []string {
 		names = append(names, name)
 	}
 	return names
+}
+
+// ListConnectionDetails returns all connection details
+func (m *MultiDatabaseManager) ListConnectionDetails() []*DatabaseConnection {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	connections := make([]*DatabaseConnection, 0, len(m.connections))
+	for _, conn := range m.connections {
+		// Don't expose password in the list
+		sanitized := &DatabaseConnection{
+			Name:     conn.Name,
+			Type:     conn.Type,
+			Host:     conn.Host,
+			Port:     conn.Port,
+			User:     conn.User,
+			Password: "", // Don't expose password
+			DBName:   conn.DBName,
+			SSLMode:  conn.SSLMode,
+		}
+		connections = append(connections, sanitized)
+	}
+	return connections
 }
 
 // RemoveConnection removes a database connection

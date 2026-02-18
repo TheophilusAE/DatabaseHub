@@ -1,0 +1,16 @@
+employee_id,first_name,last_name,email,phone,department,position,hire_date,salary,office_location,employment_status,birth_date
+EMP001,Alice,Johnson,alice.johnson@company.com,555-1001,Engineering,Senior Software Engineer,2020-03-15,95000.00,Building A - Floor 3,active,1988-05-20
+EMP002,Bob,Williams,bob.williams@company.com,555-1002,Engineering,Software Engineer,2021-06-01,75000.00,Building A - Floor 3,active,1992-08-15
+EMP003,Carol,Davis,carol.davis@company.com,555-1003,Sales,Sales Manager,2019-01-10,85000.00,Building B - Floor 2,active,1985-11-30
+EMP004,Daniel,Miller,daniel.miller@company.com,555-1004,Sales,Sales Representative,2022-02-14,55000.00,Building B - Floor 2,active,1995-03-22
+EMP005,Emma,Wilson,emma.wilson@company.com,555-1005,Marketing,Marketing Director,2018-09-20,105000.00,Building B - Floor 1,active,1983-07-10
+EMP006,Frank,Moore,frank.moore@company.com,555-1006,Marketing,Marketing Specialist,2021-11-05,62000.00,Building B - Floor 1,active,1990-12-05
+EMP007,Grace,Taylor,grace.taylor@company.com,555-1007,HR,HR Manager,2019-05-15,80000.00,Building A - Floor 1,active,1987-04-18
+EMP008,Henry,Anderson,henry.anderson@company.com,555-1008,HR,HR Coordinator,2022-08-22,50000.00,Building A - Floor 1,active,1994-09-25
+EMP009,Isabella,Thomas,isabella.thomas@company.com,555-1009,Finance,Finance Director,2017-02-01,110000.00,Building A - Floor 2,active,1982-01-14
+EMP010,Jack,Jackson,jack.jackson@company.com,555-1010,Finance,Accountant,2020-10-12,68000.00,Building A - Floor 2,active,1991-06-08
+EMP011,Karen,White,karen.white@company.com,555-1011,Engineering,DevOps Engineer,2021-04-18,88000.00,Building A - Floor 3,active,1989-10-30
+EMP012,Leo,Harris,leo.harris@company.com,555-1012,Customer Service,Customer Service Manager,2019-07-25,72000.00,Building C - Floor 1,active,1986-02-12
+EMP013,Mia,Martin,mia.martin@company.com,555-1013,Customer Service,Support Specialist,2022-01-30,48000.00,Building C - Floor 1,active,1996-11-19
+EMP014,Nathan,Thompson,nathan.thompson@company.com,555-1014,IT,IT Manager,2018-11-08,92000.00,Building A - Floor 1,active,1984-08-07
+EMP015,Olivia,Garcia,olivia.garcia@company.com,555-1015,IT,System Administrator,2020-12-14,70000.00,Building A - Floor 1,active,1993-03-28

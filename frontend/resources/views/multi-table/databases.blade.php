@@ -3,11 +3,48 @@
 @section('title', 'Database Connections - Multi-Table')
 
 @section('content')
+@php
+    $isAdmin = session('user')['role'] === 'admin';
+@endphp
+
+@if(!$isAdmin)
+<div class="container mx-auto px-4 py-8 max-w-4xl">
+    <div class="bg-red-50 border-l-4 border-red-500 p-6 rounded-lg shadow-md">
+        <div class="flex items-center mb-4">
+            <svg class="w-8 h-8 text-red-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+            </svg>
+            <h1 class="text-2xl font-bold text-red-800">Access Restricted</h1>
+        </div>
+        <p class="text-red-700 mb-4">Database connection management requires administrator privileges.</p>
+        <p class="text-red-600 text-sm">Please contact your administrator if you need access to this feature.</p>
+        <div class="mt-6">
+            <a href="{{ route(session('user')['role'] . '.multi-table.hub') }}" 
+               class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                Back to Multi-Table Hub
+            </a>
+        </div>
+    </div>
+</div>
+@else
 <div class="container mx-auto px-4 py-8 max-w-7xl">
     <!-- Page Header -->
     <div class="mb-8">
-        <h1 class="text-4xl font-bold text-gray-800 mb-2">Database Connections</h1>
-        <p class="text-gray-600">Manage connections to multiple databases for import/export operations</p>
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-4xl font-bold text-gray-800 mb-2 flex items-center">
+                    Database Connections
+                    <span class="ml-3 px-3 py-1 bg-yellow-400 text-yellow-900 text-xs font-bold rounded-full">ADMIN ONLY</span>
+                </h1>
+                <p class="text-gray-600">Manage connections to multiple databases for import/export operations</p>
+            </div>
+            <svg class="w-16 h-16 text-blue-500 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+            </svg>
+        </div>
     </div>
 
     <!-- Alert Container -->
@@ -128,7 +165,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         try {
-            const response = await apiRequest('/databases', {
+            const response = await apiRequest('/databases?user_role=admin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(connection)
@@ -145,7 +182,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function loadConnections() {
     try {
-        const response = await apiRequest('/databases');
+        const response = await apiRequest('/databases?user_role=admin');
         const data = await response.json();
 
         const container = document.getElementById('connections-list');
@@ -201,7 +238,7 @@ async function testConnection(name, silent = false) {
     if (statusEl) statusEl.textContent = 'Testing...';
 
     try {
-        const response = await apiRequest(`/databases/test?name=${name}`);
+        const response = await apiRequest(`/databases/test?name=${name}&user_role=admin`);
         const data = await response.json();
         
         if (statusEl) {
@@ -222,7 +259,7 @@ async function removeConnection(name) {
     if (!confirm(`Are you sure you want to remove connection "${name}"?`)) return;
 
     try {
-        await apiRequest(`/databases?name=${name}`, { method: 'DELETE' });
+        await apiRequest(`/databases?name=${name}&user_role=admin`, { method: 'DELETE' });
         showAlert('Connection removed successfully', 'success');
         loadConnections();
     } catch (error) {
@@ -230,4 +267,5 @@ async function removeConnection(name) {
     }
 }
 </script>
+@endif
 @endsection

@@ -1,0 +1,11 @@
+customer_code,first_name,last_name,email,phone,address,city,state,zip_code,country,customer_since,status,total_purchases,notes
+CUST001,John,Doe,john.doe@email.com,555-0101,123 Main St,New York,NY,10001,USA,2023-01-15,active,5000.00,Preferred customer
+CUST002,Jane,Smith,jane.smith@email.com,555-0102,456 Oak Ave,Los Angeles,CA,90001,USA,2023-02-20,active,3500.00,Regular customer
+CUST003,Robert,Johnson,robert.j@email.com,555-0103,789 Pine Rd,Chicago,IL,60601,USA,2023-03-10,active,8000.00,"VIP customer, priority shipping"
+CUST004,Maria,Garcia,maria.garcia@email.com,555-0104,321 Elm St,Houston,TX,77001,USA,2023-04-05,active,2000.00,New customer
+CUST005,Michael,Brown,michael.b@email.com,555-0105,654 Maple Dr,Phoenix,AZ,85001,USA,2023-05-12,active,4500.00,Bulk buyer
+CUST006,Sarah,Wilson,sarah.wilson@email.com,555-0106,987 Cedar Ln,Philadelphia,PA,19019,USA,2023-06-18,inactive,1000.00,Account on hold
+CUST007,David,Martinez,david.m@email.com,555-0107,147 Birch Ct,San Antonio,TX,78201,USA,2023-07-22,active,6000.00,Corporate account
+CUST008,Emily,Anderson,emily.a@email.com,555-0108,258 Spruce Way,San Diego,CA,92101,USA,2023-08-30,active,3000.00,Repeat customer
+CUST009,James,Taylor,james.taylor@email.com,555-0109,369 Willow St,Dallas,TX,75201,USA,2023-09-14,active,7500.00,Excellent payment history
+CUST010,Lisa,Thomas,lisa.thomas@email.com,555-0110,741 Aspen Blvd,San Jose,CA,95101,USA,2023-10-25,active,2500.00,Online customer only

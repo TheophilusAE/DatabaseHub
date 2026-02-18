@@ -128,6 +128,10 @@ func main() {
 	multiTableExportHandler := handlers.NewMultiTableExportHandler(tableConfigRepo, tableJoinRepo, exportConfigRepo, dbManager)
 	simpleMultiTableHandler := handlers.NewSimpleMultiTableHandler(db, userTablePermissionRepo, tableConfigRepo)
 	userTablePermissionHandler := handlers.NewUserTablePermissionHandler(userTablePermissionRepo, userRepo, tableConfigRepo)
+	databaseDiscoveryHandler := handlers.NewDatabaseDiscoveryHandler(dbManager, tableConfigRepo)
+
+	// Initialize unified export/import handler
+	unifiedExportImportHandler := handlers.NewUnifiedExportImportHandler(db)
 
 	// Set Gin mode
 	if cfg.Environment == "production" {
@@ -154,6 +158,8 @@ func main() {
 		multiTableExportHandler,
 		simpleMultiTableHandler,
 		userTablePermissionHandler,
+		databaseDiscoveryHandler,
+		unifiedExportImportHandler,
 	)
 	router.Setup(engine, cfg.AllowedOrigins)
 

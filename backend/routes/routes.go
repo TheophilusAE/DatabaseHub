@@ -20,6 +20,8 @@ type Router struct {
 	multiTableExportHandler    *handlers.MultiTableExportHandler
 	simpleMultiTableHandler    *handlers.SimpleMultiTableHandler
 	userTablePermissionHandler *handlers.UserTablePermissionHandler
+	databaseDiscoveryHandler   *handlers.DatabaseDiscoveryHandler
+	unifiedExportImportHandler *handlers.UnifiedExportImportHandler
 }
 
 func NewRouter(
@@ -35,6 +37,8 @@ func NewRouter(
 	multiTableExportHandler *handlers.MultiTableExportHandler,
 	simpleMultiTableHandler *handlers.SimpleMultiTableHandler,
 	userTablePermissionHandler *handlers.UserTablePermissionHandler,
+	databaseDiscoveryHandler *handlers.DatabaseDiscoveryHandler,
+	unifiedExportImportHandler *handlers.UnifiedExportImportHandler,
 ) *Router {
 	return &Router{
 		dataRecordHandler:          dataRecordHandler,
@@ -49,6 +53,8 @@ func NewRouter(
 		multiTableExportHandler:    multiTableExportHandler,
 		simpleMultiTableHandler:    simpleMultiTableHandler,
 		userTablePermissionHandler: userTablePermissionHandler,
+		databaseDiscoveryHandler:   databaseDiscoveryHandler,
+		unifiedExportImportHandler: unifiedExportImportHandler,
 	}
 }
 
@@ -122,8 +128,9 @@ func (r *Router) Setup(engine *gin.Engine, allowedOrigins string) {
 		download.GET("/excel", r.exportHandler.ExportExcel) // GET /download/excel - Export to Excel
 	}
 
-	// Multi-database management endpoints
+	// Multi-database management endpoints (ADMIN ONLY)
 	databases := engine.Group("/databases")
+	databases.Use(middleware.AdminOnly()) // Restrict to admins only
 	{
 		databases.POST("", r.dbConfigHandler.AddDatabaseConnection)      // POST /databases - Add new database connection
 		databases.GET("", r.dbConfigHandler.ListDatabaseConnections)     // GET /databases - List all database connections
@@ -131,24 +138,33 @@ func (r *Router) Setup(engine *gin.Engine, allowedOrigins string) {
 		databases.DELETE("", r.dbConfigHandler.RemoveDatabaseConnection) // DELETE /databases?name=db1 - Remove connection
 	}
 
-	// Table configuration management
-	tables := engine.Group("/tables")
+	// Database discovery endpoints for auto-sync (ADMIN ONLY)
+	discovery := engine.Group("/discovery")
+	discovery.Use(middleware.AdminOnly()) // Restrict to admins only
 	{
-		tables.POST("", r.tableConfigHandler.CreateTableConfig)       // POST /tables - Create table configuration
-		tables.GET("", r.tableConfigHandler.ListTableConfigs)         // GET /tables - List all table configurations
-		tables.GET("/:id", r.tableConfigHandler.GetTableConfig)       // GET /tables/1 - Get specific table config
-		tables.PUT("/:id", r.tableConfigHandler.UpdateTableConfig)    // PUT /tables/1 - Update table config
-		tables.DELETE("/:id", r.tableConfigHandler.DeleteTableConfig) // DELETE /tables/1 - Delete table config
+		discovery.GET("/databases", r.databaseDiscoveryHandler.ListDatabases) // GET /discovery/databases - List available databases
+		discovery.GET("/tables", r.databaseDiscoveryHandler.DiscoverTables)   // GET /discovery/tables?database=db1 - Discover tables
+		discovery.POST("/sync", r.databaseDiscoveryHandler.SyncTables)        // POST /discovery/sync - Sync tables to config
 	}
 
-	// Table join configuration management
+	// Table configuration management (ADMIN ONLY for modifications)
+	tables := engine.Group("/tables")
+	{
+		tables.GET("", r.tableConfigHandler.ListTableConfigs)                                 // GET /tables - List all table configurations
+		tables.GET("/:id", r.tableConfigHandler.GetTableConfig)                               // GET /tables/1 - Get specific table config
+		tables.POST("", middleware.AdminOnly(), r.tableConfigHandler.CreateTableConfig)       // POST /tables - Create table configuration (ADMIN ONLY)
+		tables.PUT("/:id", middleware.AdminOnly(), r.tableConfigHandler.UpdateTableConfig)    // PUT /tables/1 - Update table config (ADMIN ONLY)
+		tables.DELETE("/:id", middleware.AdminOnly(), r.tableConfigHandler.DeleteTableConfig) // DELETE /tables/1 - Delete table config (ADMIN ONLY)
+	}
+
+	// Table join configuration management (ADMIN ONLY for modifications)
 	joins := engine.Group("/joins")
 	{
-		joins.POST("", r.tableConfigHandler.CreateTableJoin)       // POST /joins - Create table join
-		joins.GET("", r.tableConfigHandler.ListTableJoins)         // GET /joins - List all table joins
-		joins.GET("/:id", r.tableConfigHandler.GetTableJoin)       // GET /joins/1 - Get specific join
-		joins.PUT("/:id", r.tableConfigHandler.UpdateTableJoin)    // PUT /joins/1 - Update join
-		joins.DELETE("/:id", r.tableConfigHandler.DeleteTableJoin) // DELETE /joins/1 - Delete join
+		joins.GET("", r.tableConfigHandler.ListTableJoins)                                 // GET /joins - List all table joins
+		joins.GET("/:id", r.tableConfigHandler.GetTableJoin)                               // GET /joins/1 - Get specific join
+		joins.POST("", middleware.AdminOnly(), r.tableConfigHandler.CreateTableJoin)       // POST /joins - Create table join (ADMIN ONLY)
+		joins.PUT("/:id", middleware.AdminOnly(), r.tableConfigHandler.UpdateTableJoin)    // PUT /joins/1 - Update join (ADMIN ONLY)
+		joins.DELETE("/:id", middleware.AdminOnly(), r.tableConfigHandler.DeleteTableJoin) // DELETE /joins/1 - Delete join (ADMIN ONLY)
 	}
 
 	// Multi-table import endpoints
@@ -166,6 +182,14 @@ func (r *Router) Setup(engine *gin.Engine, allowedOrigins string) {
 		multiExport.GET("/join-to-table", r.multiTableExportHandler.ExportJoinedDataToTable) // GET /multi-export/join-to-table?join_name=join1 - Export joined data to table
 		multiExport.GET("/configs", r.multiTableExportHandler.ListExportConfigs)             // GET /multi-export/configs - List export configs
 		multiExport.POST("/configs", r.multiTableExportHandler.CreateExportConfig)           // POST /multi-export/configs - Create export config
+	}
+
+	// Unified Export/Import - Simple, single endpoint for import and export
+	unified := engine.Group("/unified")
+	{
+		unified.POST("/import", r.unifiedExportImportHandler.SimpleImport)  // POST /unified/import - Simple import to a table
+		unified.POST("/export", r.unifiedExportImportHandler.UnifiedExport) // POST /unified/export - Unified export from multiple tables
+		unified.GET("/export", r.unifiedExportImportHandler.SimpleExport)   // GET /unified/export?tables[]=users&tables[]=products&format=csv - Quick export
 	}
 
 	// Simple multi-table operations (view, upload, export)

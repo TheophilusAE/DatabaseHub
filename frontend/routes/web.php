@@ -10,6 +10,7 @@ use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\DataExchangeController;
 
 // Authentication Routes
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -65,6 +66,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // Export
     Route::get('/export', [ExportController::class, 'index'])->name('export.index');
 
+    // Unified Data Exchange - Simple Import & Export
+    Route::get('/data-exchange', [DataExchangeController::class, 'index'])->name('data-exchange');
+    
     // Multi-Table Features
     Route::prefix('multi-table')->name('multi-table.')->group(function () {
         Route::get('/hub', [\App\Http\Controllers\MultiTableController::class, 'hub'])->name('hub');
@@ -111,6 +115,9 @@ Route::middleware(['auth', 'user'])->prefix('user')->name('user.')->group(functi
     // Export - Users can export data
     Route::get('/export', [ExportController::class, 'index'])->name('export.index');
 
+    // Unified Data Exchange - Simple Import & Export
+    Route::get('/data-exchange', [DataExchangeController::class, 'index'])->name('data-exchange');
+    
     // Multi-Table Features
     Route::prefix('multi-table')->name('multi-table.')->group(function () {
         Route::get('/hub', [\App\Http\Controllers\MultiTableController::class, 'hub'])->name('hub');

@@ -1,0 +1,16 @@
+order_number,customer_id,order_date,ship_date,required_date,status,subtotal,tax_amount,shipping_cost,total_amount,payment_method,shipping_address,shipping_city,shipping_state,shipping_zip,notes
+ORD-2024-001,1,2024-01-10,2024-01-12,2024-01-15,delivered,599.98,51.00,15.00,665.98,Credit Card,123 Main St,New York,NY,10001,Express shipping requested
+ORD-2024-002,2,2024-01-12,2024-01-14,2024-01-18,delivered,499.99,42.50,10.00,552.49,PayPal,456 Oak Ave,Los Angeles,CA,90001,Standard shipping
+ORD-2024-003,3,2024-01-15,,2024-01-20,processing,149.95,12.75,8.00,170.70,Credit Card,789 Pine Rd,Chicago,IL,60601,Awaiting stock
+ORD-2024-004,4,2024-01-18,2024-01-20,2024-01-25,shipped,299.99,25.50,12.00,337.49,Debit Card,321 Elm St,Houston,TX,77001,Signature required
+ORD-2024-005,5,2024-01-20,2024-01-22,2024-01-28,delivered,899.97,76.50,20.00,996.47,Credit Card,654 Maple Dr,Phoenix,AZ,85001,Large order - fragile items
+ORD-2024-006,1,2024-01-22,,2024-01-30,pending,89.99,7.65,5.00,102.64,Credit Card,123 Main St,New York,NY,10001,Backorder - waiting for restock
+ORD-2024-007,6,2024-01-25,2024-01-26,2024-02-01,delivered,199.98,17.00,8.00,224.98,PayPal,987 Cedar Ln,Philadelphia,PA,19019,Premium customer
+ORD-2024-008,7,2024-01-28,2024-01-30,2024-02-05,delivered,449.99,38.25,15.00,503.24,Bank Transfer,147 Birch Ct,San Antonio,TX,78201,Corporate purchase
+ORD-2024-009,8,2024-01-30,2024-02-01,2024-02-08,shipped,699.95,59.50,18.00,777.45,Credit Card,258 Spruce Way,San Diego,CA,92101,Weekend delivery requested
+ORD-2024-010,9,2024-02-01,,2024-02-10,processing,1299.98,110.50,25.00,1435.48,Credit Card,369 Willow St,Dallas,TX,75201,VIP customer - priority handling
+ORD-2024-011,10,2024-02-03,2024-02-05,2024-02-12,delivered,349.99,29.75,10.00,389.74,Debit Card,741 Aspen Blvd,San Jose,CA,95101,Standard shipping
+ORD-2024-012,2,2024-02-05,2024-02-07,2024-02-14,delivered,249.99,21.25,9.00,280.24,PayPal,456 Oak Ave,Los Angeles,CA,90001,Repeat customer discount applied
+ORD-2024-013,3,2024-02-08,,2024-02-18,cancelled,599.99,51.00,15.00,665.99,Credit Card,789 Pine Rd,Chicago,IL,60601,Customer requested cancellation
+ORD-2024-014,4,2024-02-10,2024-02-12,2024-02-20,shipped,799.98,68.00,20.00,887.98,Credit Card,321 Elm St,Houston,TX,77001,Gift wrap requested
+ORD-2024-015,5,2024-02-12,2024-02-14,2024-02-22,delivered,149.99,12.75,7.00,169.74,Credit Card,654 Maple Dr,Phoenix,AZ,85001,Quick delivery
