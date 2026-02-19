@@ -140,6 +140,9 @@
 </div>
 
 <script>
+// ✅ FIXED: Configure your Go backend API URL here
+const API_BASE = 'http://localhost:8080';
+
 document.addEventListener('DOMContentLoaded', function() {
     // Update port based on database type
     document.getElementById('conn-type').addEventListener('change', function() {
@@ -165,11 +168,16 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         try {
-            const response = await apiRequest('/databases?user_role=admin', {
+            const response = await fetch(`${API_BASE}/databases?user_role=admin`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(connection)
             });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to add connection');
+            }
 
             showAlert('Database connection added successfully!', 'success');
             this.reset();
@@ -182,7 +190,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function loadConnections() {
     try {
-        const response = await apiRequest('/databases?user_role=admin');
+        const response = await fetch(`${API_BASE}/databases?user_role=admin`);
+        if (!response.ok) throw new Error('Failed to load connections');
         const data = await response.json();
 
         const container = document.getElementById('connections-list');
@@ -238,7 +247,8 @@ async function testConnection(name, silent = false) {
     if (statusEl) statusEl.textContent = 'Testing...';
 
     try {
-        const response = await apiRequest(`/databases/test?name=${name}&user_role=admin`);
+        const response = await fetch(`${API_BASE}/databases/test?name=${name}&user_role=admin`);
+        if (!response.ok) throw new Error('Test failed');
         const data = await response.json();
         
         if (statusEl) {
@@ -259,7 +269,8 @@ async function removeConnection(name) {
     if (!confirm(`Are you sure you want to remove connection "${name}"?`)) return;
 
     try {
-        await apiRequest(`/databases?name=${name}&user_role=admin`, { method: 'DELETE' });
+        const response = await fetch(`${API_BASE}/databases?name=${name}&user_role=admin`, { method: 'DELETE' });
+        if (!response.ok) throw new Error('Failed to remove connection');
         showAlert('Connection removed successfully', 'success');
         loadConnections();
     } catch (error) {

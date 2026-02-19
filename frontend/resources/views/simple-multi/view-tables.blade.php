@@ -182,7 +182,12 @@ async function viewTable(tableName) {
 
 async function loadTableData() {
     try {
-        const response = await fetch(`http://localhost:8080/simple-multi/tables/${currentTable}?page=${currentPage}&page_size=${pageSize}`);
+        let dataUrl = `http://localhost:8080/simple-multi/tables/${currentTable}?page=${currentPage}&page_size=${pageSize}`;
+        if (userId && userRole && userRole !== 'admin') {
+            dataUrl += `&user_id=${encodeURIComponent(userId)}&user_role=${encodeURIComponent(userRole)}`;
+        }
+
+        const response = await fetch(dataUrl);
         if (!response.ok) throw new Error('Failed to load table data');
         
         const result = await response.json();

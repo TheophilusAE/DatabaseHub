@@ -170,9 +170,11 @@ func (r *Router) Setup(engine *gin.Engine, allowedOrigins string) {
 	// Multi-table import endpoints
 	multiImport := engine.Group("/multi-import")
 	{
-		multiImport.POST("/table", r.multiTableImportHandler.ImportToTable)          // POST /multi-import/table - Import to configured table
-		multiImport.GET("/mappings", r.multiTableImportHandler.ListImportMappings)   // GET /multi-import/mappings - List import mappings
-		multiImport.POST("/mappings", r.multiTableImportHandler.CreateImportMapping) // POST /multi-import/mappings - Create mapping
+		multiImport.POST("/table", r.multiTableImportHandler.ImportToTable)                // POST /multi-import/table - Import to configured table
+		multiImport.GET("/mappings", r.multiTableImportHandler.ListImportMappings)         // GET /multi-import/mappings - List import mappings
+		multiImport.POST("/mappings", r.multiTableImportHandler.CreateImportMapping)       // POST /multi-import/mappings - Create mapping
+		multiImport.PUT("/mappings/:id", r.multiTableImportHandler.UpdateImportMapping)    // PUT /multi-import/mappings/1
+		multiImport.DELETE("/mappings/:id", r.multiTableImportHandler.DeleteImportMapping) // DELETE /multi-import/mappings/1
 	}
 
 	// Multi-table export endpoints
@@ -182,6 +184,8 @@ func (r *Router) Setup(engine *gin.Engine, allowedOrigins string) {
 		multiExport.GET("/join-to-table", r.multiTableExportHandler.ExportJoinedDataToTable) // GET /multi-export/join-to-table?join_name=join1 - Export joined data to table
 		multiExport.GET("/configs", r.multiTableExportHandler.ListExportConfigs)             // GET /multi-export/configs - List export configs
 		multiExport.POST("/configs", r.multiTableExportHandler.CreateExportConfig)           // POST /multi-export/configs - Create export config
+		multiExport.PUT("/configs/:id", r.multiTableExportHandler.UpdateExportConfig)        // PUT /multi-export/configs/1 - Update export config
+		multiExport.DELETE("/configs/:id", r.multiTableExportHandler.DeleteExportConfig)     // DELETE /multi-export/configs/1 - Delete export config
 	}
 
 	// Unified Export/Import - Simple, single endpoint for import and export

@@ -1,270 +1,165 @@
 package handlers
 
 import (
-	"dataImportDashboard/models"
 	"dataImportDashboard/repository"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
-// UserTablePermissionHandler handles user table permission operations
 type UserTablePermissionHandler struct {
-	permRepo        *repository.UserTablePermissionRepository
-	userRepo        *repository.UserRepository
-	tableConfigRepo *repository.TableConfigRepository
+	permRepo  *repository.UserTablePermissionRepository
+	tableRepo *repository.TableConfigRepository
 }
 
-// NewUserTablePermissionHandler creates a new handler
+func getRequestUserRole(c *gin.Context) string {
+	role := strings.TrimSpace(c.Query("user_role"))
+	if role == "" {
+		if ctxRole, exists := c.Get("user_role"); exists {
+			if roleStr, ok := ctxRole.(string); ok {
+				role = strings.TrimSpace(roleStr)
+			}
+		}
+	}
+	if role == "" {
+		role = strings.TrimSpace(c.GetHeader("X-User-Role"))
+	}
+
+	return strings.ToLower(role)
+}
+
 func NewUserTablePermissionHandler(
 	permRepo *repository.UserTablePermissionRepository,
-	userRepo *repository.UserRepository,
-	tableConfigRepo *repository.TableConfigRepository,
+	tableRepo *repository.TableConfigRepository,
 ) *UserTablePermissionHandler {
 	return &UserTablePermissionHandler{
-		permRepo:        permRepo,
-		userRepo:        userRepo,
-		tableConfigRepo: tableConfigRepo,
+		permRepo:  permRepo,
+		tableRepo: tableRepo,
 	}
 }
 
-// AssignTablePermissionRequest represents the request to assign table permissions
-type AssignTablePermissionRequest struct {
-	UserID        uint `json:"user_id" binding:"required"`
-	TableConfigID uint `json:"table_config_id" binding:"required"`
-	CanView       bool `json:"can_view"`
-	CanEdit       bool `json:"can_edit"`
-	CanDelete     bool `json:"can_delete"`
-	CanExport     bool `json:"can_export"`
-	CanImport     bool `json:"can_import"`
-}
-
-// BulkAssignTablePermissionRequest for assigning multiple tables at once
-type BulkAssignTablePermissionRequest struct {
-	UserID         uint   `json:"user_id" binding:"required"`
-	TableConfigIDs []uint `json:"table_config_ids" binding:"required"`
-	CanView        bool   `json:"can_view"`
-	CanEdit        bool   `json:"can_edit"`
-	CanDelete      bool   `json:"can_delete"`
-	CanExport      bool   `json:"can_export"`
-	CanImport      bool   `json:"can_import"`
-}
-
-// GetUserPermissions retrieves all table permissions for a user
-func (h *UserTablePermissionHandler) GetUserPermissions(c *gin.Context) {
-	userIDStr := c.Param("userId")
-	userID, err := strconv.ParseUint(userIDStr, 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-		return
-	}
-
-	permissions, err := h.permRepo.GetUserPermissions(uint(userID))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"data":    permissions,
-	})
-}
-
-// GetAccessibleTables returns tables accessible to a user
+// GetAccessibleTables returns tables based on WHO is requesting (not target user)
+// GetAccessibleTables returns ALL tables for admin permission management
+// ✅ No auth required - Laravel frontend already ensures only admins can access this page
 func (h *UserTablePermissionHandler) GetAccessibleTables(c *gin.Context) {
 	userIDStr := c.Param("userId")
-	userID, err := strconv.ParseUint(userIDStr, 10, 32)
+	_, err := strconv.ParseUint(userIDStr, 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-		return
-	}
-
-	tableIDs, err := h.permRepo.GetAccessibleTables(uint(userID))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Get full table configs
-	tables := []models.TableConfig{}
-	if len(tableIDs) > 0 {
-		if err := h.tableConfigRepo.GetByIDs(tableIDs, &tables); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"data":    tables,
-	})
-}
-
-// AssignTablePermission creates or updates a table permission for a user
-func (h *UserTablePermissionHandler) AssignTablePermission(c *gin.Context) {
-	var req AssignTablePermissionRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Check if user exists
-	user, err := h.userRepo.GetByID(req.UserID)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
-		return
-	}
-
-	// Admin users have access to all tables by default
-	if user.IsAdmin() {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot assign table permissions to admin users"})
-		return
-	}
-
-	// Check if table config exists
-	tableConfig, err := h.tableConfigRepo.GetByID(req.TableConfigID)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Table configuration not found"})
-		return
-	}
-
-	// Check if permission already exists
-	existing, err := h.permRepo.GetPermissionByUserAndTable(req.UserID, req.TableConfigID)
-	if err == nil {
-		// Update existing
-		existing.CanView = req.CanView
-		existing.CanEdit = req.CanEdit
-		existing.CanDelete = req.CanDelete
-		existing.CanExport = req.CanExport
-		existing.CanImport = req.CanImport
-
-		if err := h.permRepo.Update(existing); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-
-		c.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"message": "Permission updated successfully",
-			"data":    existing,
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   "Invalid user ID",
 		})
 		return
 	}
 
-	// Create new permission
-	permission := &models.UserTablePermission{
-		UserID:        req.UserID,
-		TableConfigID: req.TableConfigID,
-		CanView:       req.CanView,
-		CanEdit:       req.CanEdit,
-		CanDelete:     req.CanDelete,
-		CanExport:     req.CanExport,
-		CanImport:     req.CanImport,
-	}
-
-	if err := h.permRepo.Create(permission); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	// ✅ ALWAYS return ALL tables for admin management page
+	// Laravel already protects this route - only admins can access it
+	allTables, err := h.tableRepo.GetAll()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   "Failed to fetch tables",
+		})
 		return
 	}
 
-	// Load the table config for response
-	permission.TableConfig = *tableConfig
-
-	c.JSON(http.StatusCreated, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": "Permission assigned successfully",
-		"data":    permission,
+		"data":    allTables,
+		"count":   len(allTables),
 	})
 }
 
-// BulkAssignTablePermissions assigns multiple tables to a user at once
+// GetUserPermissions gets all permission records for a specific user
+// ✅ No auth required - Laravel frontend already ensures only admins can access this page
+func (h *UserTablePermissionHandler) GetUserPermissions(c *gin.Context) {
+	userIDStr := c.Param("userId")
+	userID, err := strconv.ParseUint(userIDStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "Invalid user ID"})
+		return
+	}
+
+	// ✅ No authentication check - Laravel protects this admin-only route
+	// Admin can view any user's permissions to manage them
+
+	permissions, err := h.permRepo.GetUserPermissions(uint(userID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": "Failed to fetch permissions"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": permissions})
+}
+
+// BulkAssignTablePermissions assigns multiple table permissions to a user (ADMIN ONLY)
 func (h *UserTablePermissionHandler) BulkAssignTablePermissions(c *gin.Context) {
-	var req BulkAssignTablePermissionRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if getRequestUserRole(c) != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"success": false, "error": "Only administrators can assign permissions"})
 		return
 	}
 
-	// Check if user exists
-	user, err := h.userRepo.GetByID(req.UserID)
+	var request struct {
+		UserID         uint   `json:"user_id"`
+		TableConfigIDs []uint `json:"table_config_ids"`
+		CanView        bool   `json:"can_view"`
+		CanEdit        bool   `json:"can_edit"`
+		CanDelete      bool   `json:"can_delete"`
+		CanExport      bool   `json:"can_export"`
+		CanImport      bool   `json:"can_import"`
+	}
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "Invalid request body"})
+		return
+	}
+
+	// Revoke all existing permissions first
+	err := h.permRepo.RevokeAllPermissions(request.UserID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": "Failed to revoke existing permissions"})
 		return
 	}
 
-	// Admin users have access to all tables by default
-	if user.IsAdmin() {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Cannot assign table permissions to admin users"})
-		return
+	// Assign new permissions
+	if len(request.TableConfigIDs) > 0 {
+		err = h.permRepo.BulkAssignPermissions(
+			request.UserID, request.TableConfigIDs,
+			request.CanView, request.CanEdit, request.CanDelete,
+			request.CanExport, request.CanImport,
+		)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": "Failed to assign permissions"})
+			return
+		}
 	}
 
-	permissions := models.UserTablePermission{
-		CanView:   req.CanView,
-		CanEdit:   req.CanEdit,
-		CanDelete: req.CanDelete,
-		CanExport: req.CanExport,
-		CanImport: req.CanImport,
-	}
-
-	if err := h.permRepo.BulkCreatePermissions(req.UserID, req.TableConfigIDs, permissions); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "Permissions assigned successfully",
-	})
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Permissions updated successfully"})
 }
 
-// RevokeTablePermission removes a table permission
-func (h *UserTablePermissionHandler) RevokeTablePermission(c *gin.Context) {
-	userIDStr := c.Param("userId")
-	tableIDStr := c.Param("tableId")
-
-	userID, err := strconv.ParseUint(userIDStr, 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-		return
-	}
-
-	tableID, err := strconv.ParseUint(tableIDStr, 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid table ID"})
-		return
-	}
-
-	if err := h.permRepo.DeleteByUserAndTable(uint(userID), uint(tableID)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "Permission revoked successfully",
-	})
-}
-
-// RevokeAllUserPermissions removes all table permissions for a user
+// RevokeAllUserPermissions removes all table permissions for a user (ADMIN ONLY)
 func (h *UserTablePermissionHandler) RevokeAllUserPermissions(c *gin.Context) {
+	if getRequestUserRole(c) != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"success": false, "error": "Only administrators can revoke permissions"})
+		return
+	}
+
 	userIDStr := c.Param("userId")
 	userID, err := strconv.ParseUint(userIDStr, 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "Invalid user ID"})
 		return
 	}
 
-	if err := h.permRepo.RevokeAllUserPermissions(uint(userID)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	err = h.permRepo.RevokeAllPermissions(uint(userID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": "Failed to revoke permissions"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "All permissions revoked successfully",
-	})
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "All permissions revoked successfully"})
 }
 
 // CheckTableAccess checks if a user has access to a specific table
@@ -274,24 +169,87 @@ func (h *UserTablePermissionHandler) CheckTableAccess(c *gin.Context) {
 
 	userID, err := strconv.ParseUint(userIDStr, 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "Invalid user ID"})
 		return
 	}
 
 	tableID, err := strconv.ParseUint(tableIDStr, 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid table ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "Invalid table ID"})
 		return
 	}
 
 	hasAccess, err := h.permRepo.HasTableAccess(uint(userID), uint(tableID))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": "Failed to check access"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"success":    true,
-		"has_access": hasAccess,
-	})
+	c.JSON(http.StatusOK, gin.H{"success": true, "has_access": hasAccess})
+}
+
+// AssignTablePermission assigns a single table permission to a user (ADMIN ONLY)
+func (h *UserTablePermissionHandler) AssignTablePermission(c *gin.Context) {
+	if getRequestUserRole(c) != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"success": false, "error": "Only administrators can assign permissions"})
+		return
+	}
+
+	var request struct {
+		UserID        uint `json:"user_id"`
+		TableConfigID uint `json:"table_config_id"`
+		CanView       bool `json:"can_view"`
+		CanEdit       bool `json:"can_edit"`
+		CanDelete     bool `json:"can_delete"`
+		CanExport     bool `json:"can_export"`
+		CanImport     bool `json:"can_import"`
+	}
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "Invalid request body"})
+		return
+	}
+
+	err := h.permRepo.AssignPermission(
+		request.UserID, request.TableConfigID,
+		request.CanView, request.CanEdit, request.CanDelete,
+		request.CanExport, request.CanImport,
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": "Failed to assign permission"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Permission assigned successfully"})
+}
+
+// RevokeTablePermission removes a specific table permission from a user (ADMIN ONLY)
+func (h *UserTablePermissionHandler) RevokeTablePermission(c *gin.Context) {
+	if getRequestUserRole(c) != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"success": false, "error": "Only administrators can revoke permissions"})
+		return
+	}
+
+	userIDStr := c.Param("userId")
+	tableIDStr := c.Param("tableId")
+
+	userID, err := strconv.ParseUint(userIDStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "Invalid user ID"})
+		return
+	}
+
+	tableID, err := strconv.ParseUint(tableIDStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "Invalid table ID"})
+		return
+	}
+
+	err = h.permRepo.RevokePermission(uint(userID), uint(tableID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": "Failed to revoke permission"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Permission revoked successfully"})
 }

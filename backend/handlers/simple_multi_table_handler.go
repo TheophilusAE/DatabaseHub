@@ -45,12 +45,37 @@ type ColumnInfo struct {
 }
 
 // ListTables returns all tables in the current database
+// ListTables returns all tables in the current database (with permission filtering)
 func (h *SimpleMultiTableHandler) ListTables(c *gin.Context) {
 	var tables []TableInfo
 
-	// Check if user filtering is needed
-	userIDStr := c.Query("user_id")
+	// ✅ Get user info from query parameters (same as AdminOnly middleware)
 	userRole := c.Query("user_role")
+	if userRole == "" {
+		if role, exists := c.Get("user_role"); exists {
+			userRole = role.(string)
+		}
+	}
+	if userRole == "" {
+		userRole = c.GetHeader("X-User-Role")
+	}
+
+	userIDStr := c.Query("user_id")
+	var userID interface{}
+	var exists bool
+	if userIDStr != "" {
+		if uid, err := strconv.ParseUint(userIDStr, 10, 32); err == nil {
+			userID = uint(uid)
+			exists = true
+		}
+	} else {
+		userID, exists = c.Get("user_id")
+	}
+
+	if userRole != "admin" && !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Missing user identity for table permission check"})
+		return
+	}
 
 	// Get all table names from information_schema
 	query := `
@@ -68,21 +93,16 @@ func (h *SimpleMultiTableHandler) ListTables(c *gin.Context) {
 	}
 	defer rows.Close()
 
-	// Get accessible table names for non-admin users
+	// ✅ Get accessible table names for non-admin users
 	accessibleTableNames := make(map[string]bool)
-	if userRole != "admin" && userIDStr != "" {
-		userID, err := strconv.ParseUint(userIDStr, 10, 32)
+
+	if userRole != "admin" {
+		// ✅ GetAccessibleTables returns []TableConfig directly
+		accessibleTables, err := h.PermRepo.GetAccessibleTables(userID.(uint))
 		if err == nil {
-			// Get table configs user has access to
-			accessibleTableIDs, err := h.PermRepo.GetAccessibleTables(uint(userID))
-			if err == nil {
-				// Map table config IDs to actual table names
-				for _, tableID := range accessibleTableIDs {
-					config, err := h.TableConfigRepo.GetByID(tableID)
-					if err == nil {
-						accessibleTableNames[config.Table] = true
-					}
-				}
+			for _, tableConfig := range accessibleTables {
+				// ✅ tableConfig.Table already contains the actual table name
+				accessibleTableNames[tableConfig.Table] = true
 			}
 		}
 	}
@@ -93,8 +113,8 @@ func (h *SimpleMultiTableHandler) ListTables(c *gin.Context) {
 			continue
 		}
 
-		// Filter tables if user is not admin
-		if userRole != "admin" && userIDStr != "" {
+		// ✅ Filter tables if user is not admin
+		if userRole != "admin" {
 			if !accessibleTableNames[tableName] {
 				continue // Skip tables user doesn't have access to
 			}
@@ -160,6 +180,55 @@ func (h *SimpleMultiTableHandler) GetTableData(c *gin.Context) {
 	tableName := c.Param("table")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "50"))
+
+	userRole := strings.TrimSpace(c.Query("user_role"))
+	if userRole == "" {
+		if role, exists := c.Get("user_role"); exists {
+			if roleStr, ok := role.(string); ok {
+				userRole = strings.TrimSpace(roleStr)
+			}
+		}
+	}
+	if userRole == "" {
+		userRole = strings.TrimSpace(c.GetHeader("X-User-Role"))
+	}
+	userRole = strings.ToLower(userRole)
+
+	userIDStr := c.Query("user_id")
+	var requesterID uint
+	if userIDStr != "" {
+		if parsedID, err := strconv.ParseUint(userIDStr, 10, 32); err == nil {
+			requesterID = uint(parsedID)
+		}
+	} else {
+		requesterID = c.GetUint("user_id")
+	}
+
+	if userRole != "admin" {
+		if requesterID == 0 {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Missing user identity for table access"})
+			return
+		}
+
+		accessibleTables, err := h.PermRepo.GetAccessibleTables(requesterID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to verify table permission"})
+			return
+		}
+
+		hasAccess := false
+		for _, tableConfig := range accessibleTables {
+			if tableConfig.Table == tableName {
+				hasAccess = true
+				break
+			}
+		}
+
+		if !hasAccess {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Access denied for this table"})
+			return
+		}
+	}
 
 	// Validate table name
 	if tableName == "" || tableName == "undefined" {

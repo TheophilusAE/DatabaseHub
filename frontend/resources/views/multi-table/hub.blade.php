@@ -32,12 +32,10 @@
             <div class="flex border-b border-gray-200">
                 <button onclick="switchTab('quick')" id="tab-quick" class="tab-button flex-1 py-4 px-6 text-center font-medium transition-all duration-200 border-b-2 border-blue-600 text-blue-600 hover:bg-blue-50">
                     <div class="flex items-center justify-center">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                        </svg>
                         <span>Quick Actions</span>
                     </div>
                 </button>
+                @if($userRole === 'admin')
                 <button onclick="switchTab('import')" id="tab-import" class="tab-button flex-1 py-4 px-6 text-center font-medium transition-all duration-200 border-b-2 border-transparent text-gray-600 hover:text-blue-600 hover:bg-gray-50">
                     <div class="flex items-center justify-center">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -55,6 +53,7 @@
                         <span>Configuration</span>
                     </div>
                 </button>
+                @endif
             </div>
         </div>
 
@@ -62,7 +61,7 @@
         <div class="bg-white rounded-b-xl shadow-sm p-6">
             <!-- Quick Actions Tab -->
             <div id="content-quick" class="tab-content">
-                <h2 class="text-2xl font-bold text-gray-800 mb-2">Quick Actions - Simple Mode</h2>
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">Multi-Table Operations </h2>
                 <p class="text-gray-600 mb-6">Direct access to database tables - no configuration required</p>
 
                 <!-- Cards Grid -->
@@ -124,6 +123,7 @@
             </div>
 
             <!-- Import & Export Tab -->
+            @if($userRole === 'admin')
             <div id="content-import" class="tab-content hidden">
                 <h2 class="text-2xl font-bold text-gray-800 mb-2">Import & Export Operations</h2>
                 <p class="text-gray-600 mb-6">Configured import and export operations using mappings</p>
@@ -166,8 +166,10 @@
                     </a>
                 </div>
             </div>
+            @endif
 
             <!-- Configuration Tab -->
+            @if($userRole === 'admin')
             <div id="content-config" class="tab-content hidden">
                 <h2 class="text-2xl font-bold text-gray-800 mb-2">Advanced Configuration</h2>
                 <p class="text-gray-600 mb-6">Configure databases, tables, joins, and mappings for advanced operations</p>
@@ -264,6 +266,7 @@
                     </a>
                 </div>
             </div>
+            @endif
         </div>
     </div>
 </div>

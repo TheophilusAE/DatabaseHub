@@ -103,20 +103,30 @@
 <script>
 const userId = {{ $user['id'] }};
 const apiUrl = 'http://localhost:8080';
+const currentUserId = {{ session('user')['id'] ?? 'null' }};
+const currentUserRole = '{{ session('user')['role'] ?? '' }}';
 let allTables = [];
 let userPermissions = [];
 let allSelected = false;
 
-// Load tables and permissions
 async function loadData() {
     try {
-        // Fetch all tables
-        const tablesResponse = await fetch(`${apiUrl}/tables`);
+        // ✅ No credentials needed - Go backend returns all tables for admin management
+        const tablesResponse = await fetch(`${apiUrl}/permissions/users/${userId}/tables`);
+        
+        if (!tablesResponse.ok) {
+            throw new Error(`HTTP ${tablesResponse.status}: ${tablesResponse.statusText}`);
+        }
+        
         const tablesData = await tablesResponse.json();
         allTables = tablesData.data || [];
 
-        // Fetch user's current permissions
         const permResponse = await fetch(`${apiUrl}/permissions/users/${userId}`);
+        
+        if (!permResponse.ok) {
+            throw new Error(`HTTP ${permResponse.status}: ${permResponse.statusText}`);
+        }
+        
         const permData = await permResponse.json();
         userPermissions = permData.data || [];
 
@@ -127,20 +137,21 @@ async function loadData() {
             <div class="text-center py-8 text-red-600">
                 <p class="font-bold">Error loading tables</p>
                 <p class="text-sm mt-2">${error.message}</p>
+                <button onclick="location.reload()" class="mt-3 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Retry</button>
             </div>
         `;
     }
 }
 
-// Render tables
 function renderTables() {
     const container = document.getElementById('permissions-container');
+    if (!container) return;
     
     if (allTables.length === 0) {
         container.innerHTML = `
             <div class="text-center py-8 text-gray-500">
-                <p class="font-bold">No tables configured</p>
-                <p class="text-sm mt-2">Please configure tables first</p>
+                <p class="font-bold">No tables available</p>
+                <p class="text-sm mt-2">This user has no permitted tables or no tables are configured</p>
             </div>
         `;
         return;
@@ -164,9 +175,9 @@ function renderTables() {
                         class="h-5 w-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                     >
                     <label for="table-${table.id}" class="ml-3 cursor-pointer">
-                        <div class="text-sm font-bold text-gray-900">${table.name}</div>
-                        <div class="text-xs text-gray-600">${table.database_name} - ${table.table_name}</div>
-                        ${table.description ? `<div class="text-xs text-gray-500 mt-1">${table.description}</div>` : ''}
+                        <div class="text-sm font-bold text-gray-900">${escapeHtml(table.name)}</div>
+                        <div class="text-xs text-gray-600">${escapeHtml(table.database_name)} - ${escapeHtml(table.table_name)}</div>
+                        ${table.description ? `<div class="text-xs text-gray-500 mt-1">${escapeHtml(table.description)}</div>` : ''}
                     </label>
                 </div>
                 <div class="flex items-center space-x-2">
@@ -176,47 +187,65 @@ function renderTables() {
         `;
     }).join('');
 
-    document.getElementById('loading').remove();
+    const loading = document.getElementById('loading');
+    if (loading) loading.remove();
 }
 
-// Toggle all permissions
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 function toggleAllPermissions() {
     allSelected = !allSelected;
     const checkboxes = document.querySelectorAll('[data-table-id]');
     checkboxes.forEach(cb => cb.checked = allSelected);
-    
     const btn = document.getElementById('toggleAllBtn');
-    btn.textContent = allSelected ? 'Deselect All' : 'Select All';
+    if (btn) btn.textContent = allSelected ? 'Deselect All' : 'Select All';
 }
 
-// Save permissions
-async function savePermissions() {
+async function savePermissions(event) {
+    if (event) event.preventDefault();
+    
     const checkboxes = document.querySelectorAll('[data-table-id]');
     const selectedTableIds = [];
-    
     checkboxes.forEach(cb => {
-        if (cb.checked) {
-            selectedTableIds.push(parseInt(cb.dataset.tableId));
-        }
+        if (cb.checked) selectedTableIds.push(parseInt(cb.dataset.tableId));
     });
 
     try {
-        // Show loading
-        const btn = event.target;
-        btn.disabled = true;
-        btn.innerHTML = '⏳ Saving...';
+        const btn = document.querySelector('button[onclick="savePermissions(event)"]') || 
+                   document.querySelector('button[onclick="savePermissions()"]');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Saving...';
+        }
 
-        // First, revoke all existing permissions
-        await fetch(`${apiUrl}/permissions/users/${userId}/all`, {
-            method: 'DELETE'
+        if (!currentUserRole || currentUserRole.toLowerCase() !== 'admin') {
+            throw new Error('Current session is not admin. Please re-login as admin.');
+        }
+
+        // Delete all existing permissions with admin credentials
+        const revokeResponse = await fetch(`${apiUrl}/permissions/users/${userId}/all?user_role=${encodeURIComponent(currentUserRole)}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-User-Role': currentUserRole
+            }
         });
+        if (!revokeResponse.ok) {
+            throw new Error(`Failed to clear old permissions: HTTP ${revokeResponse.status}`);
+        }
 
-        // Then assign selected tables
+        // Assign new permissions with admin credentials
         if (selectedTableIds.length > 0) {
-            await fetch(`${apiUrl}/permissions/bulk-assign`, {
+            const assignResponse = await fetch(`${apiUrl}/permissions/bulk-assign?user_role=${encodeURIComponent(currentUserRole)}`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'X-User-Role': currentUserRole
                 },
                 body: JSON.stringify({
                     user_id: userId,
@@ -228,24 +257,28 @@ async function savePermissions() {
                     can_import: false
                 })
             });
+            if (!assignResponse.ok) {
+                throw new Error(`Failed to assign permissions: HTTP ${assignResponse.status}`);
+            }
         }
 
-        // Success
-        btn.innerHTML = '✓ Saved!';
-        btn.classList.remove('from-blue-600', 'to-purple-600');
-        btn.classList.add('from-green-600', 'to-green-700');
-        
-        setTimeout(() => {
-            location.reload();
-        }, 1000);
+        if (btn) {
+            btn.innerHTML = '✓ Saved!';
+            btn.classList.remove('from-blue-600', 'to-purple-600');
+            btn.classList.add('from-green-600', 'to-green-700');
+        }
+        setTimeout(() => location.reload(), 1000);
     } catch (error) {
         console.error('Error saving permissions:', error);
-        alert('Error saving permissions: ' + error.message);
+        alert('Error: ' + error.message);
         location.reload();
     }
 }
 
-// Load data on page load
-document.addEventListener('DOMContentLoaded', loadData);
+document.addEventListener('DOMContentLoaded', function() {
+    if (document.getElementById('permissions-container')) {
+        loadData();
+    }
+});
 </script>
 @endsection

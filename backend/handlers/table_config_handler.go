@@ -128,19 +128,22 @@ func (h *TableConfigHandler) CreateTableConfig(c *gin.Context) {
 }
 
 // ListTableConfigs lists all table configurations
+// ListTableConfigs lists all table configurations (with permission filtering)
 func (h *TableConfigHandler) ListTableConfigs(c *gin.Context) {
-	configs, err := h.tableConfigRepo.FindAll()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve table configurations"})
-		return
-	}
+	// ✅ Get user info from auth middleware context (secure)
+	currentUserID, exists := c.Get("user_id")
+	currentUserRole, _ := c.Get("user_role")
 
-	// Check if user_id is provided for permission filtering
-	userIDStr := c.Query("user_id")
-	userRole := c.Query("user_role")
-
-	// If user is admin or no user_id provided, return all configs
-	if userRole == "admin" || userIDStr == "" {
+	// ✅ Admin always sees ALL configs
+	if currentUserRole == "admin" {
+		configs, err := h.tableConfigRepo.FindAll()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"error":   "Failed to retrieve table configurations",
+			})
+			return
+		}
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"data":    configs,
@@ -149,38 +152,53 @@ func (h *TableConfigHandler) ListTableConfigs(c *gin.Context) {
 		return
 	}
 
-	// Filter configs based on user permissions
-	userID, err := strconv.ParseUint(userIDStr, 10, 32)
-	if err == nil && userID > 0 {
-		accessibleTableIDs, err := h.permRepo.GetAccessibleTables(uint(userID))
-		if err == nil {
-			// Filter configs to only include accessible tables
-			filtered := []models.TableConfig{}
-			accessMap := make(map[uint]bool)
-			for _, id := range accessibleTableIDs {
-				accessMap[id] = true
-			}
+	// ✅ For regular users: get ONLY their permitted tables
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"success": false,
+			"error":   "Not authenticated",
+		})
+		return
+	}
 
-			for _, config := range configs {
-				if accessMap[config.ID] {
-					filtered = append(filtered, config)
-				}
-			}
+	// ✅ GetAccessibleTables returns []TableConfig directly
+	accessibleTables, err := h.permRepo.GetAccessibleTables(currentUserID.(uint))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   "Failed to fetch permitted tables",
+		})
+		return
+	}
 
-			c.JSON(http.StatusOK, gin.H{
-				"success": true,
-				"data":    filtered,
-				"count":   len(filtered),
-			})
-			return
+	// ✅ Create map of permitted table IDs for fast lookup
+	accessMap := make(map[uint]bool)
+	for _, tableConfig := range accessibleTables {
+		accessMap[tableConfig.ID] = true // ✅ Use tableConfig.ID (which is uint)
+	}
+
+	// ✅ Get ALL configs, then filter
+	allConfigs, err := h.tableConfigRepo.FindAll()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   "Failed to retrieve table configurations",
+		})
+		return
+	}
+
+	// ✅ Filter to only permitted configs
+	filtered := make([]*models.TableConfig, 0)
+	for _, config := range allConfigs {
+		if accessMap[config.ID] {
+			filtered = append(filtered, config)
 		}
 	}
 
-	// Default: return all configs
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"data":    configs,
-		"count":   len(configs),
+		"data":    filtered,
+		"count":   len(filtered),
 	})
 }
 

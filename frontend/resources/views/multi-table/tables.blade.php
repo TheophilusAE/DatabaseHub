@@ -194,6 +194,9 @@
 </div>
 
 <script>
+// ✅ FIXED: Configure your Go backend API URL here
+const API_BASE = 'http://localhost:8080';
+
 let discoveredTablesData = [];
 let selectedDatabase = '';
 const userRole = '{{ session('user')['role'] ?? 'user' }}';
@@ -226,11 +229,16 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         try {
-            const response = await apiRequest('/tables?user_role=' + userRole, {
+            const response = await fetch(`${API_BASE}/tables?user_role=${userRole}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(config)
             });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to add table configuration');
+            }
 
             showAlert('Table configuration added successfully!', 'success');
             closeAddModal();
@@ -246,7 +254,8 @@ async function loadDiscoveryDatabases() {
     if (!isAdmin) return;
     
     try {
-        const response = await apiRequest('/discovery/databases?user_role=' + userRole);
+        const response = await fetch(`${API_BASE}/discovery/databases?user_role=${userRole}`);
+        if (!response.ok) throw new Error('Failed to load databases');
         const data = await response.json();
 
         const select = document.getElementById('discovery-database');
@@ -359,7 +368,7 @@ async function syncSingleTable(tableName) {
     try {
         showAlert(`Syncing ${tableName}...`, 'info');
         
-        const response = await apiRequest('/discovery/sync?user_role=' + userRole, {
+        const response = await fetch(`${API_BASE}/discovery/sync?user_role=${userRole}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -367,6 +376,11 @@ async function syncSingleTable(tableName) {
                 tables: [tableName]
             })
         });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to sync table');
+        }
 
         const data = await response.json();
 
@@ -418,7 +432,7 @@ async function syncAllTables() {
     try {
         showAlert(`Syncing ${selectedTables.length} tables...`, 'info');
         
-        const response = await apiRequest('/discovery/sync?user_role=' + userRole, {
+        const response = await fetch(`${API_BASE}/discovery/sync?user_role=${userRole}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -426,6 +440,11 @@ async function syncAllTables() {
                 tables: selectedTables
             })
         });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to sync tables');
+        }
 
         const data = await response.json();
 
@@ -451,7 +470,8 @@ async function syncAllTables() {
 
 async function loadTables() {
     try {
-        const response = await apiRequest('/tables');
+        const response = await fetch(`${API_BASE}/tables`);
+        if (!response.ok) throw new Error('Failed to load tables');
         const data = await response.json();
 
         const container = document.getElementById('tables-list');
@@ -492,13 +512,10 @@ async function loadTables() {
     }
 }
 
-asynif (!isAdmin) {
-        showAlert('Only administrators can add table configurations', 'error');
-        return;
-    }
-    c function loadDatabases() {
+async function loadDatabases() {
     try {
-        const response = await apiRequest('/databases');
+        const response = await fetch(`${API_BASE}/databases`);
+        if (!response.ok) throw new Error('Failed to load databases');
         const data = await response.json();
 
         const select = document.getElementById('table-database');

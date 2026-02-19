@@ -127,7 +127,7 @@ func main() {
 	multiTableImportHandler := handlers.NewMultiTableImportHandler(tableConfigRepo, importMappingRepo, importLogRepo, dbManager)
 	multiTableExportHandler := handlers.NewMultiTableExportHandler(tableConfigRepo, tableJoinRepo, exportConfigRepo, dbManager)
 	simpleMultiTableHandler := handlers.NewSimpleMultiTableHandler(db, userTablePermissionRepo, tableConfigRepo)
-	userTablePermissionHandler := handlers.NewUserTablePermissionHandler(userTablePermissionRepo, userRepo, tableConfigRepo)
+	userTablePermissionHandler := handlers.NewUserTablePermissionHandler(userTablePermissionRepo, tableConfigRepo)
 	databaseDiscoveryHandler := handlers.NewDatabaseDiscoveryHandler(dbManager, tableConfigRepo)
 
 	// Initialize unified export/import handler

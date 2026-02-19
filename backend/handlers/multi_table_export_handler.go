@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -461,5 +462,90 @@ func (h *MultiTableExportHandler) CreateExportConfig(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "Export config created successfully",
 		"config":  config,
+	})
+}
+
+// UpdateExportConfig handles PUT /multi-export/configs/:id
+func (h *MultiTableExportHandler) UpdateExportConfig(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := strconv.ParseUint(idParam, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid config ID"})
+		return
+	}
+
+	var input models.ExportConfig
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Fetch existing config
+	existing, err := h.exportConfigRepo.FindByID(uint(id))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Export configuration not found"})
+		return
+	}
+
+	// Update fields if provided
+	if input.Name != "" {
+		existing.Name = input.Name
+	}
+	if input.SourceType != "" {
+		existing.SourceType = input.SourceType
+	}
+	if input.SourceID != 0 {
+		existing.SourceID = input.SourceID
+	}
+	if input.TargetFormat != "" {
+		existing.TargetFormat = input.TargetFormat
+	}
+	if input.Filters != "" {
+		existing.Filters = input.Filters
+	}
+	if input.OrderBy != "" {
+		existing.OrderBy = input.OrderBy
+	}
+	if input.ColumnList != "" {
+		existing.ColumnList = input.ColumnList
+	}
+
+	existing.UpdatedAt = time.Now()
+
+	if err := h.exportConfigRepo.Update(existing); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update export config"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Export config updated successfully",
+		"config":  existing,
+	})
+}
+
+// DeleteExportConfig handles DELETE /multi-export/configs/:id
+func (h *MultiTableExportHandler) DeleteExportConfig(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := strconv.ParseUint(idParam, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid config ID"})
+		return
+	}
+
+	// Check if exists
+	_, err = h.exportConfigRepo.FindByID(uint(id))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Export configuration not found"})
+		return
+	}
+
+	if err := h.exportConfigRepo.Delete(uint(id)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete export config"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Export configuration deleted successfully",
+		"id":      id,
 	})
 }

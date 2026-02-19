@@ -2,130 +2,94 @@ package repository
 
 import (
 	"dataImportDashboard/models"
-	"errors"
+	"time"
 
 	"gorm.io/gorm"
 )
 
-// UserTablePermissionRepository handles database operations for user table permissions
 type UserTablePermissionRepository struct {
 	db *gorm.DB
 }
 
-// NewUserTablePermissionRepository creates a new repository
 func NewUserTablePermissionRepository(db *gorm.DB) *UserTablePermissionRepository {
 	return &UserTablePermissionRepository{db: db}
 }
 
-// GetUserPermissions retrieves all table permissions for a user
-func (r *UserTablePermissionRepository) GetUserPermissions(userID uint) ([]models.UserTablePermission, error) {
-	var permissions []models.UserTablePermission
-	err := r.db.Preload("TableConfig").Where("user_id = ?", userID).Find(&permissions).Error
+// UserTablePermission model
+type UserTablePermission struct {
+	ID            uint      `gorm:"primaryKey"`
+	UserID        uint      `gorm:"not null;index"`
+	TableConfigID uint      `gorm:"not null;index"`
+	CanView       bool      `gorm:"default:true"`
+	CanEdit       bool      `gorm:"default:false"`
+	CanDelete     bool      `gorm:"default:false"`
+	CanExport     bool      `gorm:"default:false"`
+	CanImport     bool      `gorm:"default:false"`
+	CreatedAt     time.Time `gorm:"autoCreateTime"`
+	UpdatedAt     time.Time `gorm:"autoUpdateTime"`
+}
+
+// GetAccessibleTables returns tables the user has permission to access
+func (r *UserTablePermissionRepository) GetAccessibleTables(userID uint) ([]models.TableConfig, error) {
+	return r.GetTablesByUserID(userID)
+}
+
+// GetTablesByUserID returns only tables the user has permission to view
+func (r *UserTablePermissionRepository) GetTablesByUserID(userID uint) ([]models.TableConfig, error) {
+	var tables []models.TableConfig
+	err := r.db.Table("table_configs").
+		Select("table_configs.*").
+		Joins("INNER JOIN user_table_permissions ON user_table_permissions.table_config_id = table_configs.id").
+		Where("user_table_permissions.user_id = ? AND user_table_permissions.can_view = ?", userID, true).
+		Find(&tables).Error
+	return tables, err
+}
+
+// GetUserPermissions returns all permission records for a user
+func (r *UserTablePermissionRepository) GetUserPermissions(userID uint) ([]UserTablePermission, error) {
+	var permissions []UserTablePermission
+	err := r.db.Where("user_id = ?", userID).Find(&permissions).Error
 	return permissions, err
 }
 
-// GetPermissionByUserAndTable retrieves a specific permission
-func (r *UserTablePermissionRepository) GetPermissionByUserAndTable(userID, tableConfigID uint) (*models.UserTablePermission, error) {
-	var permission models.UserTablePermission
-	err := r.db.Where("user_id = ? AND table_config_id = ?", userID, tableConfigID).First(&permission).Error
-	if err != nil {
-		return nil, err
-	}
-	return &permission, nil
-}
-
-// Create creates a new permission
-func (r *UserTablePermissionRepository) Create(permission *models.UserTablePermission) error {
-	// Check if permission already exists
-	var existing models.UserTablePermission
-	err := r.db.Where("user_id = ? AND table_config_id = ?", permission.UserID, permission.TableConfigID).First(&existing).Error
-	if err == nil {
-		return errors.New("permission already exists for this user and table")
-	}
-
-	return r.db.Create(permission).Error
-}
-
-// Update updates an existing permission
-func (r *UserTablePermissionRepository) Update(permission *models.UserTablePermission) error {
-	return r.db.Save(permission).Error
-}
-
-// Delete removes a permission
-func (r *UserTablePermissionRepository) Delete(id uint) error {
-	return r.db.Delete(&models.UserTablePermission{}, id).Error
-}
-
-// DeleteByUserAndTable removes a specific permission
-func (r *UserTablePermissionRepository) DeleteByUserAndTable(userID, tableConfigID uint) error {
-	return r.db.Where("user_id = ? AND table_config_id = ?", userID, tableConfigID).Delete(&models.UserTablePermission{}).Error
-}
-
-// HasTableAccess checks if a user has access to a table
-func (r *UserTablePermissionRepository) HasTableAccess(userID, tableConfigID uint) (bool, error) {
+// HasTableAccess checks if user has access to a specific table
+func (r *UserTablePermissionRepository) HasTableAccess(userID uint, tableID uint) (bool, error) {
 	var count int64
-	err := r.db.Model(&models.UserTablePermission{}).
-		Where("user_id = ? AND table_config_id = ? AND can_view = ?", userID, tableConfigID, true).
+	err := r.db.Table("user_table_permissions").
+		Where("user_id = ? AND table_config_id = ? AND can_view = ?", userID, tableID, true).
 		Count(&count).Error
 	return count > 0, err
 }
 
-// GetAccessibleTables returns all table IDs that a user can access
-func (r *UserTablePermissionRepository) GetAccessibleTables(userID uint) ([]uint, error) {
-	var permissions []models.UserTablePermission
-	err := r.db.Where("user_id = ? AND can_view = ?", userID, true).Find(&permissions).Error
-	if err != nil {
-		return nil, err
+// AssignPermission assigns a single table permission
+func (r *UserTablePermissionRepository) AssignPermission(userID, tableConfigID uint, canView, canEdit, canDelete, canExport, canImport bool) error {
+	permission := UserTablePermission{
+		UserID: userID, TableConfigID: tableConfigID,
+		CanView: canView, CanEdit: canEdit, CanDelete: canDelete,
+		CanExport: canExport, CanImport: canImport,
 	}
-
-	tableIDs := make([]uint, len(permissions))
-	for i, p := range permissions {
-		tableIDs[i] = p.TableConfigID
-	}
-	return tableIDs, nil
+	return r.db.Create(&permission).Error
 }
 
-// BulkCreatePermissions creates multiple permissions for a user
-func (r *UserTablePermissionRepository) BulkCreatePermissions(userID uint, tableConfigIDs []uint, permissions models.UserTablePermission) error {
-	return r.db.Transaction(func(tx *gorm.DB) error {
-		for _, tableID := range tableConfigIDs {
-			perm := models.UserTablePermission{
-				UserID:        userID,
-				TableConfigID: tableID,
-				CanView:       permissions.CanView,
-				CanEdit:       permissions.CanEdit,
-				CanDelete:     permissions.CanDelete,
-				CanExport:     permissions.CanExport,
-				CanImport:     permissions.CanImport,
-			}
-
-			// Check if exists
-			var existing models.UserTablePermission
-			err := tx.Where("user_id = ? AND table_config_id = ?", userID, tableID).First(&existing).Error
-			if err == gorm.ErrRecordNotFound {
-				// Create new
-				if err := tx.Create(&perm).Error; err != nil {
-					return err
-				}
-			} else if err == nil {
-				// Update existing
-				existing.CanView = permissions.CanView
-				existing.CanEdit = permissions.CanEdit
-				existing.CanDelete = permissions.CanDelete
-				existing.CanExport = permissions.CanExport
-				existing.CanImport = permissions.CanImport
-				if err := tx.Save(&existing).Error; err != nil {
-					return err
-				}
-			} else {
-				return err
-			}
-		}
-		return nil
-	})
+// BulkAssignPermissions assigns multiple permissions
+func (r *UserTablePermissionRepository) BulkAssignPermissions(userID uint, tableConfigIDs []uint, canView, canEdit, canDelete, canExport, canImport bool) error {
+	var permissions []UserTablePermission
+	for _, tid := range tableConfigIDs {
+		permissions = append(permissions, UserTablePermission{
+			UserID: userID, TableConfigID: tid,
+			CanView: canView, CanEdit: canEdit, CanDelete: canDelete,
+			CanExport: canExport, CanImport: canImport,
+		})
+	}
+	return r.db.CreateInBatches(&permissions, 100).Error
 }
 
-// RevokeAllUserPermissions removes all permissions for a user
-func (r *UserTablePermissionRepository) RevokeAllUserPermissions(userID uint) error {
-	return r.db.Where("user_id = ?", userID).Delete(&models.UserTablePermission{}).Error
+// RevokePermission removes a specific permission
+func (r *UserTablePermissionRepository) RevokePermission(userID, tableConfigID uint) error {
+	return r.db.Where("user_id = ? AND table_config_id = ?", userID, tableConfigID).Delete(&UserTablePermission{}).Error
+}
+
+// RevokeAllPermissions removes all permissions for a user
+func (r *UserTablePermissionRepository) RevokeAllPermissions(userID uint) error {
+	return r.db.Where("user_id = ?", userID).Delete(&UserTablePermission{}).Error
 }

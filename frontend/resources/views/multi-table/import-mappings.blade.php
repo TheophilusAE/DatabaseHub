@@ -40,7 +40,7 @@
                                     <svg class="h-12 w-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                                     </svg>
-                                    <p class="text-sm">No import mappings configured</p>
+                                    <p class="text-sm">Loading mappings...</p>
                                 </div>
                             </td>
                         </tr>
@@ -117,6 +117,9 @@
 </div>
 
 <script>
+// ✅ FIXED: Configure your Go backend API URL here
+const API_BASE_URL = 'http://localhost:8080'; // Change this to your Go backend port
+
 let allMappings = [];
 let allTables = [];
 let currentTableColumns = [];
@@ -128,29 +131,35 @@ document.addEventListener('DOMContentLoaded', function() {
     loadMappings();
 });
 
+// ✅ FIXED: Uses API_BASE_URL instead of relative path
 async function loadTables() {
     try {
-        const response = await fetch('/api/multi-table/table-configs');
-        if (!response.ok) throw new Error('Failed to load tables');
+        const response = await fetch(`${API_BASE_URL}/tables`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         
         const data = await response.json();
-        allTables = data.table_configs || [];
+        console.log('Tables response:', data);
+        // Response: { "table_configs": [...], "count": N }
+        allTables = data.table_configs || data.data || [];
         
         updateTableSelect();
     } catch (error) {
         showAlert('Error loading tables: ' + error.message, 'error');
+        console.error('Load tables failed:', error);
     }
 }
 
+// ✅ FIXED: Use correct field names (database_name || name)
 function updateTableSelect() {
     const select = document.getElementById('tableConfigId');
     const options = allTables.map(table => 
-        `<option value="${table.id}">${table.database_config_name} - ${table.table_name}</option>`
+        `<option value="${table.id}">${table.database_name || table.name} - ${table.table_name}</option>`
     ).join('');
     
     select.innerHTML = '<option value="">Select target table...</option>' + options;
 }
 
+// ✅ FIXED: Handle columns as JSON string or array
 async function loadTableColumns() {
     const tableId = document.getElementById('tableConfigId').value;
     if (!tableId) {
@@ -159,14 +168,18 @@ async function loadTableColumns() {
     }
     
     const table = allTables.find(t => t.id == tableId);
-    if (!table || !table.columns) {
+    if (!table) {
         currentTableColumns = [];
         return;
     }
     
+    // Columns is stored as JSON string in Go model
     try {
-        currentTableColumns = JSON.parse(table.columns);
+        currentTableColumns = typeof table.columns === 'string' 
+            ? JSON.parse(table.columns) 
+            : table.columns || [];
     } catch (e) {
+        console.error('Failed to parse columns:', e);
         currentTableColumns = [];
     }
     
@@ -181,17 +194,20 @@ async function loadTableColumns() {
     });
 }
 
+// ✅ FIXED: Uses API_BASE_URL
 async function loadMappings() {
     try {
-        const response = await fetch('/api/multi-table/import-mappings');
-        if (!response.ok) throw new Error('Failed to load mappings');
+        const response = await fetch(`${API_BASE_URL}/multi-import/mappings`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         
         const data = await response.json();
+        console.log('Mappings response:', data);
         allMappings = data.mappings || [];
         
         renderMappingsTable();
     } catch (error) {
         showAlert('Error loading mappings: ' + error.message, 'error');
+        console.error('Load mappings failed:', error);
     }
 }
 
@@ -215,10 +231,15 @@ function renderMappingsTable() {
     }
     
     tbody.innerHTML = allMappings.map(mapping => {
+        // ✅ FIXED: Use correct field names
         const table = allTables.find(t => t.id === mapping.table_config_id);
+        const tableName = table ? `${table.database_name || table.name}.${table.table_name}` : 'N/A';
+        
         let columnMappings = {};
         try {
-            columnMappings = JSON.parse(mapping.column_mappings);
+            columnMappings = typeof mapping.column_mapping === 'string' 
+                ? JSON.parse(mapping.column_mapping) 
+                : mapping.column_mapping || {};
         } catch (e) {}
         
         const mappingCount = Object.keys(columnMappings).length;
@@ -234,7 +255,7 @@ function renderMappingsTable() {
                     <div class="text-sm font-medium text-gray-900">${mapping.name}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-600">${table ? `${table.database_config_name}.${table.table_name}` : 'N/A'}</div>
+                    <div class="text-sm text-gray-600">${tableName}</div>
                 </td>
                 <td class="px-6 py-4">
                     <div class="text-sm text-gray-600">
@@ -262,9 +283,7 @@ function openAddMappingModal() {
     document.getElementById('columnMappings').innerHTML = '';
     mappingRowCounter = 0;
     
-    // Add one initial mapping row
     addMappingRow();
-    
     updateTableSelect();
     document.getElementById('mappingModal').classList.remove('hidden');
 }
@@ -322,13 +341,14 @@ function editMapping(id) {
     
     loadTableColumns();
     
-    // Load column mappings
     document.getElementById('columnMappings').innerHTML = '';
     mappingRowCounter = 0;
     
     let columnMappings = {};
     try {
-        columnMappings = JSON.parse(mapping.column_mappings);
+        columnMappings = typeof mapping.column_mapping === 'string' 
+            ? JSON.parse(mapping.column_mapping) 
+            : mapping.column_mapping || {};
     } catch (e) {}
     
     Object.entries(columnMappings).forEach(([source, dest]) => {
@@ -351,10 +371,14 @@ function viewMapping(id) {
     
     let columnMappings = {};
     try {
-        columnMappings = JSON.parse(mapping.column_mappings);
+        columnMappings = typeof mapping.column_mapping === 'string' 
+            ? JSON.parse(mapping.column_mapping) 
+            : mapping.column_mapping || {};
     } catch (e) {}
     
     const table = allTables.find(t => t.id === mapping.table_config_id);
+    const tableName = table ? `${table.database_name || table.name}.${table.table_name}` : 'N/A';
+    
     const mappingsList = Object.entries(columnMappings).map(([src, dest]) => 
         `<li class="flex items-center py-2 border-b border-gray-200">
             <span class="flex-1 font-mono text-sm">${src}</span>
@@ -367,19 +391,19 @@ function viewMapping(id) {
     
     showAlert(`
         <div class="mb-2"><strong>${mapping.name}</strong></div>
-        <div class="text-sm mb-2">Target: ${table ? `${table.database_config_name}.${table.table_name}` : 'N/A'}</div>
+        <div class="text-sm mb-2">Target: ${tableName}</div>
         <div class="bg-white rounded p-3 max-h-64 overflow-y-auto">
             <ul class="divide-y divide-gray-200">${mappingsList || '<li class="py-2 text-gray-500">No mappings</li>'}</ul>
         </div>
     `, 'info');
 }
 
+// ✅ FIXED: Uses API_BASE_URL and correct field names
 document.getElementById('mappingForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
     const mappingId = document.getElementById('mappingId').value;
     
-    // Collect column mappings
     const columnMappings = {};
     document.querySelectorAll('#columnMappings > div').forEach(row => {
         const source = row.querySelector('.source-column').value.trim();
@@ -397,11 +421,15 @@ document.getElementById('mappingForm').addEventListener('submit', async function
     const mappingData = {
         name: document.getElementById('mappingName').value,
         table_config_id: parseInt(document.getElementById('tableConfigId').value),
-        column_mappings: JSON.stringify(columnMappings)
+        column_mapping: JSON.stringify(columnMappings),
+        source_format: 'csv'
     };
     
     try {
-        const url = mappingId ? `/api/multi-table/import-mappings/${mappingId}` : '/api/multi-table/import-mappings';
+        // ✅ FIXED: Uses API_BASE_URL
+        const url = mappingId 
+            ? `${API_BASE_URL}/multi-import/mappings/${mappingId}` 
+            : `${API_BASE_URL}/multi-import/mappings`;
         const method = mappingId ? 'PUT' : 'POST';
         
         const response = await fetch(url, {
@@ -414,34 +442,40 @@ document.getElementById('mappingForm').addEventListener('submit', async function
         
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.error || 'Failed to save mapping');
+            throw new Error(error.error || error.message || 'Failed to save mapping');
         }
+        
+        const result = await response.json();
+        console.log('Save response:', result);
         
         showAlert(mappingId ? 'Import mapping updated successfully' : 'Import mapping added successfully', 'success');
         closeMappingModal();
         loadMappings();
     } catch (error) {
         showAlert('Error: ' + error.message, 'error');
+        console.error('Save mapping failed:', error);
     }
 });
 
+// ✅ FIXED: Uses API_BASE_URL
 async function deleteMapping(id) {
     if (!confirm('Are you sure you want to delete this import mapping?')) return;
     
     try {
-        const response = await fetch(`/api/multi-table/import-mappings/${id}`, {
+        const response = await fetch(`${API_BASE_URL}/multi-import/mappings/${id}`, {
             method: 'DELETE'
         });
         
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.error || 'Failed to delete mapping');
+            throw new Error(error.error || error.message || 'Failed to delete mapping');
         }
         
         showAlert('Import mapping deleted successfully', 'success');
         loadMappings();
     } catch (error) {
         showAlert('Error: ' + error.message, 'error');
+        console.error('Delete mapping failed:', error);
     }
 }
 

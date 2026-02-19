@@ -136,6 +136,9 @@
 </div>
 
 <script>
+// ✅ FIXED: Configure your Go backend API URL here
+const API_BASE = 'http://localhost:8080';
+
 let allJoins = [];
 let allTables = [];
 
@@ -147,11 +150,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function loadTables() {
     try {
-        const response = await fetch('/api/multi-table/table-configs');
+        const response = await fetch(`${API_BASE}/tables`);
         if (!response.ok) throw new Error('Failed to load tables');
         
         const data = await response.json();
-        allTables = data.table_configs || [];
+        allTables = data.table_configs || data.data || [];
         
         updateTableSelects();
     } catch (error) {
@@ -197,11 +200,11 @@ function updateTargetTableOptions() {
 
 async function loadJoins() {
     try {
-        const response = await fetch('/api/multi-table/table-joins');
+        const response = await fetch(`${API_BASE}/joins`);
         if (!response.ok) throw new Error('Failed to load joins');
         
         const data = await response.json();
-        allJoins = data.joins || [];
+        allJoins = data.joins || data.data || [];
         
         renderJoinsTable();
     } catch (error) {
@@ -307,7 +310,7 @@ document.getElementById('joinForm').addEventListener('submit', async function(e)
     };
     
     try {
-        const url = joinId ? `/api/multi-table/table-joins/${joinId}` : '/api/multi-table/table-joins';
+        const url = joinId ? `${API_BASE}/joins/${joinId}` : `${API_BASE}/joins`;
         const method = joinId ? 'PUT' : 'POST';
         
         const response = await fetch(url, {
@@ -335,7 +338,7 @@ async function deleteJoin(id) {
     if (!confirm('Are you sure you want to delete this table join?')) return;
     
     try {
-        const response = await fetch(`/api/multi-table/table-joins/${id}`, {
+        const response = await fetch(`${API_BASE}/joins/${id}`, {
             method: 'DELETE'
         });
         

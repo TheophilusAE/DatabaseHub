@@ -205,16 +205,15 @@ func (h *DatabaseDiscoveryHandler) SyncTables(c *gin.Context) {
 		}
 
 		// Check if configuration already exists
-		existingConfigs, err := h.tableConfigRepo.FindByDatabaseAndTable(request.Database, table.TableName)
+		existingConfig, err := h.tableConfigRepo.FindByDatabaseAndTable(request.Database, table.TableName)
 
-		if err == nil && len(existingConfigs) > 0 {
+		if err == nil && existingConfig.ID != 0 {
 			// Update existing configuration
-			existingConfig := existingConfigs[0]
 			existingConfig.Columns = string(columnsJSON)
 			existingConfig.PrimaryKey = primaryKey
 			existingConfig.IsActive = true
 
-			if err := h.tableConfigRepo.Update(&existingConfig); err != nil {
+			if err := h.tableConfigRepo.Update(existingConfig); err != nil {
 				skippedTables = append(skippedTables, table.TableName)
 				continue
 			}
@@ -287,8 +286,8 @@ func (h *DatabaseDiscoveryHandler) discoverPostgresTables(db *gorm.DB, databaseN
 
 		// Check if already configured
 		isConfigured := false
-		existingConfigs, err := h.tableConfigRepo.FindByDatabaseAndTable(databaseName, tableName)
-		if err == nil && len(existingConfigs) > 0 {
+		existingConfig, err := h.tableConfigRepo.FindByDatabaseAndTable(databaseName, tableName)
+		if err == nil && existingConfig.ID != 0 {
 			isConfigured = true
 		}
 
@@ -347,8 +346,8 @@ func (h *DatabaseDiscoveryHandler) discoverMySQLTables(db *gorm.DB, databaseName
 
 		// Check if already configured
 		isConfigured := false
-		existingConfigs, err := h.tableConfigRepo.FindByDatabaseAndTable(databaseName, tableName)
-		if err == nil && len(existingConfigs) > 0 {
+		existingConfig, err := h.tableConfigRepo.FindByDatabaseAndTable(databaseName, tableName)
+		if err == nil && existingConfig.ID != 0 {
 			isConfigured = true
 		}
 

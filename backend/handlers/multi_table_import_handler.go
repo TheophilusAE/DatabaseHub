@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -376,5 +377,72 @@ func (h *MultiTableImportHandler) CreateImportMapping(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "Import mapping created successfully",
 		"mapping": mapping,
+	})
+}
+
+func (h *MultiTableImportHandler) UpdateImportMapping(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := strconv.ParseUint(idParam, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid mapping ID"})
+		return
+	}
+
+	var updates models.ImportMapping
+	if err := c.ShouldBindJSON(&updates); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Get existing mapping first
+	existing, err := h.importMappingRepo.FindByID(uint(id))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Import mapping not found"})
+		return
+	}
+
+	// Update fields
+	existing.Name = updates.Name
+	existing.TableConfigID = updates.TableConfigID
+	existing.ColumnMapping = updates.ColumnMapping
+	existing.SourceFormat = updates.SourceFormat
+	existing.Description = updates.Description
+	existing.Transform = updates.Transform
+	existing.IsActive = updates.IsActive
+	// existing.UpdatedBy = c.GetString("user")
+
+	if err := h.importMappingRepo.Update(existing); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update import mapping: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Import mapping updated successfully",
+		"mapping": existing,
+	})
+}
+
+func (h *MultiTableImportHandler) DeleteImportMapping(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := strconv.ParseUint(idParam, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid mapping ID"})
+		return
+	}
+
+	// Check if mapping exists
+	_, err = h.importMappingRepo.FindByID(uint(id))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Import mapping not found"})
+		return
+	}
+
+	if err := h.importMappingRepo.Delete(uint(id)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete import mapping: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Import mapping deleted successfully",
 	})
 }
