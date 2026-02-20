@@ -149,4 +149,10 @@ Route::middleware(['auth'])->group(function () {
         $user = session('user');
         return redirect()->route($user['role'] === 'admin' ? 'admin.documents.index' : 'user.documents.index');
     })->name('documents.index');
+
+    Route::get('/multi-upload', function () {
+        $user = session('user');
+        $role = strtolower($user['role'] ?? 'user');
+        return redirect()->route($role === 'admin' ? 'admin.simple-multi.multi-upload' : 'user.simple-multi.multi-upload');
+    })->name('multi-upload.index');
 });

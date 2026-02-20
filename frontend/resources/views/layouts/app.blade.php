@@ -46,13 +46,18 @@
     </style>
 </head>
 <body class="bg-gradient-to-br from-blue-50 via-green-50 to-blue-100 min-h-screen flex flex-col">
+    @php
+        $sessionUser = session('user');
+        $hasUser = is_array($sessionUser) && !empty($sessionUser);
+        $sessionRole = $hasUser ? strtolower($sessionUser['role'] ?? 'user') : null;
+    @endphp
     <!-- Navigation -->
     <nav class="glass-effect sticky top-0 z-50 shadow-lg backdrop-blur-md">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex">
                     <div class="flex-shrink-0 flex items-center">
-                        <a href="{{ session()->has('user') ? (session('user')['role'] === 'admin' ? route('admin.dashboard') : route('user.dashboard')) : route('login') }}" class="flex items-center space-x-3 group">
+                        <a href="{{ $hasUser ? ($sessionRole === 'admin' ? route('admin.dashboard') : route('user.dashboard')) : route('login') }}" class="flex items-center space-x-3 group">
                             <div class="bg-gradient-to-r from-blue-700 to-green-600 p-2 rounded-lg shadow-md group-hover:shadow-lg transition-shadow">
                                 <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -64,9 +69,9 @@
                         </a>
                     </div>
                     
-                    @if(session()->has('user'))
+                    @if($hasUser)
                     <div class="hidden sm:ml-8 sm:flex sm:space-x-1">
-                        <a href="{{ session('user')['role'] === 'admin' ? route('admin.dashboard') : route('user.dashboard') }}" 
+                        <a href="{{ $sessionRole === 'admin' ? route('admin.dashboard') : route('user.dashboard') }}" 
                            class="nav-link text-gray-700 hover:text-blue-600 inline-flex items-center px-3 pt-1 text-sm font-medium transition-colors">
                             <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -74,7 +79,7 @@
                             Dashboard
                         </a>
                         
-                        @if(session('user')['role'] === 'admin')
+                                @if($sessionRole === 'admin')
                         <a href="{{ route('admin.users.index') }}" 
                            class="nav-link text-gray-700 hover:text-blue-600 inline-flex items-center px-3 pt-1 text-sm font-medium transition-colors">
                             <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -98,7 +103,7 @@
                             </svg>
                             Documents
                         </a>
-                        <a href="{{ route(session('user')['role'] . '.multi-table.hub') }}" 
+                                <a href="{{ route(($sessionRole ?? 'user') . '.multi-table.hub') }}" 
                            class="nav-link text-gray-700 hover:text-blue-600 inline-flex items-center px-3 pt-1 text-sm font-medium transition-colors">
                             <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
@@ -106,7 +111,7 @@
                             Operations
                         </a>
                         
-                        <a href="{{ route(session('user')['role'] === 'admin' ? 'admin.import.history' : 'user.import.history') }}" 
+                                <a href="{{ route($sessionRole === 'admin' ? 'admin.import.history' : 'user.import.history') }}" 
                            class="nav-link text-gray-700 hover:text-blue-600 inline-flex items-center px-3 pt-1 text-sm font-medium transition-colors">
                             <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -119,17 +124,17 @@
                 
                 <!-- User Menu -->
                 <div class="flex items-center">
-                    @if(session()->has('user'))
+                    @if($hasUser)
                     <div class="relative group">
                         <button class="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
                             <div class="flex items-center space-x-2">
                                 <div class="h-8 w-8 rounded-full bg-gradient-to-r from-blue-600 to-green-500 flex items-center justify-center text-white font-bold text-sm">
-                                    {{ strtoupper(substr(session('user')['name'], 0, 1)) }}
+                                    {{ strtoupper(substr($sessionUser['name'] ?? 'U', 0, 1)) }}
                                 </div>
                                 <div class="hidden md:block text-left">
-                                    <p class="text-sm font-bold text-gray-900">{{ session('user')['name'] }}</p>
+                                    <p class="text-sm font-bold text-gray-900">{{ $sessionUser['name'] ?? 'User' }}</p>
                                     <p class="text-xs text-gray-500">
-                                        @if(session('user')['role'] === 'admin')
+                                        @if($sessionRole === 'admin')
                                         <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-800">
                                             👑 Admin
                                         </span>
@@ -149,8 +154,8 @@
                         <!-- Dropdown Menu -->
                         <div class="absolute right-0 mt-2 w-56 rounded-xl shadow-2xl bg-white ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform group-hover:translate-y-0 -translate-y-2">
                             <div class="p-3 border-b border-gray-100">
-                                <p class="text-sm font-bold text-gray-900">{{ session('user')['name'] }}</p>
-                                <p class="text-xs text-gray-500">{{ session('user')['email'] }}</p>
+                                <p class="text-sm font-bold text-gray-900">{{ $sessionUser['name'] ?? 'User' }}</p>
+                                <p class="text-xs text-gray-500">{{ $sessionUser['email'] ?? '' }}</p>
                             </div>
                             <div class="p-2">
                                 <form action="{{ route('logout') }}" method="POST">

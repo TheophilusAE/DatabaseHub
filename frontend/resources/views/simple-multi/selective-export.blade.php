@@ -106,6 +106,23 @@
 <script>
 let allTables = [];
 let tableColumns = {}; // Cache for table columns
+const SESSION_USER_ID = {{ session('user')['id'] ?? 'null' }};
+const SESSION_USER_ROLE = '{{ strtolower(session('user')['role'] ?? 'user') }}';
+
+function getCurrentUser() {
+    return {
+        userId: SESSION_USER_ID || localStorage.getItem('user_id') || sessionStorage.getItem('user_id'),
+        userRole: SESSION_USER_ROLE || localStorage.getItem('user_role') || 'user'
+    };
+}
+
+function buildApiUrl(path) {
+    const { userId, userRole } = getCurrentUser();
+    const url = new URL(`http://localhost:8080${path}`);
+    if (userId) url.searchParams.append('user_id', String(userId));
+    if (userRole) url.searchParams.append('user_role', String(userRole).toLowerCase());
+    return url;
+}
 
 document.addEventListener('DOMContentLoaded', function() {
     loadTables();
@@ -114,7 +131,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function loadTables() {
     try {
-        const response = await fetch('http://localhost:8080/simple-multi/tables');
+        const { userRole } = getCurrentUser();
+        const response = await fetch(buildApiUrl('/simple-multi/tables').toString(), {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'X-User-Role': String(userRole || 'user').toLowerCase(),
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+            }
+        });
         if (!response.ok) throw new Error('Failed to load tables');
         
         const data = await response.json();
@@ -180,7 +206,16 @@ async function loadTableColumns(selectElement) {
     columnsContainer.innerHTML = '<p class="text-sm text-gray-500">Loading columns...</p>';
     
     try {
-        const response = await fetch(`http://localhost:8080/simple-multi/tables/${tableName}/columns`);
+        const { userRole } = getCurrentUser();
+        const response = await fetch(buildApiUrl(`/simple-multi/tables/${encodeURIComponent(tableName)}/columns`).toString(), {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'X-User-Role': String(userRole || 'user').toLowerCase(),
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+            }
+        });
         if (!response.ok) throw new Error('Failed to load columns');
         
         const data = await response.json();
@@ -231,6 +266,7 @@ function clearAll() {
 }
 
 async function startExport() {
+    const { userRole } = getCurrentUser();
     const items = document.querySelectorAll('.export-item');
     const exportBtn = document.getElementById('exportBtn');
     const exportBtnText = document.getElementById('exportBtnText');
@@ -267,10 +303,14 @@ async function startExport() {
     exportBtnText.textContent = 'Exporting...';
     
     try {
-        const response = await fetch('http://localhost:8080/simple-multi/export-selected', {
+        const response = await fetch(buildApiUrl('/simple-multi/export-selected').toString(), {
             method: 'POST',
+            credentials: 'include',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-User-Role': String(userRole || 'user').toLowerCase(),
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
             },
             body: JSON.stringify({
                 tables: tables,

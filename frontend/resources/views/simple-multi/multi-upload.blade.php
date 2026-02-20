@@ -48,7 +48,7 @@
                 <button onclick="startUpload()" id="uploadBtn" class="px-8 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all font-semibold transform hover:scale-105 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
                     <span id="uploadBtnText" class="flex items-center">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M Upload 13l-3-3m0 0l-3 3m3-3v12M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2h-3M3 10V8a2 2 0 012-2h2"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 13l-3-3m0 0l-3 3m3-3v12M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2h-3M3 10V8a2 2 0 012-2h2"/>
                         </svg>
                         Start Upload
                     </span>
@@ -120,24 +120,56 @@
 <script>
 let allTables = [];
 let uploadItemCounter = 0;
+const SESSION_USER_ID = {{ session('user')['id'] ?? 'null' }};
+const SESSION_USER_ROLE = '{{ strtolower(session('user')['role'] ?? 'user') }}';
 
 document.addEventListener('DOMContentLoaded', function() {
     loadTables();
     addUploadItem(); // Add initial upload item
 });
 
+function getCurrentUser() {
+    return {
+        userId: SESSION_USER_ID || localStorage.getItem('user_id') || sessionStorage.getItem('user_id'),
+        userRole: SESSION_USER_ROLE || localStorage.getItem('user_role') || 'user'
+    };
+}
+
+
 async function loadTables() {
     try {
-        const response = await fetch('http://localhost:8080/simple-multi/tables');
-        if (!response.ok) throw new Error('Failed to load tables');
+        const { userId, userRole } = getCurrentUser();
+        
+        const url = new URL('http://localhost:8080/simple-multi/tables');
+        if (userId) url.searchParams.append('user_id', userId);
+        if (userRole) url.searchParams.append('user_role', userRole);
+
+        const response = await fetch(url.toString(), {
+            method: 'GET',
+            credentials: 'include', // Send cookies for session auth
+            headers: {
+                'Accept': 'application/json',
+                'X-User-Role': String(userRole || 'user').toLowerCase(),
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+            }
+        });
+        
+        if (!response.ok) {
+            if (response.status === 401) {
+                showAlert('Session expired. Please login again.', 'error');
+                window.location.href = '/login';
+                throw new Error('Unauthorized');
+            }
+            throw new Error('Failed to load tables');
+        }
         
         const data = await response.json();
         allTables = data.tables || [];
-        
-        // Update all existing table selects
         updateAllTableSelects();
     } catch (error) {
-        showAlert('Error loading tables: ' + error.message, 'error');
+        if (error.message !== 'Unauthorized') {
+            showAlert('Error loading tables: ' + error.message, 'error');
+        }
     }
 }
 
@@ -213,11 +245,12 @@ function clearAll() {
 }
 
 async function startUpload() {
+    const { userId, userRole } = getCurrentUser();
     const items = document.querySelectorAll('.upload-item');
     const uploadBtn = document.getElementById('uploadBtn');
     const uploadBtnText = document.getElementById('uploadBtnText');
     
-    // Validate
+    // Validation
     let valid = true;
     const formData = new FormData();
     const tableNames = [];
@@ -244,7 +277,6 @@ async function startUpload() {
     
     if (!valid || tableNames.length === 0) return;
     
-    // Add table names to form data
     tableNames.forEach(name => formData.append('table_names', name));
     
     // Disable button
@@ -252,28 +284,43 @@ async function startUpload() {
     uploadBtnText.textContent = 'Uploading...';
     
     try {
-        const response = await fetch('http://localhost:8080/simple-multi/upload-multiple', {
+        const url = new URL('http://localhost:8080/simple-multi/upload-multiple');
+        if (userId) url.searchParams.append('user_id', userId);
+        if (userRole) url.searchParams.append('user_role', userRole);
+
+        const response = await fetch(url.toString(), {
             method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'X-User-Role': String(userRole || 'user').toLowerCase(),
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+            },
             body: formData
+            // Don't set Content-Type - browser sets it with boundary for FormData
         });
         
         if (!response.ok) {
-            const error = await response.json();
+            if (response.status === 401) {
+                throw new Error('Session expired. Please login again.');
+            }
+            const error = await response.json().catch(() => ({}));
             throw new Error(error.error || 'Upload failed');
         }
         
         const result = await response.json();
         
-        // Show results
         displayResults(result);
-        showAlert(`Upload completed! Total success: ${result.total_success}, Total failed: ${result.total_failed}`, 
+        showAlert(`Upload completed! Success: ${result.total_success}, Failed: ${result.total_failed}`, 
                   result.total_failed === 0 ? 'success' : 'warning');
         
-        // Reload tables to update row counts
-        loadTables();
+        loadTables(); // Refresh table list
         
     } catch (error) {
         showAlert('Error during upload: ' + error.message, 'error');
+        if (error.message.includes('Session expired')) {
+            window.location.href = '/login';
+        }
     } finally {
         uploadBtn.disabled = false;
         uploadBtnText.textContent = 'Start Upload';

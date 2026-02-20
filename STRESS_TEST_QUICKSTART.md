@@ -29,7 +29,7 @@ Invoke-RestMethod -Uri "http://localhost:8080/health"
 
 You should see: `{"status":"ok","message":"Server is running"}`
 
-✅ **Good news:** Currently the API doesn't require authentication tokens for testing!
+  **Good news:** Currently the API doesn't require authentication tokens for testing!
 
 ---
 
@@ -74,7 +74,7 @@ $sw = [System.Diagnostics.Stopwatch]::StartNew()
 $import = Upload-File -Uri "http://localhost:8080/upload/csv" -FilePath "quick.csv"
 
 $sw.Stop()
-Write-Host "✅ Imported: $($import.success) rows in $([math]::Round($sw.Elapsed.TotalSeconds,2))s" -ForegroundColor Green
+Write-Host "  Imported: $($import.success) rows in $([math]::Round($sw.Elapsed.TotalSeconds,2))s" -ForegroundColor Green
 Write-Host "Speed: $([math]::Round(10000/$sw.Elapsed.TotalSeconds)) rows/second" -ForegroundColor Yellow
 
 # Test 2: Quick Export (~2 seconds)
@@ -85,7 +85,7 @@ Invoke-WebRequest -Uri "http://localhost:8080/download/csv" -OutFile export.csv
 
 $sw.Stop()
 $exported = (Get-Content export.csv).Count - 1
-Write-Host "✅ Exported: $exported rows in $([math]::Round($sw.Elapsed.TotalSeconds,2))s" -ForegroundColor Green
+Write-Host "  Exported: $exported rows in $([math]::Round($sw.Elapsed.TotalSeconds,2))s" -ForegroundColor Green
 Write-Host "Speed: $([math]::Round($exported/$sw.Elapsed.TotalSeconds)) rows/second" -ForegroundColor Yellow
 
 # Test 3: Document Upload (~1 second)
@@ -104,14 +104,14 @@ $stream.Close()
 $upload = Upload-File -Uri "http://localhost:8080/documents" -FilePath $file -AdditionalFields @{category="test"}
 
 $sw.Stop()
-Write-Host "✅ Uploaded: 10MB in $([math]::Round($sw.Elapsed.TotalSeconds,2))s" -ForegroundColor Green
+Write-Host "  Uploaded: 10MB in $([math]::Round($sw.Elapsed.TotalSeconds,2))s" -ForegroundColor Green
 Write-Host "Speed: $([math]::Round(10/$sw.Elapsed.TotalSeconds,2)) MB/second" -ForegroundColor Yellow
 
 # Cleanup
 Remove-Item quick.csv, export.csv, $file
 
 Write-Host "`n========================================" -ForegroundColor Magenta
-Write-Host "  ✅ ALL TESTS PASSED!" -ForegroundColor Magenta
+Write-Host "    ALL TESTS PASSED!" -ForegroundColor Magenta
 Write-Host "========================================" -ForegroundColor Magenta
 Write-Host "Your system is working correctly! 🎉"
 Write-Host "`nFor detailed tests, see: STRESS_TEST_GUIDE.md"
@@ -200,20 +200,20 @@ Write-Host "Speed: $([math]::Round(1000000/$sw.Elapsed.TotalSeconds)) rows/secon
 ## ❌ Common Problems & Solutions
 
 ### "Cannot connect" or "Connection refused"
-✅ **Solution:** Backend not running. Go to Terminal 1 and start it:
+  **Solution:** Backend not running. Go to Terminal 1 and start it:
 ```powershell
 cd d:\DataImportDashboard\backend
 go run main.go
 ```
 
 ### "401 Unauthorized"
-✅ **Solution:** Token expired. Get new token from Step 2.
+  **Solution:** Token expired. Get new token from Step 2.
 
 ### "Co4 Not Found"
-✅ **Solution:** Wrong URL. Make sure backend is running and check the endpoint (no /api prefix needed)ershell` and press Enter.
+  **Solution:** Wrong URL. Make sure backend is running and check the endpoint (no /api prefix needed)ershell` and press Enter.
 
 ### "Access denied" on files
-✅ **Solution:** Run as Administrator or use your Desktop:
+  **Solution:** Run as Administrator or use your Desktop:
 ```powershell
 cd $env:USERPROFILE\Desktop
 mkdir stress_tests
@@ -221,7 +221,7 @@ cd stress_tests
 ```
 
 ### Very slow (< 5,000 rows/sec)
-✅ **Solution:** Check these:
+  **Solution:** Check these:
 ```powershell
 # Is backend using CPU?
 Get-Process -Name "main"  # Should show high CPU
@@ -252,7 +252,7 @@ Test-NetConnection localhost -Port 5432  # PostgreSQL
 
 ---
 
-## ✅ Checklist
+##   Checklist
 
 - [ ] Backend is running on port 8080
 - [ ] I have a valid authentication token

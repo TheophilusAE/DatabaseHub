@@ -8,12 +8,12 @@ The Data Import Dashboard now supports **table-level permissions** where adminis
 
 ## 🎯 Key Features
 
-✅ **Granular Permissions**: Control access at the table level  
-✅ **Admin Override**: Administrators always have full access to all tables  
-✅ **Bulk Assignment**: Assign multiple tables to a user at once  
-✅ **Visual Management**: Easy-to-use UI for managing permissions  
-✅ **Automatic Filtering**: Views automatically show only permitted tables  
-✅ **Future-Ready**: Support for view, edit, delete, export, import permissions (currently view is active)
+  **Granular Permissions**: Control access at the table level  
+  **Admin Override**: Administrators always have full access to all tables  
+  **Bulk Assignment**: Assign multiple tables to a user at once  
+  **Visual Management**: Easy-to-use UI for managing permissions  
+  **Automatic Filtering**: Views automatically show only permitted tables  
+  **Future-Ready**: Support for view, edit, delete, export, import permissions (currently view is active)
 
 ---
 
@@ -412,7 +412,7 @@ If extending the system:
 
 ---
 
-## ✅ Testing Checklist
+##   Testing Checklist
 
 - [ ] Admin can see all tables
 - [ ] Regular user sees only assigned tables

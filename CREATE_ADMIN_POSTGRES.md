@@ -216,7 +216,7 @@ $response = Invoke-RestMethod `
     -ContentType "application/json"
 
 # Display token
-Write-Host "✅ Login successful!" -ForegroundColor Green
+Write-Host "  Login successful!" -ForegroundColor Green
 Write-Host "Token: $($response.token)"
 Write-Host "User: $($response.user.username)"
 Write-Host "Role: $($response.user.role)"
@@ -355,7 +355,7 @@ ALTER USER postgres PASSWORD 'your_new_password';
 
 ---
 
-## ✅ Quick Reference
+##   Quick Reference
 
 **Create default admin:**
 ```sql
@@ -384,4 +384,4 @@ Write-Host "Token: $token"
 3. **Test:** Login via API to get token
 4. **Done:** Use token for stress testing
 
-**The fastest way is Method 1 - just copy/paste the SQL and you're done!** ✅
+**The fastest way is Method 1 - just copy/paste the SQL and you're done!**  

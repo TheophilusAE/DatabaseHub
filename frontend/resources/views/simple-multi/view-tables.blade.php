@@ -13,7 +13,7 @@
 
         <!-- Alert Messages -->
         <div id="alertContainer" class="mb-6"></div>
-
+ 
         <!-- Tables List -->
         <div class="bg-white rounded-2xl shadow-xl p-8 mb-6 border-t-4 border-blue-500">
             <div class="flex items-center justify-between mb-6">
@@ -96,22 +96,37 @@ let currentPage = 1;
 let pageSize = 50;
 let totalPages = 1;
 let totalCount = 0;
+
+// ✅ FIXED: Point to Go backend API
+const API_URL = 'http://localhost:8080';
 const userId = {{ session('user')['id'] ?? 'null' }};
 const userRole = '{{ session('user')['role'] ?? '' }}';
 
-document.addEventListener('DOMContentLoaded', function() {
-    loadTables();
+document.addEventListener('DOMContentLoaded', async function() {
+    await loadTables();
 });
 
 async function loadTables() {
     try {
-        // Include user_id and role in the request if user is not admin
-        let url = 'http://localhost:8080/simple-multi/tables';
+        let url = `${API_URL}/simple-multi/tables`;
         if (userId && userRole !== 'admin') {
             url += `?user_id=${userId}&user_role=${userRole}`;
         }
         
-        const response = await fetch(url);
+        const response = await fetch(url, {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'X-User-ID': userId || '',
+                'X-User-Role': userRole || ''
+            }
+        });
+        
+        if (response.status === 401) {
+            throw new Error('Unauthorized. Please login again.');
+        }
+        
         if (!response.ok) throw new Error('Failed to load tables');
         
         const data = await response.json();
@@ -119,10 +134,14 @@ async function loadTables() {
         
         renderTablesList();
     } catch (error) {
+        console.error('Load tables error:', error);
         showAlert('Error loading tables: ' + error.message, 'error');
         document.getElementById('tablesListContainer').innerHTML = `
             <div class="col-span-full text-center py-8 text-red-600">
                 <p>Failed to load tables. Please check your connection.</p>
+                <button onclick="loadTables()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    Try Again
+                </button>
             </div>
         `;
     }
@@ -173,8 +192,6 @@ async function viewTable(tableName) {
     
     document.getElementById('currentTableName').textContent = tableName;
     document.getElementById('tableDataViewer').classList.remove('hidden');
-    
-    // Scroll to viewer
     document.getElementById('tableDataViewer').scrollIntoView({ behavior: 'smooth' });
     
     await loadTableData();
@@ -182,12 +199,25 @@ async function viewTable(tableName) {
 
 async function loadTableData() {
     try {
-        let dataUrl = `http://localhost:8080/simple-multi/tables/${currentTable}?page=${currentPage}&page_size=${pageSize}`;
+        let dataUrl = `${API_URL}/simple-multi/tables/${currentTable}?page=${currentPage}&page_size=${pageSize}`;
         if (userId && userRole && userRole !== 'admin') {
             dataUrl += `&user_id=${encodeURIComponent(userId)}&user_role=${encodeURIComponent(userRole)}`;
         }
 
-        const response = await fetch(dataUrl);
+        const response = await fetch(dataUrl, {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'X-User-ID': userId || '',
+                'X-User-Role': userRole || ''
+            }
+        });
+        
+        if (response.status === 401) {
+            throw new Error('Unauthorized. Please login again.');
+        }
+        
         if (!response.ok) throw new Error('Failed to load table data');
         
         const result = await response.json();
@@ -197,6 +227,7 @@ async function loadTableData() {
         renderTableData(result.data);
         updatePagination();
     } catch (error) {
+        console.error('Load table data error:', error);
         showAlert('Error loading table data: ' + error.message, 'error');
     }
 }
@@ -215,13 +246,11 @@ function renderTableData(data) {
         return;
     }
     
-    // Render headers
     const columns = Object.keys(data[0]);
     headersRow.innerHTML = columns.map(col => `
         <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300">${col}</th>
     `).join('');
     
-    // Render rows
     tbody.innerHTML = data.map((row, idx) => `
         <tr class="${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition-colors">
             ${columns.map(col => {
@@ -239,7 +268,6 @@ function renderTableData(data) {
         </tr>
     `).join('');
     
-    // Update row count
     document.getElementById('tableRowCount').textContent = `Total: ${totalCount.toLocaleString()} rows`;
 }
 

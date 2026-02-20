@@ -197,24 +197,27 @@ func (r *Router) Setup(engine *gin.Engine, allowedOrigins string) {
 	}
 
 	// Simple multi-table operations (view, upload, export)
+	// Simple multi-table operations - NOW WITH AUTH
 	simpleMulti := engine.Group("/simple-multi")
+	simpleMulti.Use(middleware.AuthRequired()) // ← Add this line
 	{
-		simpleMulti.GET("/tables", r.simpleMultiTableHandler.ListTables)                       // GET /simple-multi/tables - List all database tables
-		simpleMulti.GET("/tables/:table", r.simpleMultiTableHandler.GetTableData)              // GET /simple-multi/tables/users?page=1&page_size=50 - View table data
-		simpleMulti.GET("/tables/:table/columns", r.simpleMultiTableHandler.GetTableColumns)   // GET /simple-multi/tables/users/columns - Get table columns
-		simpleMulti.POST("/upload-multiple", r.simpleMultiTableHandler.UploadToMultipleTables) // POST /simple-multi/upload-multiple - Upload to multiple tables
+		simpleMulti.GET("/tables", r.simpleMultiTableHandler.ListTables)
+		simpleMulti.GET("/tables/:table", r.simpleMultiTableHandler.GetTableData)
+		simpleMulti.GET("/tables/:table/columns", r.simpleMultiTableHandler.GetTableColumns)
+		simpleMulti.POST("/upload-multiple", r.simpleMultiTableHandler.UploadToMultipleTables)
+		simpleMulti.POST("/export-selected", r.simpleMultiTableHandler.ExportSelectedData)
 
-		// User table permissions management (admin only)
-		permissions := engine.Group("/permissions")
+		// Permissions stay admin-only (nested group inherits AuthRequired + adds AdminOnly)
+		permissions := simpleMulti.Group("/permissions")
+		permissions.Use(middleware.AdminOnly()) // ← Already in your code, keep it
 		{
-			permissions.GET("/users/:userId", r.userTablePermissionHandler.GetUserPermissions)                       // GET /permissions/users/1 - Get all permissions for a user
-			permissions.GET("/users/:userId/tables", r.userTablePermissionHandler.GetAccessibleTables)               // GET /permissions/users/1/tables - Get accessible tables for a user
-			permissions.POST("/assign", r.userTablePermissionHandler.AssignTablePermission)                          // POST /permissions/assign - Assign table permission to user
-			permissions.POST("/bulk-assign", r.userTablePermissionHandler.BulkAssignTablePermissions)                // POST /permissions/bulk-assign - Bulk assign tables to user
-			permissions.DELETE("/users/:userId/tables/:tableId", r.userTablePermissionHandler.RevokeTablePermission) // DELETE /permissions/users/1/tables/5 - Revoke specific table permission
-			permissions.DELETE("/users/:userId/all", r.userTablePermissionHandler.RevokeAllUserPermissions)          // DELETE /permissions/users/1/all - Revoke all permissions for user
-			permissions.GET("/check/:userId/:tableId", r.userTablePermissionHandler.CheckTableAccess)                // GET /permissions/check/1/5 - Check if user has access to table
+			permissions.GET("/users/:userId", r.userTablePermissionHandler.GetUserPermissions)
+			permissions.GET("/users/:userId/tables", r.userTablePermissionHandler.GetAccessibleTables)
+			permissions.POST("/assign", r.userTablePermissionHandler.AssignTablePermission)
+			permissions.POST("/bulk-assign", r.userTablePermissionHandler.BulkAssignTablePermissions)
+			permissions.DELETE("/users/:userId/tables/:tableId", r.userTablePermissionHandler.RevokeTablePermission)
+			permissions.DELETE("/users/:userId/all", r.userTablePermissionHandler.RevokeAllUserPermissions)
+			permissions.GET("/check/:userId/:tableId", r.userTablePermissionHandler.CheckTableAccess)
 		}
-		simpleMulti.POST("/export-selected", r.simpleMultiTableHandler.ExportSelectedData) // POST /simple-multi/export-selected - Export selected data
 	}
 }

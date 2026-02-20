@@ -1,3 +1,4 @@
+// middleware/cors.go
 package middleware
 
 import (
@@ -7,16 +8,25 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// CORSMiddleware returns a CORS middleware with the allowed origins
 func CORSMiddleware(allowedOrigins string) gin.HandlerFunc {
 	origins := strings.Split(allowedOrigins, ",")
 
+	// Clean origins - remove empty and whitespace
+	cleanOrigins := []string{}
+	for _, o := range origins {
+		trimmed := strings.TrimSpace(o)
+		if trimmed != "" {
+			cleanOrigins = append(cleanOrigins, trimmed)
+		}
+	}
+
 	config := cors.Config{
-		AllowOrigins:     origins,
+		AllowOrigins:     cleanOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length", "Content-Disposition"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-User-ID", "X-User-Role", "X-CSRF-TOKEN", "X-Requested-With"},
+		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
+		MaxAge:           12 * 3600,
 	}
 
 	return cors.New(config)

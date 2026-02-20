@@ -7,8 +7,9 @@
     if (!session()->has('authenticated') || !session()->has('user')) {
         abort(403, 'Unauthorized access');
     }
-    
-    $userRole = session('user')['role'] ?? null;
+
+    $sessionUser = session('user');
+    $userRole = is_array($sessionUser) ? strtolower($sessionUser['role'] ?? '') : '';
     
     if (!$userRole) {
         abort(403, 'User role not defined');

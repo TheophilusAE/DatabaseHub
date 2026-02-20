@@ -117,7 +117,7 @@
 </div>
 
 <script>
-// ✅ FIXED: Configure your Go backend API URL here
+// : Configure your Go backend API URL here
 const API_BASE_URL = 'http://localhost:8080'; // Change this to your Go backend port
 
 let allMappings = [];
@@ -131,7 +131,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadMappings();
 });
 
-// ✅ FIXED: Uses API_BASE_URL instead of relative path
+// : Uses API_BASE_URL instead of relative path
 async function loadTables() {
     try {
         const response = await fetch(`${API_BASE_URL}/tables`);
@@ -149,7 +149,7 @@ async function loadTables() {
     }
 }
 
-// ✅ FIXED: Use correct field names (database_name || name)
+// : Use correct field names (database_name || name)
 function updateTableSelect() {
     const select = document.getElementById('tableConfigId');
     const options = allTables.map(table => 
@@ -159,7 +159,7 @@ function updateTableSelect() {
     select.innerHTML = '<option value="">Select target table...</option>' + options;
 }
 
-// ✅ FIXED: Handle columns as JSON string or array
+// : Handle columns as JSON string or array
 async function loadTableColumns() {
     const tableId = document.getElementById('tableConfigId').value;
     if (!tableId) {
@@ -194,7 +194,7 @@ async function loadTableColumns() {
     });
 }
 
-// ✅ FIXED: Uses API_BASE_URL
+// : Uses API_BASE_URL
 async function loadMappings() {
     try {
         const response = await fetch(`${API_BASE_URL}/multi-import/mappings`);
@@ -231,7 +231,7 @@ function renderMappingsTable() {
     }
     
     tbody.innerHTML = allMappings.map(mapping => {
-        // ✅ FIXED: Use correct field names
+        // : Use correct field names
         const table = allTables.find(t => t.id === mapping.table_config_id);
         const tableName = table ? `${table.database_name || table.name}.${table.table_name}` : 'N/A';
         
@@ -398,7 +398,7 @@ function viewMapping(id) {
     `, 'info');
 }
 
-// ✅ FIXED: Uses API_BASE_URL and correct field names
+// : Uses API_BASE_URL and correct field names
 document.getElementById('mappingForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
@@ -426,7 +426,7 @@ document.getElementById('mappingForm').addEventListener('submit', async function
     };
     
     try {
-        // ✅ FIXED: Uses API_BASE_URL
+        // : Uses API_BASE_URL
         const url = mappingId 
             ? `${API_BASE_URL}/multi-import/mappings/${mappingId}` 
             : `${API_BASE_URL}/multi-import/mappings`;
@@ -457,7 +457,7 @@ document.getElementById('mappingForm').addEventListener('submit', async function
     }
 });
 
-// ✅ FIXED: Uses API_BASE_URL
+// : Uses API_BASE_URL
 async function deleteMapping(id) {
     if (!confirm('Are you sure you want to delete this import mapping?')) return;
     

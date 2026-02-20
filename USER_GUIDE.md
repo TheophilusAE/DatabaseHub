@@ -286,7 +286,7 @@ Product 2,Another item,furniture,149.99,active
    - Use Postman
    - Follow: `backend/POSTMAN_TESTING_GUIDE.md`
 
-## ✅ Pre-Launch Checklist
+##   Pre-Launch Checklist
 
 Before deploying to production:
 

@@ -2,7 +2,6 @@ package repository
 
 import (
 	"dataImportDashboard/models"
-	"time"
 
 	"gorm.io/gorm"
 )
@@ -15,19 +14,8 @@ func NewUserTablePermissionRepository(db *gorm.DB) *UserTablePermissionRepositor
 	return &UserTablePermissionRepository{db: db}
 }
 
-// UserTablePermission model
-type UserTablePermission struct {
-	ID            uint      `gorm:"primaryKey"`
-	UserID        uint      `gorm:"not null;index"`
-	TableConfigID uint      `gorm:"not null;index"`
-	CanView       bool      `gorm:"default:true"`
-	CanEdit       bool      `gorm:"default:false"`
-	CanDelete     bool      `gorm:"default:false"`
-	CanExport     bool      `gorm:"default:false"`
-	CanImport     bool      `gorm:"default:false"`
-	CreatedAt     time.Time `gorm:"autoCreateTime"`
-	UpdatedAt     time.Time `gorm:"autoUpdateTime"`
-}
+// ✅ REMOVED local UserTablePermission struct - now using models.UserTablePermission
+// This ensures JSON tags like `json:"table_config_id"` are properly serialized
 
 // GetAccessibleTables returns tables the user has permission to access
 func (r *UserTablePermissionRepository) GetAccessibleTables(userID uint) ([]models.TableConfig, error) {
@@ -46,8 +34,9 @@ func (r *UserTablePermissionRepository) GetTablesByUserID(userID uint) ([]models
 }
 
 // GetUserPermissions returns all permission records for a user
-func (r *UserTablePermissionRepository) GetUserPermissions(userID uint) ([]UserTablePermission, error) {
-	var permissions []UserTablePermission
+// ✅ Now returns models.UserTablePermission so JSON tags work correctly
+func (r *UserTablePermissionRepository) GetUserPermissions(userID uint) ([]models.UserTablePermission, error) {
+	var permissions []models.UserTablePermission
 	err := r.db.Where("user_id = ?", userID).Find(&permissions).Error
 	return permissions, err
 }
@@ -62,8 +51,9 @@ func (r *UserTablePermissionRepository) HasTableAccess(userID uint, tableID uint
 }
 
 // AssignPermission assigns a single table permission
+// ✅ Now uses models.UserTablePermission for proper JSON serialization
 func (r *UserTablePermissionRepository) AssignPermission(userID, tableConfigID uint, canView, canEdit, canDelete, canExport, canImport bool) error {
-	permission := UserTablePermission{
+	permission := models.UserTablePermission{
 		UserID: userID, TableConfigID: tableConfigID,
 		CanView: canView, CanEdit: canEdit, CanDelete: canDelete,
 		CanExport: canExport, CanImport: canImport,
@@ -72,10 +62,11 @@ func (r *UserTablePermissionRepository) AssignPermission(userID, tableConfigID u
 }
 
 // BulkAssignPermissions assigns multiple permissions
+// ✅ Now uses models.UserTablePermission for proper JSON serialization
 func (r *UserTablePermissionRepository) BulkAssignPermissions(userID uint, tableConfigIDs []uint, canView, canEdit, canDelete, canExport, canImport bool) error {
-	var permissions []UserTablePermission
+	var permissions []models.UserTablePermission
 	for _, tid := range tableConfigIDs {
-		permissions = append(permissions, UserTablePermission{
+		permissions = append(permissions, models.UserTablePermission{
 			UserID: userID, TableConfigID: tid,
 			CanView: canView, CanEdit: canEdit, CanDelete: canDelete,
 			CanExport: canExport, CanImport: canImport,
@@ -86,10 +77,20 @@ func (r *UserTablePermissionRepository) BulkAssignPermissions(userID uint, table
 
 // RevokePermission removes a specific permission
 func (r *UserTablePermissionRepository) RevokePermission(userID, tableConfigID uint) error {
-	return r.db.Where("user_id = ? AND table_config_id = ?", userID, tableConfigID).Delete(&UserTablePermission{}).Error
+	return r.db.Where("user_id = ? AND table_config_id = ?", userID, tableConfigID).Delete(&models.UserTablePermission{}).Error
 }
 
 // RevokeAllPermissions removes all permissions for a user
 func (r *UserTablePermissionRepository) RevokeAllPermissions(userID uint) error {
-	return r.db.Where("user_id = ?", userID).Delete(&UserTablePermission{}).Error
+	return r.db.Where("user_id = ?", userID).Delete(&models.UserTablePermission{}).Error
+}
+
+// ✅ Optional: Add a helper to get a single permission (useful for debugging)
+func (r *UserTablePermissionRepository) GetPermission(userID, tableConfigID uint) (*models.UserTablePermission, error) {
+	var perm models.UserTablePermission
+	err := r.db.Where("user_id = ? AND table_config_id = ?", userID, tableConfigID).First(&perm).Error
+	if err != nil {
+		return nil, err
+	}
+	return &perm, nil
 }

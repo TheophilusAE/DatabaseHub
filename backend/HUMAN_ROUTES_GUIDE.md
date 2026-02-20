@@ -10,10 +10,10 @@
 All API routes are now **simple, intuitive, and human-readable**!
 
 ### Key Improvements:
-- ✅ **No `/api/v1/` prefix** - Routes are at root level
-- ✅ **Plain English names** - Anyone can understand them
-- ✅ **Shorter URLs** - Faster to type and remember
-- ✅ **RESTful design** - Industry best practices
+-   **No `/api/v1/` prefix** - Routes are at root level
+-   **Plain English names** - Anyone can understand them
+-   **Shorter URLs** - Faster to type and remember
+-   **RESTful design** - Industry best practices
 
 ---
 

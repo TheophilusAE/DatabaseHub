@@ -47,21 +47,21 @@ Option B: Click "Sync Now" on individual tables
 ## What Happens When You Sync?
 
 The system automatically:
-- ✅ Detects all columns
-- ✅ Identifies data types  
-- ✅ Finds primary keys
-- ✅ Discovers nullable fields
-- ✅ Maps database types to generic types
-- ✅ Creates table configurations
+-   Detects all columns
+-   Identifies data types  
+-   Finds primary keys
+-   Discovers nullable fields
+-   Maps database types to generic types
+-   Creates table configurations
 
 ## Benefits
 
 | Before | After |
 |--------|-------|
-| Manual schema definition | ✅ Automatic detection |
-| Error-prone JSON editing | ✅ Zero configuration |
-| Minutes per table | ✅ Seconds for all tables |
-| Schema updates = manual work | ✅ One-click re-sync |
+| Manual schema definition |   Automatic detection |
+| Error-prone JSON editing |   Zero configuration |
+| Minutes per table |   Seconds for all tables |
+| Schema updates = manual work |   One-click re-sync |
 
 ## Example Workflow
 
@@ -95,7 +95,7 @@ System updates the configuration with new schema automatically.
 ## Status Indicators
 
 - ⚪ **White background** = Not yet synced
-- ✅ **Green background** = Already synced
+-   **Green background** = Already synced
 - 🔄 **"Sync Now"** = Ready to sync
 - 🔄 **"Re-sync"** = Update existing config
 
@@ -132,8 +132,8 @@ System tables are automatically filtered:
 
 ## Supported Databases
 
-- ✅ PostgreSQL (fully supported)
-- ✅ MySQL (fully supported)  
+-   PostgreSQL (fully supported)
+-   MySQL (fully supported)  
 - 🔜 SQL Server (coming soon)
 - 🔜 SQLite (coming soon)
 

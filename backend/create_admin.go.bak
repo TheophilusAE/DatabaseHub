@@ -67,7 +67,7 @@ package p
 // 		log.Fatal("Failed to create admin user:", err)
 // 	}
 
-// 	fmt.Println("✅ Admin user created successfully!")
+// 	fmt.Println("  Admin user created successfully!")
 // 	fmt.Println("\n┌─────────────────────────────────────┐")
 // 	fmt.Println("│  Login Credentials                  │")
 // 	fmt.Println("├─────────────────────────────────────┤")

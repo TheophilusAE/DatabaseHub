@@ -44,38 +44,38 @@ type ColumnInfo struct {
 	Nullable string `json:"nullable"`
 }
 
-// ListTables returns all tables in the current database
 // ListTables returns all tables in the current database (with permission filtering)
 func (h *SimpleMultiTableHandler) ListTables(c *gin.Context) {
 	var tables []TableInfo
 
-	// ✅ Get user info from query parameters (same as AdminOnly middleware)
-	userRole := c.Query("user_role")
-	if userRole == "" {
-		if role, exists := c.Get("user_role"); exists {
-			userRole = role.(string)
+	//  Get user from context (set by AuthRequired middleware)
+	userID := c.GetUint("user_id")
+	userRole, _ := c.Get("user_role")
+
+	// Fallback: check query params for testing/transition
+	if userID == 0 {
+		userIDStr := c.Query("user_id")
+		if userIDStr != "" {
+			if uid, err := strconv.ParseUint(userIDStr, 10, 32); err == nil {
+				userID = uint(uid)
+			}
 		}
 	}
-	if userRole == "" {
-		userRole = c.GetHeader("X-User-Role")
+	if userRole == nil || userRole == "" {
+		userRole = c.Query("user_role")
 	}
 
-	userIDStr := c.Query("user_id")
-	var userID interface{}
-	var exists bool
-	if userIDStr != "" {
-		if uid, err := strconv.ParseUint(userIDStr, 10, 32); err == nil {
-			userID = uint(uid)
-			exists = true
-		}
-	} else {
-		userID, exists = c.Get("user_id")
-	}
-
-	if userRole != "admin" && !exists {
+	// Final auth check
+	if userID == 0 {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Missing user identity for table permission check"})
 		return
 	}
+
+	roleStr, _ := userRole.(string)
+	if roleStr == "" {
+		roleStr = "user" // default role
+	}
+	isAdmin := roleStr == "admin"
 
 	// Get all table names from information_schema
 	query := `
@@ -93,15 +93,13 @@ func (h *SimpleMultiTableHandler) ListTables(c *gin.Context) {
 	}
 	defer rows.Close()
 
-	// ✅ Get accessible table names for non-admin users
+	//  Get accessible table names for non-admin users
 	accessibleTableNames := make(map[string]bool)
 
-	if userRole != "admin" {
-		// ✅ GetAccessibleTables returns []TableConfig directly
-		accessibleTables, err := h.PermRepo.GetAccessibleTables(userID.(uint))
+	if !isAdmin {
+		accessibleTables, err := h.PermRepo.GetAccessibleTables(userID)
 		if err == nil {
 			for _, tableConfig := range accessibleTables {
-				// ✅ tableConfig.Table already contains the actual table name
 				accessibleTableNames[tableConfig.Table] = true
 			}
 		}
@@ -113,8 +111,8 @@ func (h *SimpleMultiTableHandler) ListTables(c *gin.Context) {
 			continue
 		}
 
-		// ✅ Filter tables if user is not admin
-		if userRole != "admin" {
+		//  Filter tables if user is not admin
+		if !isAdmin {
 			if !accessibleTableNames[tableName] {
 				continue // Skip tables user doesn't have access to
 			}
@@ -181,36 +179,38 @@ func (h *SimpleMultiTableHandler) GetTableData(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "50"))
 
-	userRole := strings.TrimSpace(c.Query("user_role"))
-	if userRole == "" {
-		if role, exists := c.Get("user_role"); exists {
-			if roleStr, ok := role.(string); ok {
-				userRole = strings.TrimSpace(roleStr)
+	//  Get user from context (set by AuthRequired middleware)
+	userID := c.GetUint("user_id")
+	userRole, _ := c.Get("user_role")
+
+	// Fallback to query params
+	if userID == 0 {
+		userIDStr := c.Query("user_id")
+		if userIDStr != "" {
+			if parsedID, err := strconv.ParseUint(userIDStr, 10, 32); err == nil {
+				userID = uint(parsedID)
 			}
 		}
 	}
-	if userRole == "" {
-		userRole = strings.TrimSpace(c.GetHeader("X-User-Role"))
-	}
-	userRole = strings.ToLower(userRole)
-
-	userIDStr := c.Query("user_id")
-	var requesterID uint
-	if userIDStr != "" {
-		if parsedID, err := strconv.ParseUint(userIDStr, 10, 32); err == nil {
-			requesterID = uint(parsedID)
-		}
-	} else {
-		requesterID = c.GetUint("user_id")
+	if userRole == nil || userRole == "" {
+		userRole = c.Query("user_role")
 	}
 
-	if userRole != "admin" {
-		if requesterID == 0 {
+	roleStr, _ := userRole.(string)
+	if roleStr == "" {
+		roleStr = "user"
+	}
+	roleStr = strings.ToLower(roleStr)
+	isAdmin := roleStr == "admin"
+
+	// Permission check for non-admins
+	if !isAdmin {
+		if userID == 0 {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Missing user identity for table access"})
 			return
 		}
 
-		accessibleTables, err := h.PermRepo.GetAccessibleTables(requesterID)
+		accessibleTables, err := h.PermRepo.GetAccessibleTables(userID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to verify table permission"})
 			return
@@ -323,15 +323,6 @@ func (h *SimpleMultiTableHandler) GetTableData(c *gin.Context) {
 	})
 }
 
-// MultiTableUploadRequest represents upload request for multiple tables
-type MultiTableUploadRequest struct {
-	Files []struct {
-		TableName string `json:"table_name"`
-		FileData  string `json:"file_data"` // Base64 or direct data
-		Format    string `json:"format"`    // csv or json
-	} `json:"files"`
-}
-
 // UploadToMultipleTables handles uploading data to multiple tables at once
 func (h *SimpleMultiTableHandler) UploadToMultipleTables(c *gin.Context) {
 	// Parse multipart form
@@ -354,12 +345,16 @@ func (h *SimpleMultiTableHandler) UploadToMultipleTables(c *gin.Context) {
 		return
 	}
 
+	//  Get authenticated user from context
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
 	results := []map[string]interface{}{}
 	totalSuccess := 0
 	totalFailed := 0
-
-	// Get user from context
-	userID := c.GetUint("user_id")
 
 	// Process each file
 	for i, fileHeader := range files {
@@ -549,6 +544,12 @@ type ExportSelectedDataRequest struct {
 
 // ExportSelectedData exports data from selected tables with filters
 func (h *SimpleMultiTableHandler) ExportSelectedData(c *gin.Context) {
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
 	var request ExportSelectedDataRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request: " + err.Error()})

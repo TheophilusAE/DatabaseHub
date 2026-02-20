@@ -143,19 +143,47 @@
     </div>
 
 <script>
+// Get user identity from Laravel session
+const USER_ROLE = '{{ session("user")["role"] ?? "user" }}';
+const USER_ID = '{{ session("user")["id"] ?? "" }}';
+
 // Database tables functionality
 let currentTableName = '';
 let currentPageNum = 1;
 let currentPageSize = 25;
 
+// Helper function to build authenticated API URL
+function buildApiUrl(endpoint, params = {}) {
+    const url = new URL(endpoint, 'http://localhost:8080');
+    
+    // Add authentication parameters
+    url.searchParams.append('user_role', USER_ROLE);
+    if (USER_ID) {
+        url.searchParams.append('user_id', USER_ID);
+    }
+    
+    // Add custom parameters
+    Object.keys(params).forEach(key => {
+        if (params[key] !== null && params[key] !== undefined) {
+            url.searchParams.append(key, params[key]);
+        }
+    });
+    
+    return url.toString();
+}
+
 async function loadDatabaseTables() {
     const tablesList = document.getElementById('tables-list');
     
     try {
-        const response = await fetch('http://localhost:8080/simple-multi/tables');
+        // Build authenticated URL with user identity
+        const apiUrl = buildApiUrl('/simple-multi/tables');
+        
+        const response = await fetch(apiUrl);
         
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
         }
         
         const contentType = response.headers.get("content-type");
@@ -193,6 +221,7 @@ async function loadDatabaseTables() {
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                     </svg>
                     <p class="text-gray-500 font-semibold text-lg">No tables found</p>
+                    <p class="text-gray-400 mt-2">${USER_ROLE === 'admin' ? 'Database is empty' : "You don't have access to any tables"}</p>
                 </div>
             `;
         }
@@ -204,6 +233,8 @@ async function loadDatabaseTables() {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <p class="text-red-500 font-semibold text-lg">Error loading tables</p>
+                <p class="text-sm text-gray-600 mt-2">${error.message}</p>
+                <p class="text-xs text-gray-500 mt-2">Make sure the backend is running on localhost:8080</p>
             </div>
         `;
     }
@@ -240,10 +271,17 @@ async function loadTableData() {
     `;
     
     try {
-        const response = await fetch(`http://localhost:8080/simple-multi/tables/${currentTableName}?page=${currentPageNum}&page_size=${currentPageSize}`);
+        // Build authenticated URL with pagination
+        const apiUrl = buildApiUrl(`/simple-multi/tables/${currentTableName}`, {
+            page: currentPageNum,
+            page_size: currentPageSize
+        });
+        
+        const response = await fetch(apiUrl);
         
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
         }
         
         const contentType = response.headers.get("content-type");
@@ -255,7 +293,7 @@ async function loadTableData() {
         
         const data = await response.json();
         
-        // Backend returns { data: [...], page, page_size, table, total_count, total_pages }
+        // Backend returns {  [...], page, page_size, table, total_count, total_pages }
         // Extract column names from the first row of data
         if (data.data && data.data.length > 0) {
             const columns = Object.keys(data.data[0]);
@@ -349,10 +387,12 @@ function closeTableViewer() {
 
 // Helper function to get user role
 function getUserRole() {
-    return '{{ session("user")["role"] ?? "user" }}';
+    return USER_ROLE;
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('User Role:', USER_ROLE);
+    console.log('User ID:', USER_ID);
     loadDatabaseTables(); // Load database tables on page load
 });
 

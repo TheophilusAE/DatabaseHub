@@ -8,7 +8,7 @@ The Data Import Dashboard features **automatic database and table discovery**, e
 
 **Important:** Database and table configuration features are restricted to **administrator accounts only**. Regular users can view and use configured tables but cannot modify configurations.
 
-- ✅ **Admins**: Full access to discovery, sync, and configuration
+-   **Admins**: Full access to discovery, sync, and configuration
 - ❌ **Regular Users**: Read-only access, cannot configure tables
 
 See [ADMIN_ONLY_RESTRICTIONS.md](ADMIN_ONLY_RESTRICTIONS.md) for complete details.
@@ -17,7 +17,7 @@ See [ADMIN_ONLY_RESTRICTIONS.md](ADMIN_ONLY_RESTRICTIONS.md) for complete detail
 
 ## 🎯 Key Features
 
-### ✅ What's Automated
+###   What's Automated
 - **Database Detection**: Automatically lists all available database connections
 - **Table Discovery**: Scans and identifies all tables in a selected database  
 - **Schema Introspection**: Automatically detects:
@@ -177,23 +177,23 @@ The system will:
 ## 💡 Benefits
 
 ### For Users
-- ✅ **Zero Manual Configuration**: No need to manually define schemas
-- ✅ **Error-Free**: Eliminates typos and configuration mistakes
-- ✅ **Fast Setup**: Configure dozens of tables in seconds
-- ✅ **Always Current**: Easy to re-sync when schema changes
-- ✅ **Visual Feedback**: See row counts and column information
+-   **Zero Manual Configuration**: No need to manually define schemas
+-   **Error-Free**: Eliminates typos and configuration mistakes
+-   **Fast Setup**: Configure dozens of tables in seconds
+-   **Always Current**: Easy to re-sync when schema changes
+-   **Visual Feedback**: See row counts and column information
 
 ### For Developers
-- ✅ **Database Agnostic**: Works with PostgreSQL and MySQL
-- ✅ **Extensible**: Easy to add support for more database types
-- ✅ **Clean Code**: Well-structured handler and repository pattern
-- ✅ **Type Safe**: Proper type mapping between database systems
+-   **Database Agnostic**: Works with PostgreSQL and MySQL
+-   **Extensible**: Easy to add support for more database types
+-   **Clean Code**: Well-structured handler and repository pattern
+-   **Type Safe**: Proper type mapping between database systems
 
 ## 🎨 UI Features
 
 The new interface includes:
 - 🌈 **Gradient Header**: Beautiful purple/pink gradient discovery section
-- ✅ **Status Badges**: Green badges show already-synced tables
+-   **Status Badges**: Green badges show already-synced tables
 - 📊 **Statistics**: Row counts and column counts displayed
 - 🔍 **Smart Filtering**: Checkbox selection for bulk operations
 - 🔄 **Action Buttons**: Individual sync or bulk sync options

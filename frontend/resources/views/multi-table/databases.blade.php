@@ -140,7 +140,7 @@
 </div>
 
 <script>
-// ✅ FIXED: Configure your Go backend API URL here
+// : Configure your Go backend API URL here
 const API_BASE = 'http://localhost:8080';
 
 document.addEventListener('DOMContentLoaded', function() {
