@@ -66,7 +66,7 @@
                 <p class="text-gray-600 mb-6">Direct access to database tables - no configuration required</p>
 
                 <!-- Cards Grid -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- View All Tables Card -->
                     <a href="{{ route($userRole . '.simple-multi.view-tables') }}" class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 group cursor-pointer">
                         <div class="flex items-center justify-between mb-4">
@@ -85,35 +85,22 @@
                         </div>
                     </a>
 
-                    <!-- Multi-Table Upload Card -->
-                    <a href="{{ route($userRole . '.simple-multi.multi-upload') }}" class="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-6 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 group cursor-pointer">
+                    <!-- Unified Import & Export Card -->
+                    <a href="{{ route($userRole . '.data-exchange') }}" class="bg-green-500 rounded-xl p-6 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 group cursor-pointer">
                         <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-3">
                                 <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                                 </svg>
-                            <span class="bg-white bg-opacity-30 px-3 py-1 rounded-full text-xs font-bold text-green-700">Simple</span>
-                        </div>
-                        <h3 class="text-xl font-bold text-white mb-2">Multi-Table Upload</h3>
-                        <p class="text-green-100 text-sm">Upload multiple CSV or JSON files to different tables simultaneously</p>
-                        <div class="flex items-center text-xs text-green-200 mt-3">
-                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
-                            </svg>
-                            Click to access
-                        </div>
-                    </a>
-
-                    <!-- Selective Export Card -->
-                    <a href="{{ route($userRole . '.simple-multi.selective-export') }}" class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 group cursor-pointer">
-                        <div class="flex items-center justify-between mb-4">
                                 <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                                 </svg>
-                            <span class="bg-white bg-opacity-30 px-3 py-1 rounded-full text-xs font-bold text-purple-700">Simple</span>
+                            </div>
+                            <span class="bg-white bg-opacity-30 px-3 py-1 rounded-full text-xs font-bold text-green-700">Simple</span>
                         </div>
-                        <h3 class="text-xl font-bold text-white mb-2">Selective Export</h3>
-                        <p class="text-purple-100 text-sm">Choose specific tables, columns, and apply filters to export custom data</p>
-                        <div class="flex items-center text-xs text-purple-200 mt-3">
+                        <h3 class="text-xl font-bold text-white mb-2">Import & Export Data</h3>
+                        <p class="text-green-100 text-sm">Upload into multiple tables and run selective exports from one unified page</p>
+                        <div class="flex items-center text-xs text-green-200 mt-3">
                             <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
                             </svg>

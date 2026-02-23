@@ -9,7 +9,7 @@ start "Backend Server" cmd /k "cd /d %~dp0backend && .\start.bat"
 timeout /t 3 /nobreak >nul
 
 echo [2/2] Starting Laravel Frontend Server...
-start "Frontend Server" cmd /k "cd /d %~dp0frontend && php artisan serve"
+start "Frontend Server" cmd /k "cd /d %~dp0frontend && if exist public\hot del /f /q public\hot >nul 2>&1 && php artisan serve"
 timeout /t 2 /nobreak >nul
 
 echo.

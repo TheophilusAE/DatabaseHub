@@ -154,9 +154,9 @@
                     </svg>
                     Uploaded By
                 </label>
-                <input type="text" id="uploaded-by" placeholder="Your name (optional)"
-                       class="block w-full px-4 py-3 rounded-xl border-2 border-gray-200 shadow-sm focus:border-yellow-500 focus:ring-4 focus:ring-yellow-100 transition-all text-base">
-                <p class="text-xs text-gray-500 mt-1 ml-1">Optional: Add your name or leave blank for 'anonymous'</p>
+                <input type="text" id="uploaded-by" readonly
+                       class="block w-full px-4 py-3 rounded-xl border-2 border-gray-200 shadow-sm bg-gray-50 text-gray-700 text-base cursor-not-allowed">
+                <p class="text-xs text-gray-500 mt-1 ml-1">Automatically filled with your account name</p>
             </div>
 
             <!-- Progress Bar -->
@@ -232,10 +232,13 @@
 
 <script>
 const userRole = '{{ session("user")["role"] ?? "user" }}';
+const userName = '{{ session("user")["name"] ?? "Anonymous" }}';
 const isAdmin = userRole === 'admin';
 
 document.addEventListener('DOMContentLoaded', function() {
     loadCategories();
+    // Auto-fill uploaded by field with current user's name
+    document.getElementById('uploaded-by').value = userName;
     if (isAdmin) {
         document.getElementById('admin-category-controls').classList.remove('hidden');
     }
@@ -467,7 +470,7 @@ document.getElementById('upload-form').addEventListener('submit', async function
     const category = document.getElementById('category').value;
     const documentType = document.getElementById('document-type').value;
     const description = document.getElementById('description').value;
-    const uploadedBy = document.getElementById('uploaded-by').value || 'anonymous';
+    const uploadedBy = document.getElementById('uploaded-by').value || userName || 'anonymous';
     
     if (!fileInput.files[0]) {
         showAlert('Please select a file to upload', 'error');

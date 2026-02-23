@@ -1,13 +1,4 @@
-@extends('layouts.app')
 
-@section('content')
-<div class="py-6">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <!-- Header -->
-        <div class="mb-6">
-            <h1 class="text-3xl font-bold text-gray-900">Selective Data Export</h1>
-            <p class="mt-1 text-sm text-gray-600">Choose specific tables, columns, and filters to export your data</p>
-        </div>
 
         <!-- Alert Messages -->
         <div id="alertContainer"></div>

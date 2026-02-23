@@ -100,8 +100,8 @@ start "Laravel Server" cmd /k "echo Starting Laravel Server... && php artisan se
 REM Wait a moment
 timeout /t 2 /nobreak >nul
 
-REM Start Vite in new terminal
-start "Vite Dev Server" cmd /k "echo Starting Vite Dev Server... && npm run dev"
+REM Start Vite in new terminal (force IPv4 to avoid [::1] asset issues)
+start "Vite Dev Server" cmd /k "echo Starting Vite Dev Server... && npm run dev -- --host 127.0.0.1 --port 5173"
 
 echo.
 echo ✓ Servers starting...

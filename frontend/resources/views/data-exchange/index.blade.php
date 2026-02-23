@@ -45,49 +45,18 @@
                     </svg>
                     Import Your Data
                 </h2>
-                <p class="text-gray-600 mb-8 text-lg">Upload a CSV or JSON file to import data into any table</p>
+                <p class="text-gray-600 mb-8 text-lg">Upload multiple CSV or JSON files into different tables in one run</p>
 
                 <form id="import-form" class="space-y-6">
-                    <!-- Table Selection -->
-                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border-2 border-blue-200">
-                        <label class="block text-lg font-bold text-gray-800 mb-3">
-                            <svg class="inline h-6 w-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
-                            </svg>
-                            Select Table *
-                        </label>
-                        <select id="import-table-select" required
-                            class="w-full px-6 py-4 text-lg border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-300 focus:border-blue-500 transition-all">
-                            <option value="">Loading tables...</option>
-                        </select>
-                        <p class="mt-3 text-sm text-gray-600">Choose which table to import your data into</p>
-                    </div>
+                    <div id="import-items-container" class="space-y-4"></div>
 
-                    <!-- File Upload -->
-                    <div class="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-xl border-2 border-green-200">
-                        <label class="block text-lg font-bold text-gray-800 mb-3">
-                            <svg class="inline h-6 w-6 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                            </svg>
-                            Upload File *
-                        </label>
-                        <div class="mt-2 flex justify-center px-8 pt-8 pb-8 border-4 border-dashed border-green-300 rounded-xl hover:border-green-500 hover:bg-white transition-all cursor-pointer" id="drop-zone">
-                            <div class="space-y-2 text-center">
-                                <svg class="mx-auto h-16 w-16 text-green-500" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                                <div class="flex text-base text-gray-600 justify-center">
-                                    <label for="import-file-input" class="relative cursor-pointer bg-white rounded-md font-bold text-green-600 hover:text-green-700 px-3 py-1">
-                                        <span class="text-xl">Choose a file</span>
-                                        <input id="import-file-input" name="file" type="file" class="sr-only" accept=".csv,.json" required>
-                                    </label>
-                                    <p class="pl-2 text-xl">or drag and drop</p>
-                                </div>
-                                <p class="text-base text-gray-500 font-semibold">CSV or JSON files up to 500MB</p>
-                            </div>
-                        </div>
-                        <div id="import-file-info" class="mt-4 text-base text-gray-700 hidden"></div>
-                    </div>
+                    <button type="button" onclick="addImportItem()"
+                        class="w-full py-4 border-2 border-dashed border-blue-300 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all text-gray-700 hover:text-blue-700 flex items-center justify-center group">
+                        <svg class="h-7 w-7 mr-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
+                        <span class="font-semibold text-lg">Add Another File + Table</span>
+                    </button>
 
                     <!-- Import Button -->
                     <button type="submit" id="import-btn"
@@ -95,7 +64,7 @@
                         <svg class="w-7 h-7 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                         </svg>
-                        <span id="import-btn-text">Start Import</span>
+                        <span id="import-btn-text">Start Multi-Table Import</span>
                     </button>
                 </form>
 
@@ -109,6 +78,36 @@
                     <p id="import-progress-text" class="text-center mt-3 text-base text-gray-700 font-semibold"></p>
                 </div>
             </div>
+
+            <template id="import-item-template">
+                <div class="import-item bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border-2 border-blue-200">
+                    <div class="flex items-start justify-between mb-4">
+                        <h3 class="text-lg font-bold text-gray-800">Import Item</h3>
+                        <button type="button" onclick="removeImportItem(this)"
+                            class="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-all">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Target Table *</label>
+                            <select class="import-table-select w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-semibold" required>
+                                <option value="">Loading tables...</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Upload File *</label>
+                            <input type="file" class="import-file-input w-full px-4 py-3 border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500"
+                                accept=".csv,.json" onchange="onImportFileSelected(this)" required>
+                            <p class="import-file-label mt-2 text-xs text-gray-600">CSV or JSON</p>
+                        </div>
+                    </div>
+                </div>
+            </template>
 
             <!-- Export Panel -->
             <div id="panel-export" class="p-10 hidden">
@@ -189,6 +188,7 @@ const USER_ID = '{{ session("user")["id"] ?? "" }}';
 let allTables = [];
 let tableColumns = {}; // Cache for table columns
 let tableSelectionCounter = 0;
+let importItemCounter = 0;
 
 function buildApiUrl(endpoint, params = {}) {
     const url = new URL(endpoint, 'http://localhost:8080');
@@ -238,8 +238,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const initialTab = (queryTab === 'export' || hashTab === 'export') ? 'export' : 'import';
 
     switchTab(initialTab);
+    addImportItem();
     loadTables();
-    setupFileDropZone();
     setupFormHandlers();
     
     // Add initial table selection for export
@@ -282,13 +282,70 @@ async function loadTables() {
         const data = await response.json();
         allTables = data.tables || [];
         
-        // Update import select
-        const importSelect = document.getElementById('import-table-select');
-        importSelect.innerHTML = '<option value="">Select a table...</option>' + 
-            allTables.map(table => `<option value="${table.table_name}">${table.table_name} (${table.row_count} rows)</option>`).join('');
+        updateImportTableSelects();
         
     } catch (error) {
         showAlert('Error loading tables: ' + error.message, 'error');
+    }
+}
+
+function updateImportTableSelects() {
+    document.querySelectorAll('.import-table-select').forEach(select => {
+        const currentValue = select.value;
+        select.innerHTML = '<option value="">Select a table...</option>' +
+            allTables.map(table => `<option value="${table.table_name}">${table.table_name} (${table.row_count} rows)</option>`).join('');
+        if (currentValue) {
+            select.value = currentValue;
+        }
+    });
+}
+
+function updateImportItemTitles() {
+    document.querySelectorAll('.import-item').forEach((item, index) => {
+        const title = item.querySelector('h3');
+        if (title) {
+            title.textContent = `Import Item ${index + 1}`;
+        }
+    });
+}
+
+function addImportItem() {
+    const container = document.getElementById('import-items-container');
+    const template = document.getElementById('import-item-template');
+    if (!container || !template) return;
+
+    const clone = template.content.cloneNode(true);
+    container.appendChild(clone);
+    importItemCounter++;
+    updateImportTableSelects();
+    updateImportItemTitles();
+}
+
+function removeImportItem(button) {
+    const item = button.closest('.import-item');
+    if (item) {
+        item.remove();
+    }
+
+    if (document.querySelectorAll('.import-item').length === 0) {
+        addImportItem();
+    }
+
+    updateImportItemTitles();
+}
+
+function onImportFileSelected(input) {
+    const item = input.closest('.import-item');
+    if (!item) return;
+
+    const label = item.querySelector('.import-file-label');
+    if (!label) return;
+
+    if (input.files && input.files.length > 0) {
+        const file = input.files[0];
+        label.textContent = `${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`;
+    } else {
+        label.textContent = 'CSV or JSON';
     }
 }
 
@@ -363,12 +420,24 @@ function addTableSelection() {
             
             <div class="filter-section hidden">
                 <label class="block text-sm font-bold text-gray-700 mb-2">
-                    Filter (Optional)
-                    <span class="text-xs font-normal text-gray-500">- SQL WHERE condition</span>
+                    Filter Conditions (Optional)
+                    <span class="text-xs font-normal text-gray-500">- No SQL needed</span>
                 </label>
-                <input type="text" class="filter-input w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 font-mono text-sm"
-                       placeholder="e.g., status = 'active' AND created_at > '2024-01-01'">
-                <p class="mt-1 text-xs text-gray-600">Leave empty to export all rows</p>
+                <div class="filter-rows space-y-2"></div>
+                <div class="mt-3 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs font-semibold text-gray-600">Match</label>
+                        <select class="filter-logic px-2 py-1 border border-gray-300 rounded text-xs">
+                            <option value="AND">All conditions (AND)</option>
+                            <option value="OR">Any condition (OR)</option>
+                        </select>
+                    </div>
+                    <button type="button" onclick="addFilterCondition(${id})"
+                        class="text-xs px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-all font-semibold">
+                        + Add Condition
+                    </button>
+                </div>
+                <p class="mt-1 text-xs text-gray-600">Add one or more conditions, or leave empty to export all rows</p>
             </div>
         </div>
     `;
@@ -407,9 +476,192 @@ async function onTableChange(id, tableName) {
                 <span class="ml-2 text-sm font-medium text-gray-700">${col.name}</span>
             </label>
         `).join('');
+
+        const filterRows = container.querySelector('.filter-rows');
+        if (filterRows) {
+            filterRows.innerHTML = '';
+        }
     } else {
         columnsList.innerHTML = '<p class="text-red-500 col-span-full text-center">No columns found</p>';
     }
+}
+
+function createOperatorOptions() {
+    return `
+        <option value="eq">is equal to</option>
+        <option value="neq">is not equal to</option>
+        <option value="contains">contains</option>
+        <option value="starts_with">starts with</option>
+        <option value="ends_with">ends with</option>
+        <option value="gt">is greater than</option>
+        <option value="gte">is greater than or equal to</option>
+        <option value="lt">is less than</option>
+        <option value="lte">is less than or equal to</option>
+        <option value="is_empty">is empty</option>
+        <option value="is_not_empty">is not empty</option>
+    `;
+}
+
+function addFilterCondition(id) {
+    const container = document.querySelector(`[data-id="${id}"]`);
+    if (!container) return;
+
+    const tableName = container.querySelector('.table-select')?.value;
+    if (!tableName) {
+        showAlert('Please select a table first before adding filter conditions', 'error');
+        return;
+    }
+
+    const columns = tableColumns[tableName] || [];
+    if (columns.length === 0) {
+        showAlert('No columns available for this table', 'error');
+        return;
+    }
+
+    const filterRows = container.querySelector('.filter-rows');
+    if (!filterRows) return;
+
+    const row = document.createElement('div');
+    row.className = 'filter-row grid grid-cols-1 md:grid-cols-12 gap-2 items-center';
+
+    row.innerHTML = `
+        <select class="filter-column md:col-span-4 px-3 py-2 border border-gray-300 rounded text-sm">
+            ${columns.map(col => `<option value="${col.name}" data-type="${(col.type || '').toLowerCase()}">${col.name}</option>`).join('')}
+        </select>
+        <select class="filter-operator md:col-span-4 px-3 py-2 border border-gray-300 rounded text-sm" onchange="onFilterOperatorChange(this)">
+            ${createOperatorOptions()}
+        </select>
+        <input type="text" class="filter-value md:col-span-3 px-3 py-2 border border-gray-300 rounded text-sm" placeholder="Value">
+        <button type="button" class="md:col-span-1 px-2 py-2 text-red-600 hover:bg-red-100 rounded" onclick="this.closest('.filter-row').remove()" title="Remove condition">
+            ✕
+        </button>
+    `;
+
+    filterRows.appendChild(row);
+}
+
+function onFilterOperatorChange(selectEl) {
+    const row = selectEl.closest('.filter-row');
+    if (!row) return;
+
+    const valueInput = row.querySelector('.filter-value');
+    if (!valueInput) return;
+
+    const noValueOps = ['is_empty', 'is_not_empty'];
+    const operator = selectEl.value;
+
+    if (noValueOps.includes(operator)) {
+        valueInput.value = '';
+        valueInput.disabled = true;
+        valueInput.placeholder = 'No value needed';
+    } else {
+        valueInput.disabled = false;
+        valueInput.placeholder = 'Value';
+    }
+}
+
+function escapeSqlString(value) {
+    return String(value).replace(/'/g, "''");
+}
+
+function isNumericType(columnType) {
+    return /(int|numeric|decimal|float|double|real|serial)/i.test(columnType || '');
+}
+
+function isBooleanType(columnType) {
+    return /(bool)/i.test(columnType || '');
+}
+
+function formatSqlValue(rawValue, columnType) {
+    const value = String(rawValue).trim();
+
+    if (isBooleanType(columnType)) {
+        const normalized = value.toLowerCase();
+        if (normalized === 'true' || normalized === '1' || normalized === 'yes') return 'TRUE';
+        if (normalized === 'false' || normalized === '0' || normalized === 'no') return 'FALSE';
+    }
+
+    if (isNumericType(columnType) && value !== '' && !isNaN(Number(value))) {
+        return String(Number(value));
+    }
+
+    return `'${escapeSqlString(value)}'`;
+}
+
+function buildSqlFilterForTable(container) {
+    const tableName = container.querySelector('.table-select')?.value;
+    const filterRows = Array.from(container.querySelectorAll('.filter-row'));
+    if (!tableName || filterRows.length === 0) {
+        return '';
+    }
+
+    const logic = container.querySelector('.filter-logic')?.value || 'AND';
+    const noValueOps = ['is_empty', 'is_not_empty'];
+    const conditions = [];
+
+    for (const row of filterRows) {
+        const columnSelect = row.querySelector('.filter-column');
+        const operatorSelect = row.querySelector('.filter-operator');
+        const valueInput = row.querySelector('.filter-value');
+
+        const column = columnSelect?.value;
+        const columnType = columnSelect?.selectedOptions?.[0]?.dataset?.type || '';
+        const operator = operatorSelect?.value;
+        const value = valueInput?.value?.trim() || '';
+
+        if (!column || !operator) {
+            continue;
+        }
+
+        if (!noValueOps.includes(operator) && value === '') {
+            throw new Error(`Please enter a value for condition on column "${column}"`);
+        }
+
+        const qualifiedColumn = `${tableName}.${column}`;
+        let sql = '';
+
+        switch (operator) {
+            case 'eq':
+                sql = `${qualifiedColumn} = ${formatSqlValue(value, columnType)}`;
+                break;
+            case 'neq':
+                sql = `${qualifiedColumn} <> ${formatSqlValue(value, columnType)}`;
+                break;
+            case 'gt':
+                sql = `${qualifiedColumn} > ${formatSqlValue(value, columnType)}`;
+                break;
+            case 'gte':
+                sql = `${qualifiedColumn} >= ${formatSqlValue(value, columnType)}`;
+                break;
+            case 'lt':
+                sql = `${qualifiedColumn} < ${formatSqlValue(value, columnType)}`;
+                break;
+            case 'lte':
+                sql = `${qualifiedColumn} <= ${formatSqlValue(value, columnType)}`;
+                break;
+            case 'contains':
+                sql = `${qualifiedColumn}::text ILIKE '%${escapeSqlString(value)}%'`;
+                break;
+            case 'starts_with':
+                sql = `${qualifiedColumn}::text ILIKE '${escapeSqlString(value)}%'`;
+                break;
+            case 'ends_with':
+                sql = `${qualifiedColumn}::text ILIKE '%${escapeSqlString(value)}'`;
+                break;
+            case 'is_empty':
+                sql = `(${qualifiedColumn} IS NULL OR ${qualifiedColumn}::text = '')`;
+                break;
+            case 'is_not_empty':
+                sql = `(${qualifiedColumn} IS NOT NULL AND ${qualifiedColumn}::text <> '')`;
+                break;
+            default:
+                continue;
+        }
+
+        conditions.push(`(${sql})`);
+    }
+
+    return conditions.join(` ${logic} `);
 }
 
 function selectAllColumns(id) {
@@ -430,78 +682,45 @@ function deselectAllColumns(id) {
     });
 }
 
-function setupFileDropZone() {
-    const dropZone = document.getElementById('drop-zone');
-    const fileInput = document.getElementById('import-file-input');
-    
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        dropZone.addEventListener(eventName, preventDefaults, false);
-    });
-    
-    function preventDefaults(e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
-    
-    ['dragenter', 'dragover'].forEach(eventName => {
-        dropZone.addEventListener(eventName, () => {
-            dropZone.classList.add('border-blue-500', 'bg-blue-50');
-        }, false);
-    });
-    
-    ['dragleave', 'drop'].forEach(eventName => {
-        dropZone.addEventListener(eventName, () => {
-            dropZone.classList.remove('border-blue-500', 'bg-blue-50');
-        }, false);
-    });
-    
-    dropZone.addEventListener('drop', (e) => {
-        const dt = e.dataTransfer;
-        const files = dt.files;
-        fileInput.files = files;
-        handleFileSelect();
-    }, false);
-    
-    fileInput.addEventListener('change', handleFileSelect);
-}
-
-function handleFileSelect() {
-    const fileInput = document.getElementById('import-file-input');
-    const fileInfo = document.getElementById('import-file-info');
-    
-    if (fileInput.files.length > 0) {
-        const file = fileInput.files[0];
-        fileInfo.innerHTML = `
-            <div class="flex items-center bg-green-100 border-2 border-green-500 rounded-lg p-4">
-                <svg class="w-6 h-6 mr-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                <div class="flex-1">
-                    <p class="font-bold text-green-900">${file.name}</p>
-                    <p class="text-sm text-green-700">${(file.size / (1024*1024)).toFixed(2)} MB</p>
-                </div>
-            </div>
-        `;
-        fileInfo.classList.remove('hidden');
-    }
-}
-
 function setupFormHandlers() {
     // Import form
     document.getElementById('import-form').addEventListener('submit', async function(e) {
         e.preventDefault();
         
-        const table = document.getElementById('import-table-select').value;
-        const fileInput = document.getElementById('import-file-input');
-        
-        if (!table || !fileInput.files.length) {
-            showAlert('Please select a table and file', 'error');
+        const importItems = document.querySelectorAll('.import-item');
+        if (importItems.length === 0) {
+            showAlert('Please add at least one import item', 'error');
             return;
         }
-        
+
         const formData = new FormData();
-        formData.append('table', table);
-        formData.append('file', fileInput.files[0]);
+        let valid = true;
+
+        importItems.forEach(item => {
+            if (!valid) return;
+
+            const tableSelect = item.querySelector('.import-table-select');
+            const fileInput = item.querySelector('.import-file-input');
+
+            if (!tableSelect || !tableSelect.value) {
+                showAlert('Please select a target table for each import item', 'error');
+                valid = false;
+                return;
+            }
+
+            if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+                showAlert('Please select a file for each import item', 'error');
+                valid = false;
+                return;
+            }
+
+            formData.append('files', fileInput.files[0]);
+            formData.append('table_names', tableSelect.value);
+        });
+
+        if (!valid) {
+            return;
+        }
         
         const importBtn = document.getElementById('import-btn');
         const importBtnText = document.getElementById('import-btn-text');
@@ -512,28 +731,35 @@ function setupFormHandlers() {
         importBtn.disabled = true;
         importBtnText.textContent = 'Importing...';
         progress.classList.remove('hidden');
-        progressBar.style.width = '50%';
-        progressText.textContent = 'Uploading and processing data...';
+        progressBar.style.width = '35%';
+        progressText.textContent = 'Uploading files to selected tables...';
         
         try {
-            const response = await fetch(buildApiUrl('/unified/import'), {
+            const response = await fetch(buildApiUrl('/simple-multi/upload-multiple'), {
                 method: 'POST',
                 body: formData,
                 headers: getAuthHeaders()
             });
-            
-            if (!response.ok) throw new Error('Import failed');
-            
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Import failed');
+            }
+
             const result = await response.json();
             
             progressBar.style.width = '100%';
             progressText.textContent = 'Import completed!';
             
             setTimeout(() => {
-                showAlert(`Import successful! ${result.success_count} records imported${result.failure_count > 0 ? ', ' + result.failure_count + ' failed' : ''}`, 'success');
+                const successCount = result.total_success || 0;
+                const failedCount = result.total_failed || 0;
+                showAlert(`Import finished. Success: ${successCount}, Failed: ${failedCount}`, failedCount > 0 ? 'error' : 'success');
                 progress.classList.add('hidden');
                 document.getElementById('import-form').reset();
-                document.getElementById('import-file-info').classList.add('hidden');
+                document.getElementById('import-items-container').innerHTML = '';
+                addImportItem();
+                loadTables();
             }, 1000);
             
         } catch (error) {
@@ -541,7 +767,7 @@ function setupFormHandlers() {
             progress.classList.add('hidden');
         } finally {
             importBtn.disabled = false;
-            importBtnText.textContent = 'Start Import';
+            importBtnText.textContent = 'Start Multi-Table Import';
         }
     });
     
@@ -551,14 +777,24 @@ function setupFormHandlers() {
         
         // Collect all table selections
         const tableSelections = [];
+        let hasFilterError = false;
         document.querySelectorAll('.table-selection').forEach(container => {
+            if (hasFilterError) return;
+
             const tableName = container.querySelector('.table-select').value;
             if (!tableName) return;
             
             const selectedColumns = Array.from(container.querySelectorAll('.column-checkbox:checked'))
                 .map(cb => cb.value);
             
-            const filter = container.querySelector('.filter-input').value.trim();
+            let filter = '';
+            try {
+                filter = buildSqlFilterForTable(container);
+            } catch (filterError) {
+                showAlert(filterError.message, 'error');
+                hasFilterError = true;
+                return;
+            }
             
             tableSelections.push({
                 table_name: tableName,
@@ -566,6 +802,10 @@ function setupFormHandlers() {
                 filters: filter
             });
         });
+
+        if (hasFilterError) {
+            return;
+        }
         
         if (tableSelections.length === 0) {
             showAlert('Please add and configure at least one table', 'error');

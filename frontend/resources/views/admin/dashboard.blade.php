@@ -44,13 +44,13 @@
                 </svg>
                 <p class="text-sm font-bold text-blue-900">Upload Document</p>
             </a>
-            <a href="{{ route('admin.import.index') }}" class="bg-gradient-to-br from-teal-50 to-cyan-50 border-2 border-teal-200 rounded-xl p-4 hover:shadow-lg transition-all text-center group">
+            <a href="{{ route('admin.data-exchange', ['tab' => 'import']) }}" class="bg-gradient-to-br from-teal-50 to-cyan-50 border-2 border-teal-200 rounded-xl p-4 hover:shadow-lg transition-all text-center group">
                 <svg class="h-8 w-8 text-teal-700 mx-auto mb-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                 </svg>
                 <p class="text-sm font-bold text-teal-900">Import Data</p>
             </a>
-            <a href="{{ route('admin.export.index') }}" class="bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 rounded-xl p-4 hover:shadow-lg transition-all text-center group">
+            <a href="{{ route('admin.data-exchange', ['tab' => 'export']) }}" class="bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 rounded-xl p-4 hover:shadow-lg transition-all text-center group">
                 <svg class="h-8 w-8 text-orange-600 mx-auto mb-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>

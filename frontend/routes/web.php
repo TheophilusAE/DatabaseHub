@@ -56,6 +56,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::prefix('documents')->name('documents.')->group(function () {
         Route::get('/', [DocumentController::class, 'index'])->name('index');
         Route::get('/create', [DocumentController::class, 'create'])->name('create');
+        Route::post('/{id}/delete', [DocumentController::class, 'destroy'])->name('destroy');
     });
 
     // Configuration - Document categories (Admin only)
@@ -90,8 +91,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // Simple Multi-Table Operations
     Route::prefix('simple-multi')->name('simple-multi.')->group(function () {
         Route::get('/view-tables', [\App\Http\Controllers\SimpleMultiTableController::class, 'viewTables'])->name('view-tables');
-        Route::get('/multi-upload', [\App\Http\Controllers\SimpleMultiTableController::class, 'multiUpload'])->name('multi-upload');
-        Route::get('/selective-export', [\App\Http\Controllers\SimpleMultiTableController::class, 'selectiveExport'])->name('selective-export');
     });
 });
 
@@ -110,6 +109,7 @@ Route::middleware(['auth', 'user'])->prefix('user')->name('user.')->group(functi
     Route::prefix('documents')->name('documents.')->group(function () {
         Route::get('/', [DocumentController::class, 'index'])->name('index');
         Route::get('/create', [DocumentController::class, 'create'])->name('create');
+        Route::post('/{id}/delete', [DocumentController::class, 'destroy'])->name('destroy');
     });
 
     // Import - Users can import data
@@ -139,8 +139,6 @@ Route::middleware(['auth', 'user'])->prefix('user')->name('user.')->group(functi
     // Simple Multi-Table Operations
     Route::prefix('simple-multi')->name('simple-multi.')->group(function () {
         Route::get('/view-tables', [\App\Http\Controllers\SimpleMultiTableController::class, 'viewTables'])->name('view-tables');
-        Route::get('/multi-upload', [\App\Http\Controllers\SimpleMultiTableController::class, 'multiUpload'])->name('multi-upload');
-        Route::get('/selective-export', [\App\Http\Controllers\SimpleMultiTableController::class, 'selectiveExport'])->name('selective-export');
     });
 });
 
@@ -159,6 +157,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/multi-upload', function () {
         $user = session('user');
         $role = strtolower($user['role'] ?? 'user');
-        return redirect()->route($role === 'admin' ? 'admin.simple-multi.multi-upload' : 'user.simple-multi.multi-upload');
+        return redirect()->route($role === 'admin' ? 'admin.data-exchange' : 'user.data-exchange', ['tab' => 'import']);
     })->name('multi-upload.index');
 });

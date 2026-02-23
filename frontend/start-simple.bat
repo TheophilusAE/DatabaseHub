@@ -30,6 +30,11 @@ if not exist ".env" (
 echo.
 echo [3/3] Checking dependencies...
 
+REM Ensure stale Vite hot file does not force dev-server assets
+if exist "public\hot" (
+    del /f /q "public\hot" >nul 2>&1
+)
+
 REM Check if vendor exists
 if not exist "vendor" (
     echo Installing PHP dependencies...

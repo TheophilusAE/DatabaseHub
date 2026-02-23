@@ -122,9 +122,16 @@ func (h *DocumentHandler) Upload(c *gin.Context) {
 		documentType = "other"
 	}
 	description := c.PostForm("description")
-	uploadedBy := c.GetString("user")
+	
+	// Get uploaded_by from form (frontend auto-fills with authenticated user's name)
+	uploadedBy := strings.TrimSpace(c.PostForm("uploaded_by"))
 	if uploadedBy == "" {
-		uploadedBy = "anonymous"
+		// Fallback to context user if form is empty
+		if contextUser := c.GetString("user"); contextUser != "" {
+			uploadedBy = contextUser
+		} else {
+			uploadedBy = "anonymous"
+		}
 	}
 
 	// Detect MIME type (use header value or default to application/octet-stream)
@@ -280,16 +287,19 @@ func (h *DocumentHandler) Delete(c *gin.Context) {
 
 	// Delete file from disk
 	if _, err := os.Stat(document.FilePath); err == nil {
-		os.Remove(document.FilePath)
+		if delErr := os.Remove(document.FilePath); delErr != nil {
+			// Log error but continue with database deletion
+			fmt.Printf("Warning: Failed to delete file %s: %v\n", document.FilePath, delErr)
+		}
 	}
 
-	// Delete database record
+	// Delete database record (soft delete)
 	if err := h.repo.Delete(uint(id)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Document deleted successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "Document deleted successfully", "id": id})
 }
 
 // GetByCategory retrieves documents by category

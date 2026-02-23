@@ -109,8 +109,7 @@
 <!-- Delete Modal -->
 <div id="delete-modal" class="hidden fixed z-50 inset-0 overflow-y-auto">
     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity backdrop-blur-sm" onclick="closeDeleteModal()"></div>
-        <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full animate-slideIn">
+        <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full animate-slideIn" onclick="event.stopPropagation()">
             <div class="bg-white px-6 pt-6 pb-4">
                 <div class="sm:flex sm:items-start">
                     <div class="mx-auto flex-shrink-0 flex items-center justify-center h-14 w-14 rounded-full bg-red-100 sm:mx-0 sm:h-12 sm:w-12 animate-pulse">
@@ -145,6 +144,7 @@
 let currentPage = 1;
 let currentLimit = 12;
 let deleteDocumentId = null;
+const csrfToken = '{{ csrf_token() }}';
 
 // Helper function to get user role
 function getUserRole() {
@@ -154,31 +154,11 @@ function getUserRole() {
 document.addEventListener('DOMContentLoaded', function() {
     loadCategoryFilterOptions();
     loadDocuments();
-    
-    document.getElementById('category-filter').addEventListener('change', loadDocuments);
-    document.getElementById('type-filter').addEventListener('change', loadDocuments);
-    document.getElementById('search').addEventListener('keyup', debounce(loadDocuments, 500));
+
+    document.getElementById('category-filter').addEventListener('change', () => loadDocuments(1));
+    document.getElementById('type-filter').addEventListener('change', () => loadDocuments(1));
+    document.getElementById('search').addEventListener('keyup', debounce(() => loadDocuments(1), 500));
 });
-
-async function loadCategoryFilterOptions() {
-    try {
-        const response = await fetch('http://localhost:8080/document-categories');
-        const result = await response.json();
-        const categories = result.data || [];
-
-        const select = document.getElementById('category-filter');
-        select.innerHTML = '<option value="">📂 All Categories</option>';
-
-        categories.forEach((category) => {
-            const option = document.createElement('option');
-            option.value = category.name;
-            option.textContent = `📁 ${category.name}`;
-            select.appendChild(option);
-        });
-    } catch (error) {
-        console.error('Error loading categories:', error);
-    }
-}
 
 function debounce(func, wait) {
     let timeout;
@@ -192,11 +172,30 @@ function debounce(func, wait) {
     };
 }
 
+async function loadCategoryFilterOptions() {
+    const categoryFilter = document.getElementById('category-filter');
+    try {
+        const response = await fetch('http://localhost:8080/document-categories');
+        const result = await response.json();
+        const categories = result.data || [];
+
+        categoryFilter.innerHTML = '<option value="">📂 All Categories</option>';
+        categories.forEach((category) => {
+            const option = document.createElement('option');
+            option.value = category.name;
+            option.textContent = `📁 ${category.name}`;
+            categoryFilter.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error loading category filters:', error);
+    }
+}
+
 async function loadDocuments(page = 1) {
     currentPage = page;
     const category = document.getElementById('category-filter').value;
     const documentType = document.getElementById('type-filter').value;
-    
+
     let url = `http://localhost:8080/documents?page=${currentPage}&limit=${currentLimit}`;
 
     if (category) {
@@ -205,11 +204,11 @@ async function loadDocuments(page = 1) {
     if (documentType) {
         url += `&document_type=${encodeURIComponent(documentType)}`;
     }
-    
+
     try {
         const response = await fetch(url);
         const data = await response.json();
-        
+
         displayDocuments(data.data || []);
         displayPagination(data);
     } catch (error) {
@@ -263,7 +262,7 @@ function displayDocuments(documents) {
                 <p class="text-sm text-gray-600 line-clamp-2 min-h-[2.5rem]">
                     ${doc.description || '<span class="italic text-gray-400">No description provided</span>'}
                 </p>
-                <div class="grid grid-cols-2 gap-3 text-xs">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                     <div class="flex items-center space-x-2 text-gray-500">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -276,6 +275,12 @@ function displayDocuments(documents) {
                         </svg>
                         <span class="font-semibold">${new Date(doc.created_at).toLocaleDateString()}</span>
                     </div>
+                    <div class="flex items-center space-x-2 text-gray-500">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        <span class="font-semibold truncate" title="${doc.uploaded_by || 'anonymous'}">${doc.uploaded_by || 'anonymous'}</span>
+                    </div>
                 </div>
                 <div class="flex space-x-2 pt-2">
                     <a href="http://localhost:8080/documents/${doc.id}/download" 
@@ -285,7 +290,7 @@ function displayDocuments(documents) {
                         </svg>
                         Download
                     </a>
-                    <button onclick="event.preventDefault(); event.stopPropagation(); showDeleteModal(${doc.id}); return false;" type="button"
+                    <button onclick="showDeleteModal(${doc.id})" type="button"
                             class="px-4 py-2.5 border-2 border-red-200 rounded-xl text-sm font-bold text-red-700 bg-red-50 hover:bg-red-100 hover:border-red-300 transition-all transform hover:-translate-y-0.5">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -411,27 +416,33 @@ function closeDeleteModal() {
 
 async function confirmDelete() {
     if (!deleteDocumentId) return;
-    
+
+    const basePath = window.location.pathname.startsWith('/admin') ? '/admin' : '/user';
+    const deleteUrl = `${basePath}/documents/${deleteDocumentId}/delete`;
+
     try {
-        const response = await fetch(`http://localhost:8080/documents/${deleteDocumentId}`, {
-            method: 'DELETE',
+        const response = await fetch(deleteUrl, {
+            method: 'POST',
             headers: {
+                'Accept': 'application/json',
                 'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            }
+                'X-CSRF-TOKEN': csrfToken,
+            },
+            body: JSON.stringify({}),
         });
-        
+
+        const result = await response.json().catch(() => ({}));
+
         if (response.ok) {
             showAlert('Document deleted successfully', 'success');
             loadDocuments(currentPage);
         } else {
-            showAlert('Failed to delete document', 'error');
+            showAlert(result.error || `Failed to delete document (${response.status})`, 'error');
         }
     } catch (error) {
-        console.error('Error deleting document:', error);
-        showAlert('Error deleting document', 'error');
+        showAlert('Network error: Unable to delete document', 'error');
     }
-    
+
     closeDeleteModal();
 }
 

@@ -70,7 +70,7 @@
                     </div>
                     
                     @if($hasUser)
-                    <div class="hidden sm:ml-8 sm:flex sm:space-x-1">
+                    <div class="hidden sm:ml-8 sm:flex sm:space-x-3">
                         <a href="{{ $sessionRole === 'admin' ? route('admin.dashboard') : route('user.dashboard') }}" 
                            class="nav-link text-gray-700 hover:text-blue-600 inline-flex items-center px-3 pt-1 text-sm font-medium transition-colors">
                             <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
