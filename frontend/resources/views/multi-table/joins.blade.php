@@ -4,12 +4,12 @@
 <div class="py-6">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Header -->
-        <div class="mb-6 flex justify-between items-center">
+        <div class="mb-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
             <div>
-                <h1 class="text-3xl font-bold text-gray-900">Table Joins</h1>
+                <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Table Joins</h1>
                 <p class="mt-1 text-sm text-gray-600">Configure joins between tables to combine data</p>
             </div>
-            <button onclick="openAddJoinModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg inline-flex items-center transition-colors shadow-md">
+            <button onclick="openAddJoinModal()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg inline-flex items-center justify-center transition-colors shadow-md">
                 <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                 </svg>
@@ -22,8 +22,8 @@
 
         <!-- Joins List -->
         <div class="bg-white rounded-lg shadow-md overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
+            <div class="overflow-x-auto table-responsive">
+                <table class="min-w-[960px] w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
@@ -55,7 +55,7 @@
 
 <!-- Add/Edit Join Modal -->
 <div id="joinModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-lg bg-white">
+    <div class="relative top-4 sm:top-20 mx-auto p-4 sm:p-5 border w-full max-w-2xl shadow-lg rounded-lg bg-white">
         <div class="flex justify-between items-center pb-3 border-b">
             <h3 class="text-xl font-semibold text-gray-900" id="modalTitle">Add Table Join</h3>
             <button onclick="closeJoinModal()" class="text-gray-400 hover:text-gray-600">
@@ -75,7 +75,7 @@
                        placeholder="e.g., Users with Orders">
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Left Table</label>
                     <select id="leftTableId" required onchange="updateTargetTableOptions()"
@@ -121,13 +121,13 @@
                 <p class="mt-1 text-xs text-gray-500">Optionally specify a table where combined data can be exported</p>
             </div>
 
-            <div class="flex justify-end space-x-3 pt-4 border-t">
+            <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4 border-t">
                 <button type="button" onclick="closeJoinModal()" 
-                        class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                        class="w-full sm:w-auto px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
                     Cancel
                 </button>
                 <button type="submit" 
-                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        class="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                     Save Join
                 </button>
             </div>

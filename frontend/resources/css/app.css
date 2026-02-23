@@ -177,3 +177,44 @@ tbody tr:hover {
         opacity: 1;
     }
 }
+
+/* Responsive Baseline */
+html, body {
+    overflow-x: hidden;
+}
+
+img, svg, video, canvas {
+    max-width: 100%;
+    height: auto;
+}
+
+table {
+    width: 100%;
+}
+
+/* Keep table UIs usable on small screens */
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 1024px) {
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    button:hover,
+    .btn:hover,
+    .card-hover:hover,
+    tbody tr:hover {
+        transform: none;
+    }
+
+    tbody tr:hover {
+        background-color: inherit;
+    }
+}

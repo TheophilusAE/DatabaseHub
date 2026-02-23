@@ -54,7 +54,7 @@
     <!-- Navigation -->
     <nav class="glass-effect sticky top-0 z-50 shadow-lg backdrop-blur-md">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
+            <div class="flex items-center justify-between min-h-16 py-2 md:py-0">
                 <div class="flex">
                     <div class="flex-shrink-0 flex items-center">
                         <a href="{{ $hasUser ? ($sessionRole === 'admin' ? route('admin.dashboard') : route('user.dashboard')) : route('login') }}" class="flex items-center space-x-3 group">
@@ -63,14 +63,14 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                                 </svg>
                             </div>
-                            <span class="text-xl font-bold bg-gradient-to-r from-blue-700 to-green-600 bg-clip-text text-transparent">
+                            <span class="hidden sm:inline text-lg md:text-xl font-bold bg-gradient-to-r from-blue-700 to-green-600 bg-clip-text text-transparent">
                                 Data Import Dashboard
                             </span>
                         </a>
                     </div>
                     
                     @if($hasUser)
-                    <div class="hidden sm:ml-8 sm:flex sm:space-x-3">
+                    <div class="hidden md:ml-8 md:flex md:space-x-3">
                         <a href="{{ $sessionRole === 'admin' ? route('admin.dashboard') : route('user.dashboard') }}" 
                            class="nav-link text-gray-700 hover:text-blue-600 inline-flex items-center px-3 pt-1 text-sm font-medium transition-colors">
                             <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -123,10 +123,18 @@
                 </div>
                 
                 <!-- User Menu -->
-                <div class="flex items-center">
+                <div class="flex items-center space-x-2 md:space-x-3">
                     @if($hasUser)
-                    <div class="relative group">
-                        <button class="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
+                    <button id="mobile-menu-button" class="md:hidden inline-flex items-center justify-center h-10 w-10 rounded-lg text-gray-600 hover:text-blue-600 hover:bg-gray-100 transition-colors" aria-label="Toggle navigation" aria-expanded="false">
+                        <svg id="mobile-menu-icon-open" class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                        <svg id="mobile-menu-icon-close" class="h-6 w-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                    <div class="relative">
+                        <button id="user-menu-button" class="flex items-center space-x-3 px-2 sm:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors" aria-expanded="false" aria-controls="user-dropdown-menu">
                             <div class="flex items-center space-x-2">
                                 <div class="h-8 w-8 rounded-full bg-gradient-to-r from-blue-600 to-green-500 flex items-center justify-center text-white font-bold text-sm">
                                     {{ strtoupper(substr($sessionUser['name'] ?? 'U', 0, 1)) }}
@@ -152,7 +160,7 @@
                         </button>
                         
                         <!-- Dropdown Menu -->
-                        <div class="absolute right-0 mt-2 w-56 rounded-xl shadow-2xl bg-white ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform group-hover:translate-y-0 -translate-y-2">
+                        <div id="user-dropdown-menu" class="absolute right-0 mt-2 w-56 rounded-xl shadow-2xl bg-white ring-1 ring-black ring-opacity-5 hidden z-50">
                             <div class="p-3 border-b border-gray-100">
                                 <p class="text-sm font-bold text-gray-900">{{ $sessionUser['name'] ?? 'User' }}</p>
                                 <p class="text-xs text-gray-500">{{ $sessionUser['email'] ?? '' }}</p>
@@ -171,7 +179,7 @@
                         </div>
                     </div>
                     @else
-                    <div class="flex items-center space-x-3">
+                    <div class="flex items-center space-x-2 sm:space-x-3">
                         <a href="{{ route('login') }}" class="px-4 py-2 text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors">
                             Login
                         </a>
@@ -182,6 +190,25 @@
                     @endif
                 </div>
             </div>
+
+            @if($hasUser)
+            <div id="mobile-menu" class="md:hidden hidden border-t border-gray-200 pb-4 pt-3">
+                <div class="space-y-1">
+                    <a href="{{ $sessionRole === 'admin' ? route('admin.dashboard') : route('user.dashboard') }}" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-blue-600">Dashboard</a>
+                    @if($sessionRole === 'admin')
+                    <a href="{{ route('admin.users.index') }}" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-blue-600">Users</a>
+                    @endif
+                    <a href="{{ route('data-records.index') }}" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-blue-600">View Tables</a>
+                    <a href="{{ route('documents.index') }}" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-blue-600">Documents</a>
+                    <a href="{{ route(($sessionRole ?? 'user') . '.multi-table.hub') }}" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-blue-600">Operations</a>
+                    <a href="{{ route($sessionRole === 'admin' ? 'admin.import.history' : 'user.import.history') }}" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-blue-600">History</a>
+                    <form action="{{ route('logout') }}" method="POST" class="px-3 pt-2">
+                        @csrf
+                        <button type="submit" class="w-full text-left px-3 py-2 rounded-lg text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors">Logout</button>
+                    </form>
+                </div>
+            </div>
+            @endif
         </div>
     </nav>
 
@@ -189,8 +216,8 @@
     <div id="alert-container" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4"></div>
 
     <!-- Page Content -->
-    <main class="py-10 animate-fade-in flex-grow">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+    <main class="py-6 sm:py-10 animate-fade-in flex-grow">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             @yield('content')
         </div>
     </main>
@@ -212,5 +239,42 @@
             </div>
         </div>
     </footer>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const mobileMenuButton = document.getElementById('mobile-menu-button');
+    const mobileMenu = document.getElementById('mobile-menu');
+    const iconOpen = document.getElementById('mobile-menu-icon-open');
+    const iconClose = document.getElementById('mobile-menu-icon-close');
+
+    if (mobileMenuButton && mobileMenu && iconOpen && iconClose) {
+        mobileMenuButton.addEventListener('click', function () {
+            const isHidden = mobileMenu.classList.contains('hidden');
+            mobileMenu.classList.toggle('hidden');
+            iconOpen.classList.toggle('hidden');
+            iconClose.classList.toggle('hidden');
+            mobileMenuButton.setAttribute('aria-expanded', String(isHidden));
+        });
+    }
+
+    const userMenuButton = document.getElementById('user-menu-button');
+    const userMenu = document.getElementById('user-dropdown-menu');
+
+    if (userMenuButton && userMenu) {
+        userMenuButton.addEventListener('click', function (event) {
+            event.stopPropagation();
+            const isHidden = userMenu.classList.contains('hidden');
+            userMenu.classList.toggle('hidden');
+            userMenuButton.setAttribute('aria-expanded', String(isHidden));
+        });
+
+        document.addEventListener('click', function (event) {
+            if (!userMenu.contains(event.target) && !userMenuButton.contains(event.target)) {
+                userMenu.classList.add('hidden');
+                userMenuButton.setAttribute('aria-expanded', 'false');
+            }
+        });
+    }
+});
+</script>
 </body>
 </html>

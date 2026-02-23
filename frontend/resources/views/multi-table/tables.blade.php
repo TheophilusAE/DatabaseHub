@@ -3,11 +3,11 @@
 @section('title', 'Table Configurations - Multi-Table')
 
 @section('content')
-<div class="container mx-auto px-4 py-8 max-w-7xl">
+<div class="container mx-auto px-3 sm:px-4 py-6 sm:py-8 max-w-7xl">
     <!-- Page Header -->
-    <div class="mb-8">
-        <h1 class="text-4xl font-bold text-gray-800 mb-2">Table Configurations</h1>
-        <p class="text-gray-600">Define table structures for import and export operations</p>
+    <div class="mb-6 sm:mb-8">
+        <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-2">Table Configurations</h1>
+        <p class="text-sm sm:text-base text-gray-600">Define table structures for import and export operations</p>
     </div>
 
     <!-- Alert Container -->
@@ -15,24 +15,24 @@
 
     @if(session('user')['role'] === 'admin')
     <!-- Database Selection and Discovery (ADMIN ONLY) -->
-    <div class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white rounded-xl shadow-lg p-6 mb-8">
-        <div class="flex items-center mb-4">
+    <div class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white rounded-xl shadow-lg p-4 sm:p-6 mb-6 sm:mb-8">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-4">
             <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
             </svg>
-            <h2 class="text-2xl font-bold">🔍 Auto-Discover Tables</h2>
-            <span class="ml-3 px-3 py-1 bg-yellow-400 text-yellow-900 text-xs font-bold rounded-full">ADMIN ONLY</span>
+            <h2 class="text-xl sm:text-2xl font-bold">🔍 Auto-Discover Tables</h2>
+            <span class="sm:ml-1 self-start px-3 py-1 bg-yellow-400 text-yellow-900 text-xs font-bold rounded-full">ADMIN ONLY</span>
         </div>
         <p class="mb-4 text-indigo-100">Select a database to automatically discover and sync tables</p>
         
-        <div class="flex gap-4 items-end">
+        <div class="flex flex-col lg:flex-row gap-3 lg:gap-4 lg:items-end">
             <div class="flex-1">
                 <label class="block text-sm font-medium mb-2">Select Database</label>
                 <select id="discovery-database" class="w-full px-4 py-3 bg-white text-gray-900 rounded-lg focus:ring-2 focus:ring-indigo-300 border-0">
                     <option value="">Loading databases...</option>
                 </select>
             </div>
-            <button onclick="discoverTables()" class="px-6 py-3 bg-white text-purple-600 font-semibold rounded-lg hover:bg-indigo-50 transition shadow-md">
+            <button onclick="discoverTables()" class="w-full lg:w-auto px-6 py-3 bg-white text-purple-600 font-semibold rounded-lg hover:bg-indigo-50 transition shadow-md">
                 <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                 </svg>
@@ -42,15 +42,15 @@
     </div>
 
     <!-- Discovered Tables (ADMIN ONLY) -->
-    <div id="discovered-tables-section" class="hidden bg-white rounded-xl shadow-lg p-6 mb-8 border-t-4 border-green-500">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-semibold text-gray-800 flex items-center">
+    <div id="discovered-tables-section" class="hidden bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-6 sm:mb-8 border-t-4 border-green-500">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
+            <h2 class="text-xl sm:text-2xl font-semibold text-gray-800 flex items-center">
                 <svg class="w-6 h-6 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                 </svg>
                 Discovered Tables
             </h2>
-            <button onclick="syncAllTables()" class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition font-semibold">
+            <button onclick="syncAllTables()" class="w-full sm:w-auto px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition font-semibold">
                 <svg class="w-5 h-5 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                 </svg>
@@ -62,9 +62,9 @@
     @endif
 
     <!-- Quick Actions -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
         @if(session('user')['role'] === 'admin')
-        <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow cursor-pointer" onclick="showAddModal()">
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-5 sm:p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow cursor-pointer" onclick="showAddModal()">
             <div class="flex items-center justify-between">
                 <div>
                     <h3 class="text-lg font-semibold mb-2">Add Manually</h3>
@@ -76,7 +76,7 @@
             </div>
         </div>
         @else
-        <div class="bg-gradient-to-br from-gray-400 to-gray-500 text-white p-6 rounded-xl shadow-lg opacity-60 cursor-not-allowed">
+        <div class="bg-gradient-to-br from-gray-400 to-gray-500 text-white p-5 sm:p-6 rounded-xl shadow-lg opacity-60 cursor-not-allowed">
             <div class="flex items-center justify-between">
                 <div>
                     <h3 class="text-lg font-semibold mb-2">Add Manually</h3>
@@ -89,7 +89,7 @@
         </div>
         @endif
 
-        <div class="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow cursor-pointer" onclick="window.location.href='{{ route(session('user')['role'] . '.multi-table.joins') }}'">
+        <div class="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-5 sm:p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow cursor-pointer" onclick="window.location.href='{{ route(session('user')['role'] . '.multi-table.joins') }}'">
             <div class="flex items-center justify-between">
                 <div>
                     <h3 class="text-lg font-semibold mb-2">Configure Joins</h3>
@@ -101,7 +101,7 @@
             </div>
         </div>
 
-        <div class="bg-gradient-to-br from-green-500 to-green-600 text-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow cursor-pointer" onclick="window.location.href='{{ route(session('user')['role'] . '.multi-table.import-mappings') }}'">
+        <div class="bg-gradient-to-br from-green-500 to-green-600 text-white p-5 sm:p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow cursor-pointer" onclick="window.location.href='{{ route(session('user')['role'] . '.multi-table.import-mappings') }}'">
             <div class="flex items-center justify-between">
                 <div>
                     <h3 class="text-lg font-semibold mb-2">Import Mappings</h3>
@@ -115,15 +115,15 @@
     </div>
 
     <!-- Table Configurations List -->
-    <div class="bg-white rounded-xl shadow-lg p-6 border-t-4 border-blue-500">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-semibold text-gray-800 flex items-center">
+    <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 border-t-4 border-blue-500">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
+            <h2 class="text-xl sm:text-2xl font-semibold text-gray-800 flex items-center">
                 <svg class="w-6 h-6 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                 </svg>
                 Configured Tables
             </h2>
-            <button onclick="loadTables()" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
+            <button onclick="loadTables()" class="w-full sm:w-auto px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
                 <svg class="w-5 h-5 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                 </svg>
@@ -146,10 +146,10 @@
 <div id="add-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div class="p-6 border-b border-gray-200">
-            <h3 class="text-2xl font-semibold text-gray-800">Add Table Configuration</h3>
+            <h3 class="text-xl sm:text-2xl font-semibold text-gray-800">Add Table Configuration</h3>
         </div>
         <form id="add-table-form" class="p-6 space-y-4">
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="col-span-2">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Configuration Name *</label>
                     <input type="text" id="table-name" required
@@ -179,13 +179,13 @@
                     <p class="text-xs text-gray-500 mt-1">JSON array of column definitions</p>
                 </div>
             </div>
-            <div class="flex justify-end space-x-3 pt-4">
+            <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4">
                 <button type="button" onclick="closeAddModal()"
-                    class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                    class="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
                     Cancel
                 </button>
                 <button type="submit"
-                    class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
+                    class="w-full sm:w-auto px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
                     Add Configuration
                 </button>
             </div>
@@ -364,24 +364,24 @@ function displayDiscoveredTables(tables) {
     section.classList.remove('hidden');
     
     container.innerHTML = tables.map((table, index) => `
-        <div class="border ${table.is_configured ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-white'} rounded-lg p-4 flex items-center justify-between hover:shadow-md transition">
-            <div class="flex items-center space-x-4 flex-1">
+        <div class="border ${table.is_configured ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-white'} rounded-lg p-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 hover:shadow-md transition">
+            <div class="flex items-start sm:items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
                 <input type="checkbox" id="table-check-${index}" 
                     ${table.is_configured ? '' : 'checked'}
                     class="w-5 h-5 text-green-600 rounded focus:ring-green-500">
-                <div class="flex-1">
-                    <h4 class="font-semibold text-gray-800 flex items-center">
+                <div class="flex-1 min-w-0">
+                    <h4 class="font-semibold text-gray-800 flex flex-wrap items-center gap-2">
                         ${table.table_name}
-                        ${table.is_configured ? '<span class="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs rounded">Already Synced</span>' : ''}
+                        ${table.is_configured ? '<span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">Already Synced</span>' : ''}
                     </h4>
-                    <p class="text-sm text-gray-600">
+                    <p class="text-sm text-gray-600 break-words">
                         ${table.row_count.toLocaleString()} rows • ${table.columns.length} columns
                         ${table.primary_keys.length > 0 ? ' • PK: ' + table.primary_keys.join(', ') : ''}
                     </p>
                 </div>
             </div>
             <button onclick="syncSingleTable('${table.table_name}')" 
-                class="px-4 py-2 ${table.is_configured ? 'bg-blue-500' : 'bg-green-500'} text-white rounded-lg hover:opacity-90 transition text-sm font-medium">
+                class="w-full sm:w-auto px-4 py-2 ${table.is_configured ? 'bg-blue-500' : 'bg-green-500'} text-white rounded-lg hover:opacity-90 transition text-sm font-medium">
                 ${table.is_configured ? 'Re-sync' : 'Sync Now'}
             </button>
         </div>
