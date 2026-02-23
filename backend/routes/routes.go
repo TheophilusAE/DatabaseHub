@@ -216,6 +216,9 @@ func (r *Router) Setup(engine *gin.Engine, allowedOrigins string) {
 		simpleMulti.GET("/tables", r.simpleMultiTableHandler.ListTables)
 		simpleMulti.GET("/tables/:table", r.simpleMultiTableHandler.GetTableData)
 		simpleMulti.GET("/tables/:table/columns", r.simpleMultiTableHandler.GetTableColumns)
+		simpleMulti.POST("/tables/:table/rows", r.simpleMultiTableHandler.CreateTableRow)
+		simpleMulti.PUT("/tables/:table/rows", r.simpleMultiTableHandler.UpdateTableRow)
+		simpleMulti.DELETE("/tables/:table/rows", r.simpleMultiTableHandler.DeleteTableRow)
 		simpleMulti.POST("/upload-multiple", r.simpleMultiTableHandler.UploadToMultipleTables)
 		simpleMulti.POST("/export-selected", r.simpleMultiTableHandler.ExportSelectedData)
 

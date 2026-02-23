@@ -40,9 +40,27 @@ type TableInfo struct {
 
 // ColumnInfo represents column metadata
 type ColumnInfo struct {
-	Name     string `json:"name"`
-	Type     string `json:"type"`
-	Nullable string `json:"nullable"`
+	Name         string `json:"name"`
+	Type         string `json:"type"`
+	Nullable     string `json:"nullable"`
+	IsPrimaryKey bool   `json:"is_primary_key"`
+	HasDefault   bool   `json:"has_default"`
+	IsIdentity   bool   `json:"is_identity"`
+}
+
+type CreateTableRowRequest struct {
+	Data map[string]interface{} `json:"data"`
+}
+
+type UpdateTableRowRequest struct {
+	PrimaryKeyColumn string                 `json:"primary_key_column"`
+	PrimaryKeyValue  interface{}            `json:"primary_key_value"`
+	Data             map[string]interface{} `json:"data"`
+}
+
+type DeleteTableRowRequest struct {
+	PrimaryKeyColumn string      `json:"primary_key_column"`
+	PrimaryKeyValue  interface{} `json:"primary_key_value"`
 }
 
 // ListTables returns all tables in the current database (with permission filtering)
@@ -144,34 +162,278 @@ func (h *SimpleMultiTableHandler) GetTableColumns(c *gin.Context) {
 		return
 	}
 
-	// Get column information from information_schema
-	query := `
-		SELECT column_name, data_type, is_nullable
-		FROM information_schema.columns
-		WHERE table_schema = 'public' AND table_name = ?
-		ORDER BY ordinal_position
-	`
-
-	rows, err := h.DB.Raw(query, tableName).Rows()
+	columns, err := h.getTableColumnsMetadata(tableName)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch columns: " + err.Error()})
 		return
-	}
-	defer rows.Close()
-
-	var columns []ColumnInfo
-	for rows.Next() {
-		var col ColumnInfo
-		if err := rows.Scan(&col.Name, &col.Type, &col.Nullable); err != nil {
-			continue
-		}
-		columns = append(columns, col)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"table":   tableName,
 		"columns": columns,
 	})
+}
+
+// CreateTableRow inserts a new row into a selected table
+// Admin: can create in any table
+// User: can create only in tables they are allowed to access
+func (h *SimpleMultiTableHandler) CreateTableRow(c *gin.Context) {
+	tableName := c.Param("table")
+	if !isValidIdentifier(tableName) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid table name"})
+		return
+	}
+
+	isAdmin := h.isAdminRequest(c)
+	if !isAdmin {
+		userID := c.GetUint("user_id")
+		if userID == 0 {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+			return
+		}
+
+		hasAccess, err := h.userCanAccessTable(userID, tableName)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to verify table access"})
+			return
+		}
+		if !hasAccess {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Access denied for this table"})
+			return
+		}
+	}
+
+	var request CreateTableRowRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	if len(request.Data) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No data provided"})
+		return
+	}
+
+	columns, err := h.getTableColumnsMetadata(tableName)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read table columns"})
+		return
+	}
+	if len(columns) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Table not found or has no columns"})
+		return
+	}
+
+	columnMap := make(map[string]ColumnInfo)
+	for _, col := range columns {
+		columnMap[col.Name] = col
+	}
+
+	insertColumns := make([]string, 0)
+	insertValues := make([]interface{}, 0)
+	placeholders := make([]string, 0)
+
+	for key, value := range request.Data {
+		if !isValidIdentifier(key) {
+			continue
+		}
+
+		if isAutoManagedTimestampColumn(key) {
+			continue
+		}
+
+		column, exists := columnMap[key]
+		if !exists {
+			continue
+		}
+
+		if column.IsIdentity {
+			continue
+		}
+
+		insertColumns = append(insertColumns, quoteIdentifier(key))
+		insertValues = append(insertValues, value)
+		placeholders = append(placeholders, "?")
+	}
+
+	now := time.Now()
+	if column, exists := columnMap["created_at"]; exists && isTimestampType(column.Type) {
+		insertColumns = append(insertColumns, quoteIdentifier("created_at"))
+		insertValues = append(insertValues, now)
+		placeholders = append(placeholders, "?")
+	}
+	if column, exists := columnMap["updated_at"]; exists && isTimestampType(column.Type) {
+		insertColumns = append(insertColumns, quoteIdentifier("updated_at"))
+		insertValues = append(insertValues, now)
+		placeholders = append(placeholders, "?")
+	}
+
+	if len(insertColumns) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No editable columns provided"})
+		return
+	}
+
+	query := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)",
+		quoteIdentifier(tableName),
+		strings.Join(insertColumns, ", "),
+		strings.Join(placeholders, ", "),
+	)
+
+	if err := h.DB.Exec(query, insertValues...).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create row: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Row created successfully"})
+}
+
+// UpdateTableRow updates an existing row in a selected table (admin only)
+func (h *SimpleMultiTableHandler) UpdateTableRow(c *gin.Context) {
+	if !h.isAdminRequest(c) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only admin can update table rows"})
+		return
+	}
+
+	tableName := c.Param("table")
+	if !isValidIdentifier(tableName) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid table name"})
+		return
+	}
+
+	var request UpdateTableRowRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	if len(request.Data) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No data provided for update"})
+		return
+	}
+
+	pkColumns, err := h.getPrimaryKeyColumns(tableName)
+	if err != nil || len(pkColumns) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Primary key not found for this table"})
+		return
+	}
+
+	pkColumn := strings.TrimSpace(request.PrimaryKeyColumn)
+	if pkColumn == "" {
+		pkColumn = pkColumns[0]
+	}
+
+	if !isValidIdentifier(pkColumn) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid primary key column"})
+		return
+	}
+
+	columns, err := h.getTableColumnsMetadata(tableName)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read table columns"})
+		return
+	}
+
+	columnMap := make(map[string]ColumnInfo)
+	for _, col := range columns {
+		columnMap[col.Name] = col
+	}
+
+	setParts := make([]string, 0)
+	setValues := make([]interface{}, 0)
+
+	for key, value := range request.Data {
+		if key == pkColumn || !isValidIdentifier(key) {
+			continue
+		}
+
+		if isAutoManagedTimestampColumn(key) {
+			continue
+		}
+
+		column, exists := columnMap[key]
+		if !exists || column.IsIdentity {
+			continue
+		}
+
+		setParts = append(setParts, fmt.Sprintf("%s = ?", quoteIdentifier(key)))
+		setValues = append(setValues, value)
+	}
+
+	if column, exists := columnMap["updated_at"]; exists && isTimestampType(column.Type) {
+		setParts = append(setParts, fmt.Sprintf("%s = ?", quoteIdentifier("updated_at")))
+		setValues = append(setValues, time.Now())
+	}
+
+	if len(setParts) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No editable columns provided for update"})
+		return
+	}
+
+	setValues = append(setValues, request.PrimaryKeyValue)
+	query := fmt.Sprintf("UPDATE %s SET %s WHERE %s = ?", quoteIdentifier(tableName), strings.Join(setParts, ", "), quoteIdentifier(pkColumn))
+
+	result := h.DB.Exec(query, setValues...)
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update row: " + result.Error.Error()})
+		return
+	}
+
+	if result.RowsAffected == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Row not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Row updated successfully"})
+}
+
+// DeleteTableRow deletes a row from a selected table (admin only)
+func (h *SimpleMultiTableHandler) DeleteTableRow(c *gin.Context) {
+	if !h.isAdminRequest(c) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only admin can delete table rows"})
+		return
+	}
+
+	tableName := c.Param("table")
+	if !isValidIdentifier(tableName) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid table name"})
+		return
+	}
+
+	var request DeleteTableRowRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	pkColumns, err := h.getPrimaryKeyColumns(tableName)
+	if err != nil || len(pkColumns) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Primary key not found for this table"})
+		return
+	}
+
+	pkColumn := strings.TrimSpace(request.PrimaryKeyColumn)
+	if pkColumn == "" {
+		pkColumn = pkColumns[0]
+	}
+
+	if !isValidIdentifier(pkColumn) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid primary key column"})
+		return
+	}
+
+	query := fmt.Sprintf("DELETE FROM %s WHERE %s = ?", quoteIdentifier(tableName), quoteIdentifier(pkColumn))
+	result := h.DB.Exec(query, request.PrimaryKeyValue)
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete row: " + result.Error.Error()})
+		return
+	}
+
+	if result.RowsAffected == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Row not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Row deleted successfully"})
 }
 
 // GetTableData returns paginated data from a specific table
@@ -745,6 +1007,119 @@ func (h *SimpleMultiTableHandler) ExportSelectedData(c *gin.Context) {
 
 func quoteIdentifier(identifier string) string {
 	return `"` + identifier + `"`
+}
+
+func isValidIdentifier(identifier string) bool {
+	pattern := regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
+	return pattern.MatchString(identifier)
+}
+
+func isAutoManagedTimestampColumn(columnName string) bool {
+	name := strings.ToLower(strings.TrimSpace(columnName))
+	return name == "created_at" || name == "updated_at"
+}
+
+func isTimestampType(dataType string) bool {
+	typeName := strings.ToLower(strings.TrimSpace(dataType))
+	return strings.Contains(typeName, "timestamp")
+}
+
+func (h *SimpleMultiTableHandler) isAdminRequest(c *gin.Context) bool {
+	role := strings.ToLower(strings.TrimSpace(c.GetString("user_role")))
+	if role == "" {
+		role = strings.ToLower(strings.TrimSpace(c.GetHeader("X-User-Role")))
+	}
+	if role == "" {
+		role = strings.ToLower(strings.TrimSpace(c.Query("user_role")))
+	}
+	return role == "admin"
+}
+
+func (h *SimpleMultiTableHandler) userCanAccessTable(userID uint, tableName string) (bool, error) {
+	accessibleTables, err := h.PermRepo.GetAccessibleTables(userID)
+	if err != nil {
+		return false, err
+	}
+
+	for _, tableConfig := range accessibleTables {
+		if strings.EqualFold(tableConfig.Table, tableName) {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func (h *SimpleMultiTableHandler) getPrimaryKeyColumns(tableName string) ([]string, error) {
+	query := `
+		SELECT kcu.column_name
+		FROM information_schema.table_constraints tc
+		JOIN information_schema.key_column_usage kcu
+			ON tc.constraint_name = kcu.constraint_name
+			AND tc.table_schema = kcu.table_schema
+		WHERE tc.table_schema = 'public'
+			AND tc.table_name = ?
+			AND tc.constraint_type = 'PRIMARY KEY'
+		ORDER BY kcu.ordinal_position
+	`
+
+	rows, err := h.DB.Raw(query, tableName).Rows()
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	columns := []string{}
+	for rows.Next() {
+		var column string
+		if scanErr := rows.Scan(&column); scanErr != nil {
+			continue
+		}
+		columns = append(columns, column)
+	}
+
+	return columns, nil
+}
+
+func (h *SimpleMultiTableHandler) getTableColumnsMetadata(tableName string) ([]ColumnInfo, error) {
+	query := `
+		SELECT
+			c.column_name,
+			c.data_type,
+			c.is_nullable,
+			CASE WHEN pk.column_name IS NOT NULL THEN true ELSE false END AS is_primary_key,
+			CASE WHEN c.column_default IS NOT NULL THEN true ELSE false END AS has_default,
+			CASE WHEN c.is_identity = 'YES' THEN true ELSE false END AS is_identity
+		FROM information_schema.columns c
+		LEFT JOIN (
+			SELECT kcu.table_name, kcu.column_name
+			FROM information_schema.table_constraints tc
+			JOIN information_schema.key_column_usage kcu
+				ON tc.constraint_name = kcu.constraint_name
+				AND tc.table_schema = kcu.table_schema
+			WHERE tc.constraint_type = 'PRIMARY KEY' AND tc.table_schema = 'public'
+		) pk
+			ON pk.table_name = c.table_name AND pk.column_name = c.column_name
+		WHERE c.table_schema = 'public' AND c.table_name = ?
+		ORDER BY c.ordinal_position
+	`
+
+	rows, err := h.DB.Raw(query, tableName).Rows()
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	columns := []ColumnInfo{}
+	for rows.Next() {
+		var col ColumnInfo
+		if scanErr := rows.Scan(&col.Name, &col.Type, &col.Nullable, &col.IsPrimaryKey, &col.HasDefault, &col.IsIdentity); scanErr != nil {
+			continue
+		}
+		columns = append(columns, col)
+	}
+
+	return columns, nil
 }
 
 func qualifyFilterWithAlias(filterExpr string, alias string, tableColumns []string) string {

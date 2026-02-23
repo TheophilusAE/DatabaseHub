@@ -75,6 +75,23 @@
                     </div>
                 </div>
 
+                <div id="adminCrudBar" class="hidden mb-6 bg-blue-50 border border-blue-200 p-4 rounded-xl">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex items-center gap-2 text-blue-800 text-sm font-semibold">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            No SQL needed: use this form to create, edit, or delete rows.
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="openCreateModal()" id="createRowBtn" class="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold hover:bg-green-700 transition-all">Create Row</button>
+                            <button onclick="openEditModal()" id="editRowBtn" class="px-4 py-2 rounded-lg bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed" disabled>Edit Selected</button>
+                            <button onclick="deleteSelectedRow()" id="deleteRowBtn" class="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed" disabled>Delete Selected</button>
+                        </div>
+                    </div>
+                    <p id="selectedRowInfo" class="mt-2 text-xs text-blue-700">No row selected</p>
+                </div>
+
                 <!-- Data Table -->
                 <div class="overflow-x-auto rounded-xl border-2 border-gray-200 shadow-lg">
                     <table id="dataTable" class="min-w-full divide-y divide-gray-300">
@@ -89,6 +106,29 @@
     </div>
 </div>
 
+<div id="rowEditorModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4 py-8">
+        <div class="fixed inset-0 bg-black bg-opacity-40" onclick="closeRowEditorModal()"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl">
+            <div class="p-6 border-b border-gray-200 flex items-center justify-between">
+                <h3 id="rowEditorTitle" class="text-xl font-bold text-gray-800">Create Row</h3>
+                <button onclick="closeRowEditorModal()" class="text-gray-400 hover:text-gray-700">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <form id="rowEditorForm" class="p-6">
+                <div id="rowEditorFields" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button type="button" onclick="closeRowEditorModal()" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">Cancel</button>
+                    <button type="submit" class="px-5 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-semibold">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
 let allTables = [];
 let currentTable = '';
@@ -96,11 +136,28 @@ let currentPage = 1;
 let pageSize = 50;
 let totalPages = 1;
 let totalCount = 0;
+let currentColumns = [];
+let currentRows = [];
+let primaryKeyColumn = '';
+let selectedRowData = null;
+let editorMode = 'create';
 
 // ✅ FIXED: Point to Go backend API
 const API_URL = 'http://localhost:8080';
 const userId = {{ session('user')['id'] ?? 'null' }};
 const userRole = '{{ session('user')['role'] ?? '' }}';
+
+function isAdminUser() {
+    return String(userRole).toLowerCase() === 'admin';
+}
+
+function getAuthHeaders() {
+    return {
+        'Accept': 'application/json',
+        'X-User-ID': userId || '',
+        'X-User-Role': userRole || ''
+    };
+}
 
 document.addEventListener('DOMContentLoaded', async function() {
     await loadTables();
@@ -189,12 +246,36 @@ function renderTablesList() {
 async function viewTable(tableName) {
     currentTable = tableName;
     currentPage = 1;
+    selectedRowData = null;
     
     document.getElementById('currentTableName').textContent = tableName;
     document.getElementById('tableDataViewer').classList.remove('hidden');
     document.getElementById('tableDataViewer').scrollIntoView({ behavior: 'smooth' });
+
+    await loadTableColumns();
+    document.getElementById('adminCrudBar').classList.remove('hidden');
+    document.getElementById('editRowBtn').classList.toggle('hidden', !isAdminUser());
+    document.getElementById('deleteRowBtn').classList.toggle('hidden', !isAdminUser());
+    updateSelectedRowInfo();
     
     await loadTableData();
+}
+
+async function loadTableColumns() {
+    const response = await fetch(`${API_URL}/simple-multi/tables/${currentTable}/columns`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: getAuthHeaders()
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to load table columns');
+    }
+
+    const result = await response.json();
+    currentColumns = result.columns || [];
+    const primary = currentColumns.find(col => col.is_primary_key);
+    primaryKeyColumn = primary ? primary.name : '';
 }
 
 async function loadTableData() {
@@ -207,11 +288,7 @@ async function loadTableData() {
         const response = await fetch(dataUrl, {
             method: 'GET',
             credentials: 'include',
-            headers: {
-                'Accept': 'application/json',
-                'X-User-ID': userId || '',
-                'X-User-Role': userRole || ''
-            }
+            headers: getAuthHeaders()
         });
         
         if (response.status === 401) {
@@ -223,8 +300,9 @@ async function loadTableData() {
         const result = await response.json();
         totalPages = result.total_pages;
         totalCount = result.total_count;
+        currentRows = result.data || [];
         
-        renderTableData(result.data);
+        renderTableData(currentRows);
         updatePagination();
     } catch (error) {
         console.error('Load table data error:', error);
@@ -242,17 +320,19 @@ function renderTableData(data) {
                 <td class="px-6 py-4 text-center text-gray-500" colspan="100">No data found</td>
             </tr>
         `;
-        headersRow.innerHTML = '';
+        headersRow.innerHTML = isAdminUser() ? '<th class="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300">Select</th>' : '';
         return;
     }
     
-    const columns = Object.keys(data[0]);
-    headersRow.innerHTML = columns.map(col => `
+    const columns = currentColumns.length ? currentColumns.map(col => col.name) : Object.keys(data[0]);
+    const selectHeader = isAdminUser() ? '<th class="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300">Select</th>' : '';
+    headersRow.innerHTML = selectHeader + columns.map(col => `
         <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300">${col}</th>
     `).join('');
     
     tbody.innerHTML = data.map((row, idx) => `
         <tr class="${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition-colors">
+            ${isAdminUser() ? `<td class="px-4 py-4 text-sm text-gray-900"><input type="radio" name="selectedRow" onclick="selectRow(${idx})" ${selectedRowData === row ? 'checked' : ''}></td>` : ''}
             ${columns.map(col => {
                 let value = row[col];
                 let displayValue;
@@ -269,6 +349,207 @@ function renderTableData(data) {
     `).join('');
     
     document.getElementById('tableRowCount').textContent = `Total: ${totalCount.toLocaleString()} rows`;
+}
+
+function selectRow(index) {
+    selectedRowData = currentRows[index] || null;
+    updateSelectedRowInfo();
+}
+
+function updateSelectedRowInfo() {
+    const info = document.getElementById('selectedRowInfo');
+    const editBtn = document.getElementById('editRowBtn');
+    const deleteBtn = document.getElementById('deleteRowBtn');
+
+    if (!isAdminUser()) {
+        info.textContent = 'Create new rows using the form button.';
+        return;
+    }
+
+    const hasSelection = !!selectedRowData;
+
+    editBtn.disabled = !hasSelection;
+    deleteBtn.disabled = !hasSelection;
+
+    if (!hasSelection) {
+        info.textContent = 'No row selected';
+        return;
+    }
+
+    const pkValue = primaryKeyColumn ? selectedRowData[primaryKeyColumn] : '(no primary key)';
+    info.textContent = `Selected row ${primaryKeyColumn ? `${primaryKeyColumn}=${pkValue}` : ''}`;
+}
+
+function getInputType(dataType) {
+    const type = String(dataType || '').toLowerCase();
+    if (type.includes('int') || type.includes('numeric') || type.includes('decimal') || type.includes('double') || type.includes('real')) return 'number';
+    if (type.includes('date') || type.includes('timestamp')) return 'datetime-local';
+    if (type.includes('bool')) return 'checkbox';
+    return 'text';
+}
+
+function openCreateModal() {
+    editorMode = 'create';
+    renderRowEditorFields();
+    document.getElementById('rowEditorTitle').textContent = `Create Row in ${currentTable}`;
+    document.getElementById('rowEditorModal').classList.remove('hidden');
+}
+
+function openEditModal() {
+    if (!selectedRowData) {
+        showAlert('Select a row first', 'error');
+        return;
+    }
+    if (!primaryKeyColumn) {
+        showAlert('This table has no primary key, update is not supported', 'error');
+        return;
+    }
+
+    editorMode = 'edit';
+    renderRowEditorFields(selectedRowData);
+    document.getElementById('rowEditorTitle').textContent = `Edit Row in ${currentTable}`;
+    document.getElementById('rowEditorModal').classList.remove('hidden');
+}
+
+function closeRowEditorModal() {
+    document.getElementById('rowEditorModal').classList.add('hidden');
+}
+
+function renderRowEditorFields(rowData = {}) {
+    const container = document.getElementById('rowEditorFields');
+
+    const editableColumns = currentColumns.filter(col => {
+        const colName = String(col.name || '').toLowerCase();
+        if (colName === 'created_at' || colName === 'updated_at') {
+            return false;
+        }
+
+        if (editorMode === 'create') {
+            return !col.is_identity && !(col.is_primary_key && col.has_default);
+        }
+        return !col.is_primary_key && !col.is_identity;
+    });
+
+    container.innerHTML = editableColumns.map(col => {
+        const inputType = getInputType(col.type);
+        const rawValue = rowData[col.name];
+        const safeValue = rawValue === null || rawValue === undefined ? '' : String(rawValue);
+        const required = col.nullable === 'NO' ? 'required' : '';
+
+        if (inputType === 'checkbox') {
+            const checked = String(rawValue).toLowerCase() === 'true' || rawValue === 1 ? 'checked' : '';
+            return `
+                <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg">
+                    <input type="checkbox" data-column="${col.name}" ${checked} class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                    <span class="text-sm font-medium text-gray-700">${col.name}</span>
+                </label>
+            `;
+        }
+
+        return `
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">${col.name} <span class="text-gray-400">(${col.type})</span></label>
+                <input type="${inputType}" data-column="${col.name}" value="${safeValue.replace(/"/g, '&quot;')}" ${required}
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+        `;
+    }).join('');
+}
+
+document.getElementById('rowEditorForm').addEventListener('submit', async function(event) {
+    event.preventDefault();
+
+    const fields = Array.from(document.querySelectorAll('#rowEditorFields [data-column]'));
+    const payloadData = {};
+
+    fields.forEach(field => {
+        const colName = field.getAttribute('data-column');
+        if (field.type === 'checkbox') {
+            payloadData[colName] = field.checked;
+        } else {
+            payloadData[colName] = field.value === '' ? null : field.value;
+        }
+    });
+
+    try {
+        const isCreate = editorMode === 'create';
+        const method = isCreate ? 'POST' : 'PUT';
+        const requestBody = isCreate
+            ? { data: payloadData }
+            : {
+                primary_key_column: primaryKeyColumn,
+                primary_key_value: selectedRowData[primaryKeyColumn],
+                data: payloadData,
+            };
+
+        const response = await fetch(`${API_URL}/simple-multi/tables/${currentTable}/rows`, {
+            method,
+            credentials: 'include',
+            headers: {
+                ...getAuthHeaders(),
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody),
+        });
+
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result.error || 'Operation failed');
+        }
+
+        showAlert(isCreate ? 'Row created successfully' : 'Row updated successfully', 'success');
+        closeRowEditorModal();
+        selectedRowData = null;
+        updateSelectedRowInfo();
+        await loadTableData();
+        await loadTables();
+    } catch (error) {
+        showAlert(error.message, 'error');
+    }
+});
+
+async function deleteSelectedRow() {
+    if (!selectedRowData) {
+        showAlert('Select a row first', 'error');
+        return;
+    }
+    if (!primaryKeyColumn) {
+        showAlert('This table has no primary key, delete is not supported', 'error');
+        return;
+    }
+
+    const pkValue = selectedRowData[primaryKeyColumn];
+    if (!confirm(`Delete selected row (${primaryKeyColumn}=${pkValue})? This cannot be undone.`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/simple-multi/tables/${currentTable}/rows`, {
+            method: 'DELETE',
+            credentials: 'include',
+            headers: {
+                ...getAuthHeaders(),
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                primary_key_column: primaryKeyColumn,
+                primary_key_value: pkValue,
+            }),
+        });
+
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result.error || 'Delete failed');
+        }
+
+        showAlert('Row deleted successfully', 'success');
+        selectedRowData = null;
+        updateSelectedRowInfo();
+        await loadTableData();
+        await loadTables();
+    } catch (error) {
+        showAlert(error.message, 'error');
+    }
 }
 
 function updatePagination() {
@@ -300,6 +581,10 @@ function changePageSize() {
 function closeTableViewer() {
     document.getElementById('tableDataViewer').classList.add('hidden');
     currentTable = '';
+    currentColumns = [];
+    currentRows = [];
+    primaryKeyColumn = '';
+    selectedRowData = null;
 }
 
 function showAlert(message, type) {
