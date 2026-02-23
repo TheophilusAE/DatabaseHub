@@ -10,6 +10,7 @@ import (
 type Router struct {
 	dataRecordHandler          *handlers.DataRecordHandler
 	documentHandler            *handlers.DocumentHandler
+	documentCategoryHandler    *handlers.DocumentCategoryHandler
 	importHandler              *handlers.ImportHandler
 	exportHandler              *handlers.ExportHandler
 	authHandler                *handlers.AuthHandler
@@ -27,6 +28,7 @@ type Router struct {
 func NewRouter(
 	dataRecordHandler *handlers.DataRecordHandler,
 	documentHandler *handlers.DocumentHandler,
+	documentCategoryHandler *handlers.DocumentCategoryHandler,
 	importHandler *handlers.ImportHandler,
 	exportHandler *handlers.ExportHandler,
 	authHandler *handlers.AuthHandler,
@@ -43,6 +45,7 @@ func NewRouter(
 	return &Router{
 		dataRecordHandler:          dataRecordHandler,
 		documentHandler:            documentHandler,
+		documentCategoryHandler:    documentCategoryHandler,
 		importHandler:              importHandler,
 		exportHandler:              exportHandler,
 		authHandler:                authHandler,
@@ -109,6 +112,15 @@ func (r *Router) Setup(engine *gin.Engine, allowedOrigins string) {
 		documents.GET("/:id/download", r.documentHandler.Download)            // GET /documents/1/download - Download file
 		documents.DELETE("/:id", r.documentHandler.Delete)                    // DELETE /documents/1 - Delete document
 		documents.GET("/category/:category", r.documentHandler.GetByCategory) // GET /documents/category/reports
+	}
+
+	// Document categories management
+	documentCategories := engine.Group("/document-categories")
+	{
+		documentCategories.GET("", r.documentCategoryHandler.GetAll)                                // GET /document-categories
+		documentCategories.POST("", middleware.AdminOnly(), r.documentCategoryHandler.Create)       // POST /document-categories (ADMIN ONLY)
+		documentCategories.PUT("/:id", middleware.AdminOnly(), r.documentCategoryHandler.Update)    // PUT /document-categories/1 (ADMIN ONLY)
+		documentCategories.DELETE("/:id", middleware.AdminOnly(), r.documentCategoryHandler.Delete) // DELETE /document-categories/1 (ADMIN ONLY)
 	}
 
 	// Upload/import data from files

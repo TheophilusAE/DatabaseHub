@@ -141,6 +141,32 @@ const API_BASE = 'http://localhost:8080';
 
 let allJoins = [];
 let allTables = [];
+const currentUserId = {{ session('user')['id'] ?? 'null' }};
+const currentUserRole = '{{ session('user')['role'] ?? '' }}';
+
+function buildApiUrl(path, query = {}) {
+    const url = new URL(`${API_BASE}${path}`);
+    if (currentUserId) url.searchParams.set('user_id', String(currentUserId));
+    if (currentUserRole) url.searchParams.set('user_role', currentUserRole);
+    Object.entries(query).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+            url.searchParams.set(key, String(value));
+        }
+    });
+    return url.toString();
+}
+
+function authHeaders(includeJson = false) {
+    const headers = {
+        'Accept': 'application/json',
+        'X-User-ID': currentUserId ? String(currentUserId) : '',
+        'X-User-Role': currentUserRole || ''
+    };
+    if (includeJson) {
+        headers['Content-Type'] = 'application/json';
+    }
+    return headers;
+}
 
 // Load joins and tables on page load
 document.addEventListener('DOMContentLoaded', function() {
@@ -150,7 +176,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function loadTables() {
     try {
-        const response = await fetch(`${API_BASE}/tables`);
+        const response = await fetch(buildApiUrl('/tables'), {
+            headers: authHeaders()
+        });
         if (!response.ok) throw new Error('Failed to load tables');
         
         const data = await response.json();
@@ -200,7 +228,9 @@ function updateTargetTableOptions() {
 
 async function loadJoins() {
     try {
-        const response = await fetch(`${API_BASE}/joins`);
+        const response = await fetch(buildApiUrl('/joins'), {
+            headers: authHeaders()
+        });
         if (!response.ok) throw new Error('Failed to load joins');
         
         const data = await response.json();
@@ -310,14 +340,12 @@ document.getElementById('joinForm').addEventListener('submit', async function(e)
     };
     
     try {
-        const url = joinId ? `${API_BASE}/joins/${joinId}` : `${API_BASE}/joins`;
+        const url = joinId ? buildApiUrl(`/joins/${joinId}`) : buildApiUrl('/joins');
         const method = joinId ? 'PUT' : 'POST';
         
         const response = await fetch(url, {
             method: method,
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: authHeaders(true),
             body: JSON.stringify(joinData)
         });
         
@@ -338,8 +366,9 @@ async function deleteJoin(id) {
     if (!confirm('Are you sure you want to delete this table join?')) return;
     
     try {
-        const response = await fetch(`${API_BASE}/joins/${id}`, {
-            method: 'DELETE'
+        const response = await fetch(buildApiUrl(`/joins/${id}`), {
+            method: 'DELETE',
+            headers: authHeaders()
         });
         
         if (!response.ok) {

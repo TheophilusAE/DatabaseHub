@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -113,6 +114,13 @@ func (h *DocumentHandler) Upload(c *gin.Context) {
 
 	// Get optional fields from form
 	category := c.PostForm("category")
+	documentType := strings.ToLower(strings.TrimSpace(c.PostForm("document_type")))
+	if documentType == "" {
+		documentType = strings.TrimPrefix(strings.ToLower(ext), ".")
+	}
+	if documentType == "" {
+		documentType = "other"
+	}
 	description := c.PostForm("description")
 	uploadedBy := c.GetString("user")
 	if uploadedBy == "" {
@@ -134,6 +142,7 @@ func (h *DocumentHandler) Upload(c *gin.Context) {
 		FileType:     ext,
 		MimeType:     mimeType,
 		Category:     category,
+		DocumentType: documentType,
 		Description:  description,
 		UploadedBy:   uploadedBy,
 		Status:       "active",
@@ -220,8 +229,10 @@ func (h *DocumentHandler) Download(c *gin.Context) {
 func (h *DocumentHandler) GetAll(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	category := c.Query("category")
+	documentType := c.Query("document_type")
 
-	documents, total, err := h.repo.FindAll(page, limit)
+	documents, total, err := h.repo.FindAll(page, limit, category, documentType)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -70,11 +70,68 @@
                 <select id="category" required
                         class="block w-full px-4 py-3 rounded-xl border-2 border-gray-200 shadow-sm focus:border-green-500 focus:ring-4 focus:ring-green-100 transition-all text-base">
                     <option value="">📂 Select a category</option>
-                    <option value="reports">📊 Reports</option>
-                    <option value="images">🖼️ Images</option>
-                    <option value="videos">🎥 Videos</option>
-                    <option value="pdfs">📄 PDFs</option>
-                    <option value="other">📦 Other</option>
+                </select>
+                <div id="admin-category-controls" class="hidden mt-2">
+                    <div class="flex gap-2">
+                        <input type="text" id="new-category-name" placeholder="New category name"
+                               class="flex-1 px-4 py-2 rounded-xl border-2 border-gray-200 shadow-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all text-sm">
+                        <button type="button" onclick="createCategory()"
+                                class="px-4 py-2 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-blue-700 to-green-600 hover:from-blue-800 hover:to-green-700 transition-all">
+                            Add Category
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1 ml-1">Admin only: add custom categories for all users</p>
+
+                    <div class="mt-3 p-3 rounded-xl border border-gray-200 bg-gray-50 space-y-2">
+                        <p class="text-xs font-semibold text-gray-700">Manage existing categories</p>
+                        <select id="manage-category-select"
+                                class="block w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
+                            <option value="">Select category to edit/delete</option>
+                        </select>
+                        <div class="flex gap-2">
+                            <input type="text" id="rename-category-name" placeholder="Rename selected category"
+                                   class="flex-1 px-3 py-2 rounded-lg border border-gray-300 bg-white text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
+                            <button type="button" onclick="renameCategory()"
+                                    class="px-4 py-2 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 transition-all">
+                                Rename
+                            </button>
+                            <button type="button" onclick="deleteCategory()"
+                                    class="px-4 py-2 rounded-lg text-xs font-bold text-white bg-red-600 hover:bg-red-700 transition-all">
+                                Delete
+                            </button>
+                        </div>
+                        <p class="text-xs text-gray-500">Deleting a category moves existing documents to “Other”.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label for="document-type" class="block text-sm font-bold text-gray-700 flex items-center">
+                    <svg class="h-4 w-4 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 3h8a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z" />
+                    </svg>
+                    Document Type <span class="text-red-500 ml-1">*</span>
+                </label>
+                <select id="document-type" required
+                        class="block w-full px-4 py-3 rounded-xl border-2 border-gray-200 shadow-sm focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all text-base">
+                    <option value="">🗂️ Select a document type</option>
+                    <option value="pdf">📄 pdf</option>
+                    <option value="doc">📝 doc</option>
+                    <option value="docx">📝 docx</option>
+                    <option value="xls">📊 xls</option>
+                    <option value="xlsx">📊 xlsx</option>
+                    <option value="ppt">📽️ ppt</option>
+                    <option value="pptx">📽️ pptx</option>
+                    <option value="csv">📋 csv</option>
+                    <option value="json">🔧 json</option>
+                    <option value="txt">🗒️ txt</option>
+                    <option value="jpg">🖼️ jpg</option>
+                    <option value="jpeg">🖼️ jpeg</option>
+                    <option value="png">🖼️ png</option>
+                    <option value="gif">🎞️ gif</option>
+                    <option value="zip">🗜️ zip</option>
+                    <option value="rar">🗜️ rar</option>
+                    <option value="other">📁 other</option>
                 </select>
             </div>
 
@@ -174,12 +231,184 @@
 </div>
 
 <script>
+const userRole = '{{ session("user")["role"] ?? "user" }}';
+const isAdmin = userRole === 'admin';
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadCategories();
+    if (isAdmin) {
+        document.getElementById('admin-category-controls').classList.remove('hidden');
+    }
+});
+
+async function loadCategories(selectedValue = '') {
+    try {
+        const response = await fetch('http://localhost:8080/document-categories');
+        const result = await response.json();
+        const categories = result.data || [];
+
+        const categorySelect = document.getElementById('category');
+        const manageSelect = document.getElementById('manage-category-select');
+        categorySelect.innerHTML = '<option value="">📂 Select a category</option>';
+        if (manageSelect) {
+            manageSelect.innerHTML = '<option value="">Select category to edit/delete</option>';
+        }
+
+        categories.forEach((category) => {
+            const option = document.createElement('option');
+            option.value = category.name;
+            option.textContent = `📁 ${category.name}`;
+            categorySelect.appendChild(option);
+
+            if (manageSelect) {
+                const manageOption = document.createElement('option');
+                manageOption.value = category.id;
+                manageOption.textContent = category.name;
+                manageOption.dataset.name = category.name;
+                manageSelect.appendChild(manageOption);
+            }
+        });
+
+        if (selectedValue) {
+            categorySelect.value = selectedValue;
+        }
+    } catch (error) {
+        console.error('Error loading categories:', error);
+        showAlert('Unable to load categories', 'error');
+    }
+}
+
+document.getElementById('manage-category-select')?.addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    document.getElementById('rename-category-name').value = selectedOption?.dataset?.name || '';
+});
+
+async function createCategory() {
+    const input = document.getElementById('new-category-name');
+    const name = input.value.trim();
+
+    if (!name) {
+        showAlert('Enter a category name first', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch('http://localhost:8080/document-categories', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-User-Role': userRole,
+            },
+            body: JSON.stringify({ name }),
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+            showAlert(result.error || 'Failed to create category', 'error');
+            return;
+        }
+
+        input.value = '';
+        showAlert('Category created successfully', 'success');
+        await loadCategories(result.category?.name || name);
+    } catch (error) {
+        console.error('Error creating category:', error);
+        showAlert('Unable to create category', 'error');
+    }
+}
+
+async function renameCategory() {
+    const select = document.getElementById('manage-category-select');
+    const categoryId = select.value;
+    const newName = document.getElementById('rename-category-name').value.trim();
+
+    if (!categoryId) {
+        showAlert('Select a category to rename', 'error');
+        return;
+    }
+    if (!newName) {
+        showAlert('Enter the new category name', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch(`http://localhost:8080/document-categories/${categoryId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-User-Role': userRole,
+            },
+            body: JSON.stringify({ name: newName }),
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+            showAlert(result.error || 'Failed to rename category', 'error');
+            return;
+        }
+
+        showAlert('Category renamed successfully', 'success');
+        await loadCategories(result.category?.name || '');
+        select.value = String(result.category?.id || categoryId);
+    } catch (error) {
+        console.error('Error renaming category:', error);
+        showAlert('Unable to rename category', 'error');
+    }
+}
+
+async function deleteCategory() {
+    const select = document.getElementById('manage-category-select');
+    const categoryId = select.value;
+    const selectedOption = select.options[select.selectedIndex];
+    const categoryName = selectedOption?.dataset?.name || '';
+
+    if (!categoryId) {
+        showAlert('Select a category to delete', 'error');
+        return;
+    }
+
+    if (!confirm(`Delete category "${categoryName}"? Documents in this category will be moved to "Other".`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`http://localhost:8080/document-categories/${categoryId}`, {
+            method: 'DELETE',
+            headers: {
+                'Accept': 'application/json',
+                'X-User-Role': userRole,
+            },
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+            showAlert(result.error || 'Failed to delete category', 'error');
+            return;
+        }
+
+        showAlert(`Category deleted. ${result.reassigned_documents || 0} documents moved to Other.`, 'success');
+        document.getElementById('rename-category-name').value = '';
+        await loadCategories('Other');
+    } catch (error) {
+        console.error('Error deleting category:', error);
+        showAlert('Unable to delete category', 'error');
+    }
+}
+
 function handleFileSelect(event) {
     const file = event.target.files[0];
     if (file) {
         const fileSize = formatFileSize(file.size);
         const fileType = file.type || 'Unknown type';
         const icon = getFileTypeIcon(file.name);
+        const inferredDocumentType = inferDocumentType(file.name);
+        const documentTypeSelect = document.getElementById('document-type');
+        if (documentTypeSelect && inferredDocumentType) {
+            const match = Array.from(documentTypeSelect.options).find(o => o.value === inferredDocumentType);
+            documentTypeSelect.value = match ? inferredDocumentType : 'other';
+        }
         
         document.getElementById('selected-file').innerHTML = `
             <div class="inline-flex items-center space-x-3 px-6 py-4 bg-white rounded-xl shadow-md border-2 border-blue-200 animate-slideIn">
@@ -196,6 +425,11 @@ function handleFileSelect(event) {
             </div>
         `;
     }
+}
+
+function inferDocumentType(filename) {
+    if (!filename || !filename.includes('.')) return 'other';
+    return filename.split('.').pop().toLowerCase();
 }
 
 function getFileTypeIcon(filename) {
@@ -231,11 +465,22 @@ document.getElementById('upload-form').addEventListener('submit', async function
     
     const fileInput = document.getElementById('file-upload');
     const category = document.getElementById('category').value;
+    const documentType = document.getElementById('document-type').value;
     const description = document.getElementById('description').value;
     const uploadedBy = document.getElementById('uploaded-by').value || 'anonymous';
     
     if (!fileInput.files[0]) {
         showAlert('Please select a file to upload', 'error');
+        return;
+    }
+
+    if (!category) {
+        showAlert('Please select a category', 'error');
+        return;
+    }
+
+    if (!documentType) {
+        showAlert('Please select a document type', 'error');
         return;
     }
     
@@ -256,6 +501,7 @@ document.getElementById('upload-form').addEventListener('submit', async function
     const formData = new FormData();
     formData.append('file', fileInput.files[0]);
     formData.append('category', category);
+    formData.append('document_type', documentType);
     formData.append('description', description);
     formData.append('uploaded_by', uploadedBy);
     

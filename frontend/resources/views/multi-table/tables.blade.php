@@ -199,8 +199,34 @@ const API_BASE = 'http://localhost:8080';
 
 let discoveredTablesData = [];
 let selectedDatabase = '';
-const userRole = '{{ session('user')['role'] ?? 'user' }}';
+const currentUserId = {{ session('user')['id'] ?? 'null' }};
+const currentUserRole = '{{ session('user')['role'] ?? 'user' }}';
+const userRole = currentUserRole;
 const isAdmin = userRole === 'admin';
+
+function buildApiUrl(path, query = {}) {
+    const url = new URL(`${API_BASE}${path}`);
+    if (currentUserId) url.searchParams.set('user_id', String(currentUserId));
+    if (currentUserRole) url.searchParams.set('user_role', currentUserRole);
+    Object.entries(query).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+            url.searchParams.set(key, String(value));
+        }
+    });
+    return url.toString();
+}
+
+function authHeaders(includeJson = false) {
+    const headers = {
+        'Accept': 'application/json',
+        'X-User-ID': currentUserId ? String(currentUserId) : '',
+        'X-User-Role': currentUserRole || ''
+    };
+    if (includeJson) {
+        headers['Content-Type'] = 'application/json';
+    }
+    return headers;
+}
 
 document.addEventListener('DOMContentLoaded', function() {
     loadTables();
@@ -229,9 +255,9 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         try {
-            const response = await fetch(`${API_BASE}/tables?user_role=${userRole}`, {
+            const response = await fetch(buildApiUrl('/tables'), {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: authHeaders(true),
                 body: JSON.stringify(config)
             });
 
@@ -254,7 +280,9 @@ async function loadDiscoveryDatabases() {
     if (!isAdmin) return;
     
     try {
-        const response = await fetch(`${API_BASE}/discovery/databases?user_role=${userRole}`);
+        const response = await fetch(buildApiUrl('/discovery/databases'), {
+            headers: authHeaders()
+        });
         if (!response.ok) throw new Error('Failed to load databases');
         const data = await response.json();
 
@@ -295,7 +323,13 @@ async function discoverTables() {
     try {
         showAlert('Discovering tables...', 'info');
         
-        const response = await apiRequest(`/discovery/tables?database=${encodeURIComponent(database)}&user_role=${userRole}`);
+        const response = await fetch(buildApiUrl('/discovery/tables', { database }), {
+            headers: authHeaders()
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to discover tables');
+        }
         const data = await response.json();
 
         if (!data.success) {
@@ -368,9 +402,9 @@ async function syncSingleTable(tableName) {
     try {
         showAlert(`Syncing ${tableName}...`, 'info');
         
-        const response = await fetch(`${API_BASE}/discovery/sync?user_role=${userRole}`, {
+        const response = await fetch(buildApiUrl('/discovery/sync'), {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: authHeaders(true),
             body: JSON.stringify({
                 database: selectedDatabase,
                 tables: [tableName]
@@ -432,9 +466,9 @@ async function syncAllTables() {
     try {
         showAlert(`Syncing ${selectedTables.length} tables...`, 'info');
         
-        const response = await fetch(`${API_BASE}/discovery/sync?user_role=${userRole}`, {
+        const response = await fetch(buildApiUrl('/discovery/sync'), {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: authHeaders(true),
             body: JSON.stringify({
                 database: selectedDatabase,
                 tables: selectedTables
@@ -470,13 +504,16 @@ async function syncAllTables() {
 
 async function loadTables() {
     try {
-        const response = await fetch(`${API_BASE}/tables`);
+        const response = await fetch(buildApiUrl('/tables'), {
+            headers: authHeaders()
+        });
         if (!response.ok) throw new Error('Failed to load tables');
         const data = await response.json();
+        const tableConfigs = data.data || data.configs || [];
 
         const container = document.getElementById('tables-list');
-        if (data.configs && data.configs.length > 0) {
-            container.innerHTML = data.configs.map(config => `
+        if (tableConfigs.length > 0) {
+            container.innerHTML = tableConfigs.map(config => `
                 <div class="border border-gray-200 rounded-lg p-5 hover:shadow-md transition duration-300">
                     <div class="flex justify-between items-start">
                         <div class="flex-1">
@@ -514,7 +551,9 @@ async function loadTables() {
 
 async function loadDatabases() {
     try {
-        const response = await fetch(`${API_BASE}/databases`);
+        const response = await fetch(buildApiUrl('/databases'), {
+            headers: authHeaders()
+        });
         if (!response.ok) throw new Error('Failed to load databases');
         const data = await response.json();
 

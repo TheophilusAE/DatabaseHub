@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -542,6 +543,13 @@ type ExportSelectedDataRequest struct {
 	Format string `json:"format"` // csv or json
 }
 
+type tableRelation struct {
+	FKTable   string
+	FKColumn  string
+	RefTable  string
+	RefColumn string
+}
+
 // ExportSelectedData exports data from selected tables with filters
 func (h *SimpleMultiTableHandler) ExportSelectedData(c *gin.Context) {
 	userID := c.GetUint("user_id")
@@ -566,97 +574,338 @@ func (h *SimpleMultiTableHandler) ExportSelectedData(c *gin.Context) {
 		request.Format = "csv"
 	}
 
-	// Collect all data
-	allData := make(map[string]interface{})
+	identifierPattern := regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
 
-	for _, tableReq := range request.Tables {
-		// Build SELECT query
-		columns := "*"
-		if len(tableReq.Columns) > 0 {
-			columns = strings.Join(tableReq.Columns, ", ")
+	aliases := make([]string, len(request.Tables))
+	selectedColumnsPerTable := make([][]string, len(request.Tables))
+	outputHeaders := []string{}
+	columnNameCounts := map[string]int{}
+	selectExpressions := []string{}
+
+	for tableIndex, tableReq := range request.Tables {
+		if !identifierPattern.MatchString(tableReq.TableName) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Invalid table name: %s", tableReq.TableName)})
+			return
 		}
 
-		query := fmt.Sprintf("SELECT %s FROM %s", columns, tableReq.TableName)
-		if tableReq.Filters != "" {
-			query += " WHERE " + tableReq.Filters
-		}
+		aliases[tableIndex] = fmt.Sprintf("t%d", tableIndex)
 
-		rows, err := h.DB.Raw(query).Rows()
-		if err != nil {
-			allData[tableReq.TableName] = map[string]interface{}{
-				"error": err.Error(),
+		columns := tableReq.Columns
+		if len(columns) == 0 {
+			discoveredColumns, err := h.getTableColumnNames(tableReq.TableName)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to read columns for %s: %v", tableReq.TableName, err)})
+				return
 			}
+			columns = discoveredColumns
+		}
+
+		validatedColumns := make([]string, 0, len(columns))
+		for _, col := range columns {
+			if !identifierPattern.MatchString(col) {
+				c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Invalid column name '%s' in table %s", col, tableReq.TableName)})
+				return
+			}
+			validatedColumns = append(validatedColumns, col)
+		}
+		selectedColumnsPerTable[tableIndex] = validatedColumns
+
+		for _, col := range validatedColumns {
+			headerName := col
+			if existingCount, exists := columnNameCounts[col]; exists {
+				headerName = fmt.Sprintf("%s_%s", tableReq.TableName, col)
+				columnNameCounts[col] = existingCount + 1
+			} else {
+				columnNameCounts[col] = 1
+			}
+
+			outputHeaders = append(outputHeaders, headerName)
+			selectExpressions = append(selectExpressions,
+				fmt.Sprintf("%s.%s AS %s", aliases[tableIndex], quoteIdentifier(col), quoteIdentifier(headerName)),
+			)
+		}
+	}
+
+	if len(selectExpressions) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No columns selected for export"})
+		return
+	}
+
+	queryBuilder := strings.Builder{}
+	queryBuilder.WriteString("SELECT ")
+	queryBuilder.WriteString(strings.Join(selectExpressions, ", "))
+	queryBuilder.WriteString(" FROM ")
+	queryBuilder.WriteString(fmt.Sprintf("%s %s", quoteIdentifier(request.Tables[0].TableName), aliases[0]))
+
+	for i := 1; i < len(request.Tables); i++ {
+		relation, err := h.findTableRelation(request.Tables[i-1].TableName, request.Tables[i].TableName)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": fmt.Sprintf("No direct relationship found between %s and %s. Configure foreign keys or select related tables.", request.Tables[i-1].TableName, request.Tables[i].TableName),
+			})
+			return
+		}
+
+		prevAlias := aliases[i-1]
+		currAlias := aliases[i]
+
+		joinCondition := ""
+		if relation.FKTable == request.Tables[i-1].TableName && relation.RefTable == request.Tables[i].TableName {
+			joinCondition = fmt.Sprintf("%s.%s = %s.%s", prevAlias, quoteIdentifier(relation.FKColumn), currAlias, quoteIdentifier(relation.RefColumn))
+		} else {
+			joinCondition = fmt.Sprintf("%s.%s = %s.%s", currAlias, quoteIdentifier(relation.FKColumn), prevAlias, quoteIdentifier(relation.RefColumn))
+		}
+
+		queryBuilder.WriteString(fmt.Sprintf(" INNER JOIN %s %s ON %s", quoteIdentifier(request.Tables[i].TableName), currAlias, joinCondition))
+	}
+
+	whereClauses := []string{}
+	for i, tableReq := range request.Tables {
+		if strings.TrimSpace(tableReq.Filters) == "" {
+			continue
+		}
+		whereClauses = append(whereClauses, qualifyFilterWithAlias(tableReq.Filters, aliases[i], selectedColumnsPerTable[i]))
+	}
+
+	if len(whereClauses) > 0 {
+		queryBuilder.WriteString(" WHERE ")
+		queryBuilder.WriteString(strings.Join(whereClauses, " AND "))
+	}
+
+	rows, err := h.DB.Raw(queryBuilder.String()).Rows()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to export related data: " + err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	columnNames, err := rows.Columns()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read export columns: " + err.Error()})
+		return
+	}
+
+	jsonRows := make([]map[string]interface{}, 0)
+	csvRows := make([][]string, 0)
+
+	for rows.Next() {
+		columnValues := make([]interface{}, len(columnNames))
+		columnPointers := make([]interface{}, len(columnNames))
+		for i := range columnValues {
+			columnPointers[i] = &columnValues[i]
+		}
+
+		if err := rows.Scan(columnPointers...); err != nil {
 			continue
 		}
 
-		// Get column names
-		columnNames, _ := rows.Columns()
-
-		// Collect rows
-		var tableData []map[string]interface{}
-		for rows.Next() {
-			columnValues := make([]interface{}, len(columnNames))
-			columnPointers := make([]interface{}, len(columnNames))
-			for i := range columnValues {
-				columnPointers[i] = &columnValues[i]
+		jsonRow := make(map[string]interface{}, len(columnNames))
+		csvRow := make([]string, len(columnNames))
+		for i, colName := range columnNames {
+			val := columnValues[i]
+			if b, ok := val.([]byte); ok {
+				jsonRow[colName] = string(b)
+				csvRow[i] = string(b)
+			} else if val == nil {
+				jsonRow[colName] = nil
+				csvRow[i] = ""
+			} else {
+				jsonRow[colName] = val
+				csvRow[i] = fmt.Sprintf("%v", val)
 			}
-
-			rows.Scan(columnPointers...)
-
-			row := make(map[string]interface{})
-			for i, colName := range columnNames {
-				val := columnValues[i]
-				if b, ok := val.([]byte); ok {
-					row[colName] = string(b)
-				} else {
-					row[colName] = val
-				}
-			}
-			tableData = append(tableData, row)
 		}
-		rows.Close()
 
-		allData[tableReq.TableName] = tableData
+		jsonRows = append(jsonRows, jsonRow)
+		csvRows = append(csvRows, csvRow)
 	}
 
 	// Export based on format
 	if request.Format == "json" {
 		c.Header("Content-Type", "application/json")
 		c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=export_%s.json", time.Now().Format("20060102_150405")))
-		c.JSON(http.StatusOK, allData)
+		c.JSON(http.StatusOK, gin.H{
+			"rows":    jsonRows,
+			"columns": columnNames,
+			"count":   len(jsonRows),
+		})
 	} else {
-		// CSV export - combine all tables
+		// CSV export - relationship-processed flat output
 		c.Header("Content-Type", "text/csv")
 		c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=export_%s.csv", time.Now().Format("20060102_150405")))
 
 		writer := csv.NewWriter(c.Writer)
 		defer writer.Flush()
 
-		// Write each table's data
-		for tableName, data := range allData {
-			if tableDataSlice, ok := data.([]map[string]interface{}); ok && len(tableDataSlice) > 0 {
-				// Write table name header
-				writer.Write([]string{fmt.Sprintf("=== %s ===", tableName)})
-
-				// Write column headers
-				var headers []string
-				for col := range tableDataSlice[0] {
-					headers = append(headers, col)
-				}
-				writer.Write(headers)
-
-				// Write rows
-				for _, row := range tableDataSlice {
-					var values []string
-					for _, header := range headers {
-						values = append(values, fmt.Sprintf("%v", row[header]))
-					}
-					writer.Write(values)
-				}
-
-				// Empty line between tables
-				writer.Write([]string{})
-			}
+		writer.Write(columnNames)
+		for _, row := range csvRows {
+			writer.Write(row)
 		}
 	}
+}
+
+func quoteIdentifier(identifier string) string {
+	return `"` + identifier + `"`
+}
+
+func qualifyFilterWithAlias(filterExpr string, alias string, tableColumns []string) string {
+	qualified := strings.TrimSpace(filterExpr)
+	if qualified == "" {
+		return qualified
+	}
+
+	for _, col := range tableColumns {
+		pattern := regexp.MustCompile(`\b` + regexp.QuoteMeta(col) + `\b`)
+		replacement := fmt.Sprintf("%s.%s", alias, quoteIdentifier(col))
+		qualified = pattern.ReplaceAllString(qualified, replacement)
+	}
+
+	return "(" + qualified + ")"
+}
+
+func (h *SimpleMultiTableHandler) getTableColumnNames(tableName string) ([]string, error) {
+	query := `
+		SELECT column_name
+		FROM information_schema.columns
+		WHERE table_schema = 'public' AND table_name = ?
+		ORDER BY ordinal_position
+	`
+
+	rows, err := h.DB.Raw(query, tableName).Rows()
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	columns := []string{}
+	for rows.Next() {
+		var column string
+		if scanErr := rows.Scan(&column); scanErr != nil {
+			continue
+		}
+		columns = append(columns, column)
+	}
+
+	return columns, nil
+}
+
+func (h *SimpleMultiTableHandler) findTableRelation(tableA, tableB string) (*tableRelation, error) {
+	query := `
+		SELECT
+			tc.table_name AS fk_table,
+			kcu.column_name AS fk_column,
+			ccu.table_name AS ref_table,
+			ccu.column_name AS ref_column
+		FROM information_schema.table_constraints tc
+		JOIN information_schema.key_column_usage kcu
+			ON tc.constraint_name = kcu.constraint_name
+			AND tc.table_schema = kcu.table_schema
+		JOIN information_schema.constraint_column_usage ccu
+			ON ccu.constraint_name = tc.constraint_name
+			AND ccu.table_schema = tc.table_schema
+		WHERE tc.constraint_type = 'FOREIGN KEY'
+			AND tc.table_schema = 'public'
+			AND (
+				(tc.table_name = ? AND ccu.table_name = ?)
+				OR
+				(tc.table_name = ? AND ccu.table_name = ?)
+			)
+		LIMIT 1
+	`
+
+	var relation tableRelation
+	if err := h.DB.Raw(query, tableA, tableB, tableB, tableA).Scan(&relation).Error; err != nil {
+		return nil, err
+	}
+
+	if relation.FKTable == "" {
+		return h.inferTableRelationByNaming(tableA, tableB)
+	}
+
+	return &relation, nil
+}
+
+func (h *SimpleMultiTableHandler) inferTableRelationByNaming(tableA, tableB string) (*tableRelation, error) {
+	columnsA, err := h.getTableColumnNames(tableA)
+	if err != nil {
+		return nil, err
+	}
+	columnsB, err := h.getTableColumnNames(tableB)
+	if err != nil {
+		return nil, err
+	}
+
+	columnSetA := map[string]bool{}
+	for _, col := range columnsA {
+		columnSetA[strings.ToLower(col)] = true
+	}
+	columnSetB := map[string]bool{}
+	for _, col := range columnsB {
+		columnSetB[strings.ToLower(col)] = true
+	}
+
+	singularA := singularizeTableName(tableA)
+	singularB := singularizeTableName(tableB)
+
+	// Convention: child.<parent>_id -> parent.id
+	candidateBToA := singularA + "_id"
+	if columnSetA["id"] && columnSetB[candidateBToA] {
+		return &tableRelation{
+			FKTable:   tableB,
+			FKColumn:  candidateBToA,
+			RefTable:  tableA,
+			RefColumn: "id",
+		}, nil
+	}
+
+	candidateAToB := singularB + "_id"
+	if columnSetB["id"] && columnSetA[candidateAToB] {
+		return &tableRelation{
+			FKTable:   tableA,
+			FKColumn:  candidateAToB,
+			RefTable:  tableB,
+			RefColumn: "id",
+		}, nil
+	}
+
+	// Convention: exact common non-id key (e.g., customer_id exists in both)
+	for _, col := range columnsA {
+		lowerCol := strings.ToLower(col)
+		if lowerCol == "id" {
+			continue
+		}
+		if columnSetB[lowerCol] {
+			return &tableRelation{
+				FKTable:   tableA,
+				FKColumn:  col,
+				RefTable:  tableB,
+				RefColumn: col,
+			}, nil
+		}
+	}
+
+	// Last-resort convention: id=id
+	if columnSetA["id"] && columnSetB["id"] {
+		return &tableRelation{
+			FKTable:   tableA,
+			FKColumn:  "id",
+			RefTable:  tableB,
+			RefColumn: "id",
+		}, nil
+	}
+
+	return nil, fmt.Errorf("no relationship found")
+}
+
+func singularizeTableName(tableName string) string {
+	lower := strings.ToLower(strings.TrimSpace(tableName))
+	if strings.HasSuffix(lower, "ies") && len(lower) > 3 {
+		return lower[:len(lower)-3] + "y"
+	}
+	if strings.HasSuffix(lower, "ses") && len(lower) > 3 {
+		return lower[:len(lower)-2]
+	}
+	if strings.HasSuffix(lower, "s") && len(lower) > 1 {
+		return lower[:len(lower)-1]
+	}
+	return lower
 }

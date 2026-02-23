@@ -31,7 +31,7 @@
 
     <!-- Filters -->
     <div class="bg-white shadow-xl rounded-2xl border border-gray-100 p-6">
-        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
             <div class="space-y-2">
                 <label for="search" class="block text-sm font-bold text-gray-700 flex items-center">
                     <svg class="h-4 w-4 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -57,11 +57,35 @@
                 <select id="category-filter" 
                         class="block w-full px-4 py-3 rounded-xl border-2 border-gray-200 shadow-sm focus:border-green-500 focus:ring-4 focus:ring-green-100 transition-all text-base">
                     <option value="">📂 All Categories</option>
-                    <option value="reports">📊 Reports</option>
-                    <option value="images">🖼️ Images</option>
-                    <option value="videos">🎥 Videos</option>
-                    <option value="pdfs">📄 PDFs</option>
-                    <option value="other">📦 Other</option>
+                </select>
+            </div>
+            <div class="space-y-2">
+                <label for="type-filter" class="block text-sm font-bold text-gray-700 flex items-center">
+                    <svg class="h-4 w-4 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 3h8a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z" />
+                    </svg>
+                    Filter by Type
+                </label>
+                <select id="type-filter"
+                        class="block w-full px-4 py-3 rounded-xl border-2 border-gray-200 shadow-sm focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all text-base">
+                    <option value="">🗂️ All Types</option>
+                    <option value="pdf">📄 pdf</option>
+                    <option value="doc">📝 doc</option>
+                    <option value="docx">📝 docx</option>
+                    <option value="xls">📊 xls</option>
+                    <option value="xlsx">📊 xlsx</option>
+                    <option value="ppt">📽️ ppt</option>
+                    <option value="pptx">📽️ pptx</option>
+                    <option value="csv">📋 csv</option>
+                    <option value="json">🔧 json</option>
+                    <option value="txt">🗒️ txt</option>
+                    <option value="jpg">🖼️ jpg</option>
+                    <option value="jpeg">🖼️ jpeg</option>
+                    <option value="png">🖼️ png</option>
+                    <option value="gif">🎞️ gif</option>
+                    <option value="zip">🗜️ zip</option>
+                    <option value="rar">🗜️ rar</option>
+                    <option value="other">📁 other</option>
                 </select>
             </div>
         </div>
@@ -128,11 +152,33 @@ function getUserRole() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    loadCategoryFilterOptions();
     loadDocuments();
     
     document.getElementById('category-filter').addEventListener('change', loadDocuments);
+    document.getElementById('type-filter').addEventListener('change', loadDocuments);
     document.getElementById('search').addEventListener('keyup', debounce(loadDocuments, 500));
 });
+
+async function loadCategoryFilterOptions() {
+    try {
+        const response = await fetch('http://localhost:8080/document-categories');
+        const result = await response.json();
+        const categories = result.data || [];
+
+        const select = document.getElementById('category-filter');
+        select.innerHTML = '<option value="">📂 All Categories</option>';
+
+        categories.forEach((category) => {
+            const option = document.createElement('option');
+            option.value = category.name;
+            option.textContent = `📁 ${category.name}`;
+            select.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error loading categories:', error);
+    }
+}
 
 function debounce(func, wait) {
     let timeout;
@@ -149,11 +195,15 @@ function debounce(func, wait) {
 async function loadDocuments(page = 1) {
     currentPage = page;
     const category = document.getElementById('category-filter').value;
+    const documentType = document.getElementById('type-filter').value;
     
     let url = `http://localhost:8080/documents?page=${currentPage}&limit=${currentLimit}`;
-    
+
     if (category) {
-        url = `http://localhost:8080/documents/category/${category}?page=${currentPage}&limit=${currentLimit}`;
+        url += `&category=${encodeURIComponent(category)}`;
+    }
+    if (documentType) {
+        url += `&document_type=${encodeURIComponent(documentType)}`;
     }
     
     try {
@@ -207,6 +257,9 @@ function displayDocuments(documents) {
                 </div>
             </div>
             <div class="p-6 space-y-4">
+                <div class="text-xs font-semibold text-purple-700 bg-purple-100 rounded-lg px-3 py-2 inline-block">
+                    Type: ${getDocumentTypeEmoji(doc.document_type)} ${(doc.document_type || 'other').toLowerCase()}
+                </div>
                 <p class="text-sm text-gray-600 line-clamp-2 min-h-[2.5rem]">
                     ${doc.description || '<span class="italic text-gray-400">No description provided</span>'}
                 </p>
@@ -263,6 +316,30 @@ function getFileIcon(fileType) {
         '.mp4': '<svg class="h-6 w-6 text-pink-500" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h6a2 2 0 012 6v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm12.553 1.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"/></svg>',
     };
     return icons[fileType] || '<svg class="h-6 w-6 text-gray-500" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg>';
+}
+
+function getDocumentTypeEmoji(documentType) {
+    const type = (documentType || 'other').toLowerCase();
+    const icons = {
+        pdf: '📄',
+        doc: '📝',
+        docx: '📝',
+        xls: '📊',
+        xlsx: '📊',
+        ppt: '📽️',
+        pptx: '📽️',
+        csv: '📋',
+        json: '🔧',
+        txt: '🗒️',
+        jpg: '🖼️',
+        jpeg: '🖼️',
+        png: '🖼️',
+        gif: '🎞️',
+        zip: '🗜️',
+        rar: '🗜️',
+        other: '📁',
+    };
+    return icons[type] || '📁';
 }
 
 function getCategoryColor(category) {

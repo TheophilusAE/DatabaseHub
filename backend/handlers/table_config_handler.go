@@ -132,10 +132,55 @@ func (h *TableConfigHandler) CreateTableConfig(c *gin.Context) {
 func (h *TableConfigHandler) ListTableConfigs(c *gin.Context) {
 	// ✅ Get user info from auth middleware context (secure)
 	currentUserID, exists := c.Get("user_id")
-	currentUserRole, _ := c.Get("user_role")
+	currentUserRole, roleExists := c.Get("user_role")
+
+	roleStr := ""
+	if roleExists {
+		if role, ok := currentUserRole.(string); ok {
+			roleStr = role
+		}
+	}
+	if roleStr == "" {
+		roleStr = c.Query("user_role")
+	}
+	if roleStr == "" {
+		roleStr = c.GetHeader("X-User-Role")
+	}
+
+	resolvedUserID := uint(0)
+	if exists && currentUserID != nil {
+		switch v := currentUserID.(type) {
+		case uint:
+			resolvedUserID = v
+		case int:
+			if v > 0 {
+				resolvedUserID = uint(v)
+			}
+		case int64:
+			if v > 0 {
+				resolvedUserID = uint(v)
+			}
+		}
+	}
+	if resolvedUserID == 0 {
+		userIDStr := c.Query("user_id")
+		if userIDStr != "" {
+			if uid, err := strconv.ParseUint(userIDStr, 10, 32); err == nil {
+				resolvedUserID = uint(uid)
+			}
+		}
+	}
+	if resolvedUserID == 0 {
+		headerUserID := c.GetHeader("X-User-ID")
+		if headerUserID != "" {
+			if uid, err := strconv.ParseUint(headerUserID, 10, 32); err == nil {
+				resolvedUserID = uint(uid)
+			}
+		}
+	}
 
 	// ✅ Admin always sees ALL configs
-	if currentUserRole == "admin" {
+	if roleStr == "admin" {
 		configs, err := h.tableConfigRepo.FindAll()
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
@@ -153,7 +198,7 @@ func (h *TableConfigHandler) ListTableConfigs(c *gin.Context) {
 	}
 
 	// ✅ For regular users: get ONLY their permitted tables
-	if !exists {
+	if resolvedUserID == 0 {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"success": false,
 			"error":   "Not authenticated",
@@ -162,7 +207,7 @@ func (h *TableConfigHandler) ListTableConfigs(c *gin.Context) {
 	}
 
 	// ✅ GetAccessibleTables returns []TableConfig directly
-	accessibleTables, err := h.permRepo.GetAccessibleTables(currentUserID.(uint))
+	accessibleTables, err := h.permRepo.GetAccessibleTables(resolvedUserID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,

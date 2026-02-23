@@ -2,6 +2,7 @@ package repository
 
 import (
 	"dataImportDashboard/models"
+	"strings"
 
 	"gorm.io/gorm"
 )
@@ -19,18 +20,27 @@ func (r *DocumentRepository) Create(document *models.Document) error {
 	return r.db.Create(document).Error
 }
 
-// FindAll retrieves all documents with pagination
-func (r *DocumentRepository) FindAll(page, limit int) ([]models.Document, int64, error) {
+// FindAll retrieves all documents with pagination and optional filters.
+func (r *DocumentRepository) FindAll(page, limit int, category, documentType string) ([]models.Document, int64, error) {
 	var documents []models.Document
 	var total int64
 
 	offset := (page - 1) * limit
+	query := r.db.Model(&models.Document{})
 
-	if err := r.db.Model(&models.Document{}).Count(&total).Error; err != nil {
+	if strings.TrimSpace(category) != "" {
+		query = query.Where("LOWER(category) = LOWER(?)", strings.TrimSpace(category))
+	}
+
+	if strings.TrimSpace(documentType) != "" {
+		query = query.Where("LOWER(document_type) = LOWER(?)", strings.TrimSpace(documentType))
+	}
+
+	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	if err := r.db.Offset(offset).Limit(limit).Order("created_at desc").Find(&documents).Error; err != nil {
+	if err := query.Offset(offset).Limit(limit).Order("created_at desc").Find(&documents).Error; err != nil {
 		return nil, 0, err
 	}
 

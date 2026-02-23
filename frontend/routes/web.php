@@ -11,6 +11,7 @@ use App\Http\Controllers\ImportController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\DataExchangeController;
+use App\Http\Controllers\DocumentCategoryController;
 
 // Authentication Routes
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -55,6 +56,11 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::prefix('documents')->name('documents.')->group(function () {
         Route::get('/', [DocumentController::class, 'index'])->name('index');
         Route::get('/create', [DocumentController::class, 'create'])->name('create');
+    });
+
+    // Configuration - Document categories (Admin only)
+    Route::prefix('configuration')->name('configuration.')->group(function () {
+        Route::get('/document-categories', [DocumentCategoryController::class, 'index'])->name('document-categories.index');
     });
 
     // Import

@@ -16,6 +16,7 @@ type Document struct {
 	FileType     string         `gorm:"size:100" json:"file_type"`
 	MimeType     string         `gorm:"size:100" json:"mime_type"`
 	Category     string         `gorm:"size:100" json:"category"`
+	DocumentType string         `gorm:"size:100;default:'other'" json:"document_type"`
 	Description  string         `gorm:"type:text" json:"description"`
 	UploadedBy   string         `gorm:"size:100" json:"uploaded_by"`
 	Status       string         `gorm:"size:50;default:'active'" json:"status"`

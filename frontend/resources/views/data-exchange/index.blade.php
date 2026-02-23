@@ -183,11 +183,61 @@
 </div>
 
 <script>
+const USER_ROLE = '{{ session("user")["role"] ?? "user" }}';
+const USER_ID = '{{ session("user")["id"] ?? "" }}';
+
 let allTables = [];
 let tableColumns = {}; // Cache for table columns
 let tableSelectionCounter = 0;
 
+function buildApiUrl(endpoint, params = {}) {
+    const url = new URL(endpoint, 'http://localhost:8080');
+
+    if (USER_ROLE) {
+        url.searchParams.append('user_role', USER_ROLE);
+    }
+    if (USER_ID) {
+        url.searchParams.append('user_id', USER_ID);
+    }
+
+    Object.keys(params).forEach(key => {
+        if (params[key] !== null && params[key] !== undefined && params[key] !== '') {
+            url.searchParams.append(key, params[key]);
+        }
+    });
+
+    return url.toString();
+}
+
+function getAuthHeaders(includeJson = false) {
+    const headers = {};
+
+    if (includeJson) {
+        headers['Content-Type'] = 'application/json';
+    }
+
+    if (USER_ID) {
+        headers['X-User-ID'] = USER_ID;
+    }
+    if (USER_ROLE) {
+        headers['X-User-Role'] = USER_ROLE;
+    }
+
+    const token = localStorage.getItem('token');
+    if (token) {
+        headers['Authorization'] = 'Bearer ' + token;
+    }
+
+    return headers;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    const params = new URLSearchParams(window.location.search);
+    const queryTab = params.get('tab');
+    const hashTab = window.location.hash ? window.location.hash.replace('#', '') : '';
+    const initialTab = (queryTab === 'export' || hashTab === 'export') ? 'export' : 'import';
+
+    switchTab(initialTab);
     loadTables();
     setupFileDropZone();
     setupFormHandlers();
@@ -224,7 +274,9 @@ function switchTab(tab) {
 
 async function loadTables() {
     try {
-        const response = await fetch('http://localhost:8080/simple-multi/tables');
+        const response = await fetch(buildApiUrl('/simple-multi/tables'), {
+            headers: getAuthHeaders()
+        });
         if (!response.ok) throw new Error('Failed to load tables');
         
         const data = await response.json();
@@ -246,7 +298,9 @@ async function loadTableColumns(tableName) {
     }
     
     try {
-        const response = await fetch(`http://localhost:8080/simple-multi/tables/${tableName}/columns`);
+        const response = await fetch(buildApiUrl(`/simple-multi/tables/${encodeURIComponent(tableName)}/columns`), {
+            headers: getAuthHeaders()
+        });
         if (!response.ok) throw new Error('Failed to load columns');
         
         const data = await response.json();
@@ -462,12 +516,10 @@ function setupFormHandlers() {
         progressText.textContent = 'Uploading and processing data...';
         
         try {
-            const response = await fetch('http://localhost:8080/unified/import', {
+            const response = await fetch(buildApiUrl('/unified/import'), {
                 method: 'POST',
                 body: formData,
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token')
-                }
+                headers: getAuthHeaders()
             });
             
             if (!response.ok) throw new Error('Import failed');
@@ -541,12 +593,9 @@ function setupFormHandlers() {
                 format: format
             };
             
-            const response = await fetch('http://localhost:8080/unified/export', {
+            const response = await fetch(buildApiUrl('/unified/export'), {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + localStorage.getItem('token')
-                },
+                headers: getAuthHeaders(true),
                 body: JSON.stringify(requestBody)
             });
             

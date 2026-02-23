@@ -72,6 +72,7 @@ func main() {
 		&models.User{},
 		&models.DataRecord{},
 		&models.Document{},
+		&models.DocumentCategory{},
 		&models.ImportLog{},
 		&models.TableConfig{},
 		&models.TableJoin{},
@@ -106,6 +107,10 @@ func main() {
 	userRepo := repository.NewUserRepository(db)
 	dataRecordRepo := repository.NewDataRecordRepository(db)
 	documentRepo := repository.NewDocumentRepository(db)
+	documentCategoryRepo := repository.NewDocumentCategoryRepository(db)
+	if err := documentCategoryRepo.EnsureDefaults(); err != nil {
+		log.Fatalf("Failed to initialize document categories: %v", err)
+	}
 	importLogRepo := repository.NewImportLogRepository(db)
 	tableConfigRepo := repository.NewTableConfigRepository(db)
 	tableJoinRepo := repository.NewTableJoinRepository(db)
@@ -118,6 +123,7 @@ func main() {
 	userHandler := handlers.NewUserHandler(userRepo)
 	dataRecordHandler := handlers.NewDataRecordHandler(dataRecordRepo)
 	documentHandler := handlers.NewDocumentHandler(documentRepo)
+	documentCategoryHandler := handlers.NewDocumentCategoryHandler(documentCategoryRepo)
 	importHandler := handlers.NewImportHandler(dataRecordRepo, importLogRepo)
 	exportHandler := handlers.NewExportHandler(dataRecordRepo)
 
@@ -148,6 +154,7 @@ func main() {
 	router := routes.NewRouter(
 		dataRecordHandler,
 		documentHandler,
+		documentCategoryHandler,
 		importHandler,
 		exportHandler,
 		authHandler,

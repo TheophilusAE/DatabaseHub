@@ -124,6 +124,32 @@ let allMappings = [];
 let allTables = [];
 let currentTableColumns = [];
 let mappingRowCounter = 0;
+const currentUserId = {{ session('user')['id'] ?? 'null' }};
+const currentUserRole = '{{ session('user')['role'] ?? '' }}';
+
+function buildApiUrl(path, query = {}) {
+    const url = new URL(`${API_BASE_URL}${path}`);
+    if (currentUserId) url.searchParams.set('user_id', String(currentUserId));
+    if (currentUserRole) url.searchParams.set('user_role', currentUserRole);
+    Object.entries(query).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+            url.searchParams.set(key, String(value));
+        }
+    });
+    return url.toString();
+}
+
+function authHeaders(includeJson = false) {
+    const headers = {
+        'Accept': 'application/json',
+        'X-User-ID': currentUserId ? String(currentUserId) : '',
+        'X-User-Role': currentUserRole || ''
+    };
+    if (includeJson) {
+        headers['Content-Type'] = 'application/json';
+    }
+    return headers;
+}
 
 // Load mappings and tables on page load
 document.addEventListener('DOMContentLoaded', function() {
@@ -134,7 +160,9 @@ document.addEventListener('DOMContentLoaded', function() {
 // : Uses API_BASE_URL instead of relative path
 async function loadTables() {
     try {
-        const response = await fetch(`${API_BASE_URL}/tables`);
+        const response = await fetch(buildApiUrl('/tables'), {
+            headers: authHeaders()
+        });
         if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         
         const data = await response.json();
@@ -197,7 +225,9 @@ async function loadTableColumns() {
 // : Uses API_BASE_URL
 async function loadMappings() {
     try {
-        const response = await fetch(`${API_BASE_URL}/multi-import/mappings`);
+        const response = await fetch(buildApiUrl('/multi-import/mappings'), {
+            headers: authHeaders()
+        });
         if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         
         const data = await response.json();
@@ -428,15 +458,13 @@ document.getElementById('mappingForm').addEventListener('submit', async function
     try {
         // : Uses API_BASE_URL
         const url = mappingId 
-            ? `${API_BASE_URL}/multi-import/mappings/${mappingId}` 
-            : `${API_BASE_URL}/multi-import/mappings`;
+            ? buildApiUrl(`/multi-import/mappings/${mappingId}`) 
+            : buildApiUrl('/multi-import/mappings');
         const method = mappingId ? 'PUT' : 'POST';
         
         const response = await fetch(url, {
             method: method,
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: authHeaders(true),
             body: JSON.stringify(mappingData)
         });
         
@@ -462,8 +490,9 @@ async function deleteMapping(id) {
     if (!confirm('Are you sure you want to delete this import mapping?')) return;
     
     try {
-        const response = await fetch(`${API_BASE_URL}/multi-import/mappings/${id}`, {
-            method: 'DELETE'
+        const response = await fetch(buildApiUrl(`/multi-import/mappings/${id}`), {
+            method: 'DELETE',
+            headers: authHeaders()
         });
         
         if (!response.ok) {

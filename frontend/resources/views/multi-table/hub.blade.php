@@ -265,6 +265,24 @@
                             Click to configure
                         </div>
                     </a>
+
+                    <!-- Document Categories -->
+                    <a href="{{ route('admin.configuration.document-categories.index') }}" class="bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl p-6 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 cursor-pointer">
+                        <div class="flex items-center justify-between mb-3">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                            </svg>
+                            <span class="bg-white bg-opacity-30 px-3 py-1 rounded-full text-xs font-bold text-emerald-700">Config</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-1">Document Categories</h3>
+                        <p class="text-emerald-100 text-sm mb-3">Manage custom categories for document uploads</p>
+                        <div class="flex items-center text-xs text-emerald-200">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                            </svg>
+                            Click to configure
+                        </div>
+                    </a>
                 </div>
             </div>
             @endif

@@ -40,16 +40,17 @@ func AuthRequired() gin.HandlerFunc {
 			}
 		}
 
-		// Priority 3: Fallback to header (less secure, but flexible)
-		if headerRole := c.GetHeader("X-User-Role"); headerRole != "" {
-			// Still need user_id though
-			if userIDStr != "" {
-				if uid, err := strconv.ParseUint(userIDStr, 10, 32); err == nil {
-					c.Set("user_id", uint(uid))
+		// Priority 3: Fallback to headers (less secure, but flexible)
+		headerUserID := c.GetHeader("X-User-ID")
+		headerRole := c.GetHeader("X-User-Role")
+		if headerUserID != "" {
+			if uid, err := strconv.ParseUint(headerUserID, 10, 32); err == nil {
+				c.Set("user_id", uint(uid))
+				if headerRole != "" {
 					c.Set("user_role", headerRole)
-					c.Next()
-					return
 				}
+				c.Next()
+				return
 			}
 		}
 

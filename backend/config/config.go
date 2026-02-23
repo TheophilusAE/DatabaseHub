@@ -50,7 +50,7 @@ func LoadConfig() (*Config, error) {
 		DBName:         getEnv("DB_NAME", "data_import_db"),
 		UploadPath:     getEnv("UPLOAD_PATH", "./uploads"),
 		MaxUploadSize:  1099511627776, // 1TB - theoretical max for large document handling
-		AllowedOrigins: getEnv("ALLOWED_ORIGINS", "http://localhost,http://localhost:8000"),
+		AllowedOrigins: getEnv("ALLOWED_ORIGINS", "http://localhost,http://localhost:8000,http://127.0.0.1:8000"),
 		// Performance configurations for handling 1 billion+ rows
 		ImportWorkers:    32,                // Parallel workers for import processing
 		ImportBatchSize:  50000,             // Optimized batch size for massive imports

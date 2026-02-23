@@ -109,10 +109,27 @@ let allTables = [];
 let userPermissions = [];
 let allSelected = false;
 
+function buildPermissionsUrl(path) {
+    const url = new URL(`${apiUrl}/simple-multi/permissions${path}`);
+    if (currentUserId) url.searchParams.set('user_id', String(currentUserId));
+    if (currentUserRole) url.searchParams.set('user_role', currentUserRole);
+    return url.toString();
+}
+
+function authHeaders() {
+    return {
+        'Content-Type': 'application/json',
+        'X-User-ID': currentUserId ? String(currentUserId) : '',
+        'X-User-Role': currentUserRole || ''
+    };
+}
+
 async function loadData() {
     try {
         // ✅ No credentials needed - Go backend returns all tables for admin management
-        const tablesResponse = await fetch(`${apiUrl}/permissions/users/${userId}/tables`);
+        const tablesResponse = await fetch(buildPermissionsUrl(`/users/${userId}/tables`), {
+            headers: authHeaders()
+        });
         
         if (!tablesResponse.ok) {
             throw new Error(`HTTP ${tablesResponse.status}: ${tablesResponse.statusText}`);
@@ -121,7 +138,9 @@ async function loadData() {
         const tablesData = await tablesResponse.json();
         allTables = tablesData.data || [];
 
-        const permResponse = await fetch(`${apiUrl}/permissions/users/${userId}`);
+        const permResponse = await fetch(buildPermissionsUrl(`/users/${userId}`), {
+            headers: authHeaders()
+        });
         
         if (!permResponse.ok) {
             throw new Error(`HTTP ${permResponse.status}: ${permResponse.statusText}`);
@@ -228,12 +247,9 @@ async function savePermissions(event) {
         }
 
         // Delete all existing permissions with admin credentials
-        const revokeResponse = await fetch(`${apiUrl}/permissions/users/${userId}/all?user_role=${encodeURIComponent(currentUserRole)}`, {
+        const revokeResponse = await fetch(buildPermissionsUrl(`/users/${userId}/all`), {
             method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-User-Role': currentUserRole
-            }
+            headers: authHeaders()
         });
         if (!revokeResponse.ok) {
             throw new Error(`Failed to clear old permissions: HTTP ${revokeResponse.status}`);
@@ -241,12 +257,9 @@ async function savePermissions(event) {
 
         // Assign new permissions with admin credentials
         if (selectedTableIds.length > 0) {
-            const assignResponse = await fetch(`${apiUrl}/permissions/bulk-assign?user_role=${encodeURIComponent(currentUserRole)}`, {
+            const assignResponse = await fetch(buildPermissionsUrl('/bulk-assign'), {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-User-Role': currentUserRole
-                },
+                headers: authHeaders(),
                 body: JSON.stringify({
                     user_id: userId,
                     table_config_ids: selectedTableIds,

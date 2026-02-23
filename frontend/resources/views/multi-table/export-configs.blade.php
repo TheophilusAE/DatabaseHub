@@ -182,6 +182,32 @@ const API_BASE = 'http://localhost:8080'; // Change this to your Go backend port
 let allConfigs = [];
 let allTables = [];
 let allJoins = [];
+const currentUserId = {{ session('user')['id'] ?? 'null' }};
+const currentUserRole = '{{ session('user')['role'] ?? '' }}';
+
+function buildApiUrl(path, query = {}) {
+    const url = new URL(`${API_BASE}${path}`);
+    if (currentUserId) url.searchParams.set('user_id', String(currentUserId));
+    if (currentUserRole) url.searchParams.set('user_role', currentUserRole);
+    Object.entries(query).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+            url.searchParams.set(key, String(value));
+        }
+    });
+    return url.toString();
+}
+
+function authHeaders(includeJson = false) {
+    const headers = {
+        'Accept': 'application/json',
+        'X-User-ID': currentUserId ? String(currentUserId) : '',
+        'X-User-Role': currentUserRole || ''
+    };
+    if (includeJson) {
+        headers['Content-Type'] = 'application/json';
+    }
+    return headers;
+}
 
 // Load data on page load
 document.addEventListener('DOMContentLoaded', function() {
@@ -193,7 +219,9 @@ document.addEventListener('DOMContentLoaded', function() {
 // 🔁 FIXED: Load tables from your Go route /tables
 async function loadTables() {
     try {
-        const response = await fetch(`${API_BASE}/tables`);
+        const response = await fetch(buildApiUrl('/tables'), {
+            headers: authHeaders()
+        });
         if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         
         const data = await response.json();
@@ -209,7 +237,9 @@ async function loadTables() {
 // 🔁 FIXED: Load joins from your Go route /joins
 async function loadJoins() {
     try {
-        const response = await fetch(`${API_BASE}/joins`);
+        const response = await fetch(buildApiUrl('/joins'), {
+            headers: authHeaders()
+        });
         if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         
         const data = await response.json();
@@ -224,7 +254,9 @@ async function loadJoins() {
 // 🔁 FIXED: Load configs from your Go route /multi-export/configs
 async function loadConfigs() {
     try {
-        const response = await fetch(`${API_BASE}/multi-export/configs`);
+        const response = await fetch(buildApiUrl('/multi-export/configs'), {
+            headers: authHeaders()
+        });
         if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         
         const data = await response.json();
@@ -463,18 +495,14 @@ document.getElementById('configForm').addEventListener('submit', async function(
     try {
         // ✅ Use your Go routes: /multi-export/configs
         const url = configId 
-            ? `${API_BASE}/multi-export/configs/${configId}`  // PUT for update
-            : `${API_BASE}/multi-export/configs`;              // POST for create
+            ? buildApiUrl(`/multi-export/configs/${configId}`)  // PUT for update
+            : buildApiUrl('/multi-export/configs');              // POST for create
         
         const method = configId ? 'PUT' : 'POST';
         
         const response = await fetch(url, {
             method: method,
-            headers: { 
-                'Content-Type': 'application/json',
-                // 🍪 Uncomment if your Go backend requires auth:
-                // 'Authorization': 'Bearer ' + localStorage.getItem('token')
-            },
+            headers: authHeaders(true),
             body: JSON.stringify(configData)
         });
         
@@ -504,13 +532,9 @@ async function deleteConfig(id) {
     
     try {
         // ✅ Use your Go route: DELETE /multi-export/configs/:id
-        const response = await fetch(`${API_BASE}/multi-export/configs/${id}`, {
+        const response = await fetch(buildApiUrl(`/multi-export/configs/${id}`), {
             method: 'DELETE',
-            headers: { 
-                'Content-Type': 'application/json'
-                // 🍪 Uncomment if auth required:
-                // 'Authorization': 'Bearer ' + localStorage.getItem('token')
-            }
+            headers: authHeaders(true)
         });
         
         if (!response.ok) {
