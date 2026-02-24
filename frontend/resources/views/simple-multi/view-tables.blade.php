@@ -64,7 +64,14 @@
                             <option value="250">250</option>
                         </select>
                     </div>
-                    <div class="flex items-center space-x-3">
+                    <div class="flex flex-wrap items-center gap-3">
+                        <div class="relative">
+                            <input id="tableSearchInput" type="text" oninput="handleTableSearchInput()" placeholder="Search rows..."
+                                   class="w-56 sm:w-72 px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-medium" />
+                        </div>
+                        <button onclick="clearTableSearch()" id="clearSearchBtn" class="px-3 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-all hidden">
+                            Clear
+                        </button>
                         <span id="pageInfo" class="text-sm font-semibold text-gray-700"></span>
                         <button onclick="previousPage()" id="prevBtn" class="px-5 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transform hover:scale-105 transition-all">
                             Previous
@@ -138,9 +145,12 @@ let totalPages = 1;
 let totalCount = 0;
 let currentColumns = [];
 let currentRows = [];
+let displayedRows = [];
 let primaryKeyColumn = '';
 let selectedRowData = null;
 let editorMode = 'create';
+let tableSearchQuery = '';
+let searchDebounceTimer = null;
 
 // ✅ FIXED: Point to Go backend API
 const API_URL = 'http://localhost:8080';
@@ -247,6 +257,14 @@ async function viewTable(tableName) {
     currentTable = tableName;
     currentPage = 1;
     selectedRowData = null;
+    tableSearchQuery = '';
+    displayedRows = [];
+
+    const searchInput = document.getElementById('tableSearchInput');
+    if (searchInput) {
+        searchInput.value = '';
+    }
+    updateSearchUi();
     
     document.getElementById('currentTableName').textContent = tableName;
     document.getElementById('tableDataViewer').classList.remove('hidden');
@@ -281,6 +299,9 @@ async function loadTableColumns() {
 async function loadTableData() {
     try {
         let dataUrl = `${API_URL}/simple-multi/tables/${currentTable}?page=${currentPage}&page_size=${pageSize}`;
+        if (tableSearchQuery) {
+            dataUrl += `&search=${encodeURIComponent(tableSearchQuery)}`;
+        }
         if (userId && userRole && userRole !== 'admin') {
             dataUrl += `&user_id=${encodeURIComponent(userId)}&user_role=${encodeURIComponent(userRole)}`;
         }
@@ -313,24 +334,26 @@ async function loadTableData() {
 function renderTableData(data) {
     const headersRow = document.getElementById('tableHeaders');
     const tbody = document.getElementById('tableBody');
+    const filteredData = applyClientSideFilter(data || []);
+    displayedRows = filteredData;
     
-    if (!data || data.length === 0) {
+    if (!filteredData || filteredData.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td class="px-6 py-4 text-center text-gray-500" colspan="100">No data found</td>
+                <td class="px-6 py-4 text-center text-gray-500" colspan="100">${tableSearchQuery ? 'No matching rows found' : 'No data found'}</td>
             </tr>
         `;
         headersRow.innerHTML = isAdminUser() ? '<th class="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300">Select</th>' : '';
         return;
     }
     
-    const columns = currentColumns.length ? currentColumns.map(col => col.name) : Object.keys(data[0]);
+    const columns = currentColumns.length ? currentColumns.map(col => col.name) : Object.keys(filteredData[0]);
     const selectHeader = isAdminUser() ? '<th class="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300">Select</th>' : '';
     headersRow.innerHTML = selectHeader + columns.map(col => `
         <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300">${col}</th>
     `).join('');
     
-    tbody.innerHTML = data.map((row, idx) => `
+    tbody.innerHTML = filteredData.map((row, idx) => `
         <tr class="${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition-colors">
             ${isAdminUser() ? `<td class="px-4 py-4 text-sm text-gray-900"><input type="radio" name="selectedRow" onclick="selectRow(${idx})" ${selectedRowData === row ? 'checked' : ''}></td>` : ''}
             ${columns.map(col => {
@@ -352,8 +375,63 @@ function renderTableData(data) {
 }
 
 function selectRow(index) {
-    selectedRowData = currentRows[index] || null;
+    selectedRowData = displayedRows[index] || null;
     updateSelectedRowInfo();
+}
+
+function applyClientSideFilter(rows) {
+    if (!tableSearchQuery) {
+        return rows;
+    }
+
+    const searchTerm = tableSearchQuery.toLowerCase();
+    const columns = currentColumns.length ? currentColumns.map(col => col.name) : (rows[0] ? Object.keys(rows[0]) : []);
+
+    return rows.filter(row => columns.some(col => {
+        const value = row[col];
+        if (value === null || value === undefined) return false;
+        if (typeof value === 'object') {
+            return JSON.stringify(value).toLowerCase().includes(searchTerm);
+        }
+        return String(value).toLowerCase().includes(searchTerm);
+    }));
+}
+
+function updateSearchUi() {
+    const clearBtn = document.getElementById('clearSearchBtn');
+    if (clearBtn) {
+        clearBtn.classList.toggle('hidden', !tableSearchQuery);
+    }
+}
+
+function handleTableSearchInput() {
+    const input = document.getElementById('tableSearchInput');
+    tableSearchQuery = (input?.value || '').trim();
+    currentPage = 1;
+    selectedRowData = null;
+    updateSelectedRowInfo();
+    updateSearchUi();
+
+    if (searchDebounceTimer) {
+        clearTimeout(searchDebounceTimer);
+    }
+
+    searchDebounceTimer = setTimeout(() => {
+        loadTableData();
+    }, 300);
+}
+
+function clearTableSearch() {
+    tableSearchQuery = '';
+    const input = document.getElementById('tableSearchInput');
+    if (input) {
+        input.value = '';
+    }
+    currentPage = 1;
+    selectedRowData = null;
+    updateSelectedRowInfo();
+    updateSearchUi();
+    loadTableData();
 }
 
 function updateSelectedRowInfo() {
@@ -583,8 +661,16 @@ function closeTableViewer() {
     currentTable = '';
     currentColumns = [];
     currentRows = [];
+    displayedRows = [];
     primaryKeyColumn = '';
     selectedRowData = null;
+    tableSearchQuery = '';
+
+    const input = document.getElementById('tableSearchInput');
+    if (input) {
+        input.value = '';
+    }
+    updateSearchUi();
 }
 
 function showAlert(message, type) {

@@ -32,11 +32,11 @@
             Quick Actions
         </h2>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <a href="{{ route('admin.data-records.create') }}" class="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200 rounded-xl p-4 hover:shadow-lg transition-all text-center group">
-                <svg class="h-8 w-8 text-green-700 mx-auto mb-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <a href="{{ route('admin.simple-multi.view-tables') }}" class="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200 rounded-2xl px-4 py-6 hover:shadow-lg transition-all text-center group flex flex-col items-center justify-center min-h-[120px]">
+                <svg class="h-10 w-10 text-green-700 mb-3 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
-                <p class="text-sm font-bold text-green-900">Create Record</p>
+                <p class="text-lg font-bold text-green-900 leading-none">Create Record</p>
             </a>
             <a href="{{ route('admin.documents.create') }}" class="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-xl p-4 hover:shadow-lg transition-all text-center group">
                 <svg class="h-8 w-8 text-blue-700 mx-auto mb-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">

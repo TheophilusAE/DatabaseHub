@@ -54,7 +54,7 @@
                             </label>
                             <p class="pl-2 text-lg">or drag and drop</p>
                         </div>
-                        <p class="text-sm text-gray-500 font-semibold">📄 Any file type • Maximum 10MB</p>
+                        <p class="text-sm text-gray-500 font-semibold">📄 Any file type • Maximum 10GB</p>
                         <div id="selected-file" class="mt-4"></div>
                     </div>
                 </div>
@@ -73,34 +73,12 @@
                 </select>
                 <div id="admin-category-controls" class="hidden mt-2">
                     <div class="flex gap-2">
-                        <input type="text" id="new-category-name" placeholder="New category name"
+                        <input type="text" id="new-category-name" placeholder="Only Admin Can Create Categories"
                                class="flex-1 px-4 py-2 rounded-xl border-2 border-gray-200 shadow-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all text-sm">
                         <button type="button" onclick="createCategory()"
                                 class="px-4 py-2 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-blue-700 to-green-600 hover:from-blue-800 hover:to-green-700 transition-all">
                             Add Category
                         </button>
-                    </div>
-                    <p class="text-xs text-gray-500 mt-1 ml-1">Admin only: add custom categories for all users</p>
-
-                    <div class="mt-3 p-3 rounded-xl border border-gray-200 bg-gray-50 space-y-2">
-                        <p class="text-xs font-semibold text-gray-700">Manage existing categories</p>
-                        <select id="manage-category-select"
-                                class="block w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
-                            <option value="">Select category to edit/delete</option>
-                        </select>
-                        <div class="flex gap-2">
-                            <input type="text" id="rename-category-name" placeholder="Rename selected category"
-                                   class="flex-1 px-3 py-2 rounded-lg border border-gray-300 bg-white text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
-                            <button type="button" onclick="renameCategory()"
-                                    class="px-4 py-2 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 transition-all">
-                                Rename
-                            </button>
-                            <button type="button" onclick="deleteCategory()"
-                                    class="px-4 py-2 rounded-lg text-xs font-bold text-white bg-red-600 hover:bg-red-700 transition-all">
-                                Delete
-                            </button>
-                        </div>
-                        <p class="text-xs text-gray-500">Deleting a category moves existing documents to “Other”.</p>
                     </div>
                 </div>
             </div>
@@ -213,7 +191,7 @@
                         </li>
                         <li class="flex items-start">
                             <span class="text-blue-600 font-bold mr-2">✓</span>
-                            <span><strong>Maximum file size:</strong> 10MB per upload</span>
+                            <span><strong>Maximum file size:</strong> 10GB per upload</span>
                         </li>
                         <li class="flex items-start">
                             <span class="text-blue-600 font-bold mr-2">✓</span>
@@ -251,25 +229,13 @@ async function loadCategories(selectedValue = '') {
         const categories = result.data || [];
 
         const categorySelect = document.getElementById('category');
-        const manageSelect = document.getElementById('manage-category-select');
         categorySelect.innerHTML = '<option value="">📂 Select a category</option>';
-        if (manageSelect) {
-            manageSelect.innerHTML = '<option value="">Select category to edit/delete</option>';
-        }
 
         categories.forEach((category) => {
             const option = document.createElement('option');
             option.value = category.name;
             option.textContent = `📁 ${category.name}`;
             categorySelect.appendChild(option);
-
-            if (manageSelect) {
-                const manageOption = document.createElement('option');
-                manageOption.value = category.id;
-                manageOption.textContent = category.name;
-                manageOption.dataset.name = category.name;
-                manageSelect.appendChild(manageOption);
-            }
         });
 
         if (selectedValue) {
@@ -280,11 +246,6 @@ async function loadCategories(selectedValue = '') {
         showAlert('Unable to load categories', 'error');
     }
 }
-
-document.getElementById('manage-category-select')?.addEventListener('change', function() {
-    const selectedOption = this.options[this.selectedIndex];
-    document.getElementById('rename-category-name').value = selectedOption?.dataset?.name || '';
-});
 
 async function createCategory() {
     const input = document.getElementById('new-category-name');
@@ -318,85 +279,6 @@ async function createCategory() {
     } catch (error) {
         console.error('Error creating category:', error);
         showAlert('Unable to create category', 'error');
-    }
-}
-
-async function renameCategory() {
-    const select = document.getElementById('manage-category-select');
-    const categoryId = select.value;
-    const newName = document.getElementById('rename-category-name').value.trim();
-
-    if (!categoryId) {
-        showAlert('Select a category to rename', 'error');
-        return;
-    }
-    if (!newName) {
-        showAlert('Enter the new category name', 'error');
-        return;
-    }
-
-    try {
-        const response = await fetch(`http://localhost:8080/document-categories/${categoryId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-User-Role': userRole,
-            },
-            body: JSON.stringify({ name: newName }),
-        });
-
-        const result = await response.json();
-        if (!response.ok) {
-            showAlert(result.error || 'Failed to rename category', 'error');
-            return;
-        }
-
-        showAlert('Category renamed successfully', 'success');
-        await loadCategories(result.category?.name || '');
-        select.value = String(result.category?.id || categoryId);
-    } catch (error) {
-        console.error('Error renaming category:', error);
-        showAlert('Unable to rename category', 'error');
-    }
-}
-
-async function deleteCategory() {
-    const select = document.getElementById('manage-category-select');
-    const categoryId = select.value;
-    const selectedOption = select.options[select.selectedIndex];
-    const categoryName = selectedOption?.dataset?.name || '';
-
-    if (!categoryId) {
-        showAlert('Select a category to delete', 'error');
-        return;
-    }
-
-    if (!confirm(`Delete category "${categoryName}"? Documents in this category will be moved to "Other".`)) {
-        return;
-    }
-
-    try {
-        const response = await fetch(`http://localhost:8080/document-categories/${categoryId}`, {
-            method: 'DELETE',
-            headers: {
-                'Accept': 'application/json',
-                'X-User-Role': userRole,
-            },
-        });
-
-        const result = await response.json();
-        if (!response.ok) {
-            showAlert(result.error || 'Failed to delete category', 'error');
-            return;
-        }
-
-        showAlert(`Category deleted. ${result.reassigned_documents || 0} documents moved to Other.`, 'success');
-        document.getElementById('rename-category-name').value = '';
-        await loadCategories('Other');
-    } catch (error) {
-        console.error('Error deleting category:', error);
-        showAlert('Unable to delete category', 'error');
     }
 }
 
@@ -598,6 +480,14 @@ function showAlert(message, type) {
 
 // Drag and drop support
 const dropZone = document.getElementById('drop-zone');
+const fileUploadInput = document.getElementById('file-upload');
+
+dropZone.addEventListener('click', (e) => {
+    if (e.target.closest('button') || e.target.closest('label[for="file-upload"]')) {
+        return;
+    }
+    fileUploadInput.click();
+});
 
 dropZone.addEventListener('dragover', (e) => {
     e.preventDefault();

@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 # YOUR EXACT FILE PATH
-FILE_PATH = r"D:\DataImportDashboard\stress_tests\test_10gb.pdf"
+FILE_PATH = r"D:\DataImportDashboard\stress_tests\sample_10gb.pdf"
 API_URL = "http://localhost:8080/documents"
 CHUNK_SIZE = 8 * 1024 * 1024  # 8 MB chunks (memory-safe)
 

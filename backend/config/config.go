@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
@@ -49,7 +50,7 @@ func LoadConfig() (*Config, error) {
 		DBPassword:     getEnv("DB_PASSWORD", ""),
 		DBName:         getEnv("DB_NAME", "data_import_db"),
 		UploadPath:     getEnv("UPLOAD_PATH", "./uploads"),
-		MaxUploadSize:  1099511627776, // 1TB - theoretical max for large document handling
+		MaxUploadSize:  getEnvAsInt64("MAX_UPLOAD_SIZE", 10*1024*1024*1024), // 10GB default
 		AllowedOrigins: getEnv("ALLOWED_ORIGINS", "http://localhost,http://localhost:8000,http://127.0.0.1:8000"),
 		// Performance configurations for handling 1 billion+ rows
 		ImportWorkers:    32,                // Parallel workers for import processing
@@ -84,4 +85,19 @@ func getEnv(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
+}
+
+func getEnvAsInt64(key string, defaultValue int64) int64 {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+
+	parsedValue, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		log.Printf("Invalid value for %s: %s. Using default: %d", key, value, defaultValue)
+		return defaultValue
+	}
+
+	return parsedValue
 }
