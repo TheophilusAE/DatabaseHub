@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"bufio"
 	"dataImportDashboard/config"
 	"dataImportDashboard/models"
 	"dataImportDashboard/repository"
@@ -61,7 +60,7 @@ func (h *DocumentHandler) Upload(c *gin.Context) {
 	filename := fmt.Sprintf("%s_%s%s", timestamp, strconv.FormatInt(time.Now().UnixNano(), 36), ext)
 	filePath := filepath.Join(uploadPath, filename)
 
-	// Save file to disk with chunked buffered writing for large files
+	// Save file to disk using optimized buffered copy
 	out, err := os.Create(filePath)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create file"})
@@ -69,46 +68,16 @@ func (h *DocumentHandler) Upload(c *gin.Context) {
 	}
 	defer out.Close()
 
-	// Use buffered writer for better performance with large files
-	bufWriter := bufio.NewWriterSize(out, config.AppConfig.StreamBufferSize)
-	defer bufWriter.Flush()
-
-	// Stream file in chunks to handle massive files without loading into memory
-	chunkSize := config.AppConfig.ChunkSizeBytes
-	buffer := make([]byte, chunkSize)
-	totalWritten := int64(0)
-
-	for {
-		n, err := file.Read(buffer)
-		if err != nil && err != io.EOF {
-			os.Remove(filePath) // Clean up on error
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read uploaded file"})
-			return
-		}
-
-		if n == 0 {
-			break
-		}
-
-		written, err := bufWriter.Write(buffer[:n])
-		if err != nil {
-			os.Remove(filePath) // Clean up on error
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to write file"})
-			return
-		}
-
-		totalWritten += int64(written)
-
-		// Flush periodically for very large files
-		if totalWritten%(chunkSize*10) == 0 {
-			bufWriter.Flush()
-		}
+	bufferSize := config.AppConfig.StreamBufferSize
+	if bufferSize <= 0 {
+		bufferSize = 1024 * 1024
 	}
 
-	// Final flush
-	if err := bufWriter.Flush(); err != nil {
+	buffer := make([]byte, bufferSize)
+	totalWritten, err := io.CopyBuffer(out, file, buffer)
+	if err != nil {
 		os.Remove(filePath) // Clean up on error
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to finalize file"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to write file"})
 		return
 	}
 
@@ -190,46 +159,12 @@ func (h *DocumentHandler) Download(c *gin.Context) {
 		return
 	}
 
-	// Open file for reading
-	file, err := os.Open(document.FilePath)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open file"})
-		return
-	}
-	defer file.Close()
-
-	// Set headers for chunked file download
+	// Set headers and use optimized file attachment streaming
 	c.Header("Content-Description", "File Transfer")
 	c.Header("Content-Transfer-Encoding", "binary")
-	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", document.OriginalName))
 	c.Header("Content-Type", document.MimeType)
 	c.Header("Content-Length", strconv.FormatInt(fileInfo.Size(), 10))
-
-	// Stream file in chunks for large files
-	bufReader := bufio.NewReaderSize(file, config.AppConfig.StreamBufferSize)
-	buffer := make([]byte, config.AppConfig.ChunkSizeBytes)
-
-	for {
-		n, err := bufReader.Read(buffer)
-		if err != nil && err != io.EOF {
-			fmt.Printf("Error reading file: %v\n", err)
-			return
-		}
-
-		if n == 0 {
-			break
-		}
-
-		if _, err := c.Writer.Write(buffer[:n]); err != nil {
-			fmt.Printf("Error writing response: %v\n", err)
-			return
-		}
-
-		// Flush periodically for large files
-		if flusher, ok := c.Writer.(http.Flusher); ok {
-			flusher.Flush()
-		}
-	}
+	c.FileAttachment(document.FilePath, document.OriginalName)
 }
 
 // GetAll retrieves all documents with pagination

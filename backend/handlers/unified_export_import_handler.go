@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"dataImportDashboard/config"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -88,30 +90,7 @@ func (h *UnifiedExportImportHandler) exportSingleTable(c *gin.Context, tableReq 
 	defer rows.Close()
 
 	columnNames, _ := rows.Columns()
-	var data []map[string]interface{}
-
-	for rows.Next() {
-		columnValues := make([]interface{}, len(columnNames))
-		columnPointers := make([]interface{}, len(columnNames))
-		for i := range columnValues {
-			columnPointers[i] = &columnValues[i]
-		}
-
-		rows.Scan(columnPointers...)
-
-		row := make(map[string]interface{})
-		for i, colName := range columnNames {
-			val := columnValues[i]
-			if b, ok := val.([]byte); ok {
-				row[colName] = string(b)
-			} else {
-				row[colName] = val
-			}
-		}
-		data = append(data, row)
-	}
-
-	h.exportData(c, data, columnNames, format)
+	h.streamExportFromRows(c, rows, columnNames, format)
 }
 
 // exportJoinedTables exports data by joining multiple tables
@@ -138,31 +117,7 @@ func (h *UnifiedExportImportHandler) exportJoinedTables(c *gin.Context, tables [
 	}
 	defer rows.Close()
 
-	columnNames, _ := rows.Columns()
-	var data []map[string]interface{}
-
-	for rows.Next() {
-		columnValues := make([]interface{}, len(columnNames))
-		columnPointers := make([]interface{}, len(columnNames))
-		for i := range columnValues {
-			columnPointers[i] = &columnValues[i]
-		}
-
-		rows.Scan(columnPointers...)
-
-		row := make(map[string]interface{})
-		for i, colName := range columnNames {
-			val := columnValues[i]
-			if b, ok := val.([]byte); ok {
-				row[colName] = string(b)
-			} else {
-				row[colName] = val
-			}
-		}
-		data = append(data, row)
-	}
-
-	h.exportData(c, data, selectedColumns, format)
+	h.streamExportFromRows(c, rows, selectedColumns, format)
 }
 
 // detectJoinConditions finds relationships between tables
@@ -418,39 +373,112 @@ func (h *UnifiedExportImportHandler) buildJoinQuery(tables []struct {
 	return query, selectedColNames
 }
 
-// exportData exports the data in the specified format
-func (h *UnifiedExportImportHandler) exportData(c *gin.Context, data []map[string]interface{}, columnNames []string, format string) {
-	if format == "json" {
+func (h *UnifiedExportImportHandler) streamExportFromRows(c *gin.Context, rows ioCloserRows, columnNames []string, format string) {
+	if strings.EqualFold(format, "json") {
 		c.Header("Content-Type", "application/json")
 		c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=unified_export_%s.json", time.Now().Format("20060102_150405")))
-		c.JSON(http.StatusOK, gin.H{
-			"data":  data,
-			"count": len(data),
-		})
-	} else {
-		// CSV export - single unified table
-		c.Header("Content-Type", "text/csv")
-		c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=unified_export_%s.csv", time.Now().Format("20060102_150405")))
+		c.Header("Transfer-Encoding", "chunked")
 
-		writer := csv.NewWriter(c.Writer)
-		defer writer.Flush()
+		_, _ = c.Writer.Write([]byte(`{"data":[`))
+		rowsWritten := 0
+		encoder := json.NewEncoder(c.Writer)
 
-		// Write header row
-		writer.Write(columnNames)
+		for rows.Next() {
+			rowMap, err := scanRowToMap(rows, columnNames)
+			if err != nil {
+				continue
+			}
 
-		// Write data rows
-		for _, row := range data {
-			var values []string
-			for _, colName := range columnNames {
-				if val, exists := row[colName]; exists && val != nil {
-					values = append(values, fmt.Sprintf("%v", val))
-				} else {
-					values = append(values, "")
+			if rowsWritten > 0 {
+				_, _ = c.Writer.Write([]byte(","))
+			}
+
+			if err := encoder.Encode(rowMap); err != nil {
+				continue
+			}
+			rowsWritten++
+
+			if rowsWritten%5000 == 0 {
+				if f, ok := c.Writer.(http.Flusher); ok {
+					f.Flush()
 				}
 			}
-			writer.Write(values)
+		}
+
+		_, _ = c.Writer.Write([]byte(fmt.Sprintf(`],"count":%d}`, rowsWritten)))
+		if f, ok := c.Writer.(http.Flusher); ok {
+			f.Flush()
+		}
+		return
+	}
+
+	c.Header("Content-Type", "text/csv")
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=unified_export_%s.csv", time.Now().Format("20060102_150405")))
+	c.Header("Transfer-Encoding", "chunked")
+
+	writer := csv.NewWriter(c.Writer)
+	defer writer.Flush()
+
+	if err := writer.Write(columnNames); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to write CSV header"})
+		return
+	}
+
+	rowsWritten := 0
+	for rows.Next() {
+		rowMap, err := scanRowToMap(rows, columnNames)
+		if err != nil {
+			continue
+		}
+
+		values := make([]string, len(columnNames))
+		for i, colName := range columnNames {
+			if val, exists := rowMap[colName]; exists && val != nil {
+				values[i] = fmt.Sprintf("%v", val)
+			}
+		}
+
+		if err := writer.Write(values); err != nil {
+			continue
+		}
+		rowsWritten++
+
+		if rowsWritten%5000 == 0 {
+			writer.Flush()
+			if f, ok := c.Writer.(http.Flusher); ok {
+				f.Flush()
+			}
 		}
 	}
+}
+
+type ioCloserRows interface {
+	Next() bool
+	Scan(dest ...interface{}) error
+}
+
+func scanRowToMap(rows ioCloserRows, columnNames []string) (map[string]interface{}, error) {
+	columnValues := make([]interface{}, len(columnNames))
+	columnPointers := make([]interface{}, len(columnNames))
+	for i := range columnValues {
+		columnPointers[i] = &columnValues[i]
+	}
+
+	if err := rows.Scan(columnPointers...); err != nil {
+		return nil, err
+	}
+
+	row := make(map[string]interface{}, len(columnNames))
+	for i, colName := range columnNames {
+		val := columnValues[i]
+		if b, ok := val.([]byte); ok {
+			row[colName] = string(b)
+		} else {
+			row[colName] = val
+		}
+	}
+
+	return row, nil
 }
 
 // SimpleExport provides a simple one-click export of selected tables
@@ -555,6 +583,10 @@ func (h *UnifiedExportImportHandler) importToTable(file io.Reader, tableName str
 
 // importCSVToTable imports CSV data to a table
 func (h *UnifiedExportImportHandler) importCSVToTable(file io.Reader, tableName string) (int, int, error) {
+	if !isValidIdentifier(tableName) {
+		return 0, 0, fmt.Errorf("invalid table name")
+	}
+
 	reader := csv.NewReader(file)
 	reader.LazyQuotes = true
 	reader.TrimLeadingSpace = true
@@ -568,9 +600,35 @@ func (h *UnifiedExportImportHandler) importCSVToTable(file io.Reader, tableName 
 	successCount := 0
 	failureCount := 0
 
-	// Read and insert rows in batches
-	batch := []map[string]interface{}{}
-	batchSize := 100
+	columns := make([]string, 0, len(headers))
+	for _, header := range headers {
+		column := strings.TrimSpace(header)
+		if column == "" || !isValidIdentifier(column) {
+			continue
+		}
+		columns = append(columns, column)
+	}
+	if len(columns) == 0 {
+		return 0, 0, fmt.Errorf("no valid CSV columns found")
+	}
+
+	columnIndex := make(map[string]int, len(headers))
+	for i, header := range headers {
+		columnIndex[strings.TrimSpace(header)] = i
+	}
+
+	batchRows := make([][]interface{}, 0, getOptimizedBatchSize())
+	batchSize := getOptimizedBatchSize()
+
+	flushBatch := func() {
+		if len(batchRows) == 0 {
+			return
+		}
+		success, failures := h.insertBatch(tableName, columns, batchRows)
+		successCount += success
+		failureCount += failures
+		batchRows = batchRows[:0]
+	}
 
 	for {
 		record, err := reader.Read()
@@ -582,92 +640,153 @@ func (h *UnifiedExportImportHandler) importCSVToTable(file io.Reader, tableName 
 			continue
 		}
 
-		// Create a map of column -> value
-		rowData := make(map[string]interface{})
-		for i, header := range headers {
-			if i < len(record) {
-				// Skip empty values
-				if record[i] != "" {
-					rowData[header] = record[i]
+		values := make([]interface{}, len(columns))
+		for i, column := range columns {
+			idx := columnIndex[column]
+			if idx < len(record) {
+				cell := strings.TrimSpace(record[idx])
+				if cell == "" {
+					values[i] = nil
+				} else {
+					values[i] = cell
 				}
+			} else {
+				values[i] = nil
 			}
 		}
 
-		batch = append(batch, rowData)
-
-		// Insert batch when it reaches batch size
-		if len(batch) >= batchSize {
-			success, failures := h.insertBatch(tableName, batch)
-			successCount += success
-			failureCount += failures
-			batch = []map[string]interface{}{}
+		batchRows = append(batchRows, values)
+		if len(batchRows) >= batchSize {
+			flushBatch()
 		}
 	}
 
-	// Insert remaining batch
-	if len(batch) > 0 {
-		success, failures := h.insertBatch(tableName, batch)
-		successCount += success
-		failureCount += failures
-	}
+	flushBatch()
 
 	return successCount, failureCount, nil
 }
 
 // importJSONToTable imports JSON data to a table
 func (h *UnifiedExportImportHandler) importJSONToTable(file io.Reader, tableName string) (int, int, error) {
-	var data []map[string]interface{}
-
-	decoder := json.NewDecoder(file)
-	if err := decoder.Decode(&data); err != nil {
-		return 0, 0, fmt.Errorf("failed to decode JSON: %w", err)
+	if !isValidIdentifier(tableName) {
+		return 0, 0, fmt.Errorf("invalid table name")
 	}
 
-	// Insert in batches
+	decoder := json.NewDecoder(file)
+	t, err := decoder.Token()
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to decode JSON: %w", err)
+	}
+	if delim, ok := t.(json.Delim); !ok || delim != '[' {
+		return 0, 0, fmt.Errorf("json must be an array")
+	}
+
 	successCount := 0
 	failureCount := 0
-	batchSize := 100
+	batchSize := getOptimizedBatchSize()
+	batchRows := make([][]interface{}, 0, batchSize)
+	columns := make([]string, 0)
 
-	for i := 0; i < len(data); i += batchSize {
-		end := i + batchSize
-		if end > len(data) {
-			end = len(data)
+	flushBatch := func() {
+		if len(batchRows) == 0 || len(columns) == 0 {
+			return
 		}
-
-		batch := data[i:end]
-		success, failures := h.insertBatch(tableName, batch)
+		success, failures := h.insertBatch(tableName, columns, batchRows)
 		successCount += success
 		failureCount += failures
+		batchRows = batchRows[:0]
+	}
+
+	for decoder.More() {
+		var rowData map[string]interface{}
+		if err := decoder.Decode(&rowData); err != nil {
+			failureCount++
+			continue
+		}
+
+		if len(rowData) == 0 {
+			failureCount++
+			continue
+		}
+
+		if len(columns) == 0 {
+			for column := range rowData {
+				if isValidIdentifier(column) {
+					columns = append(columns, column)
+				}
+			}
+			sort.Strings(columns)
+			if len(columns) == 0 {
+				failureCount++
+				continue
+			}
+		}
+
+		values := make([]interface{}, len(columns))
+		for i, column := range columns {
+			if value, exists := rowData[column]; exists {
+				values[i] = value
+			} else {
+				values[i] = nil
+			}
+		}
+
+		batchRows = append(batchRows, values)
+		if len(batchRows) >= batchSize {
+			flushBatch()
+		}
+	}
+
+	flushBatch()
+
+	if _, err := decoder.Token(); err != nil {
+		return successCount, failureCount, fmt.Errorf("invalid JSON array termination: %w", err)
 	}
 
 	return successCount, failureCount, nil
 }
 
 // insertBatch inserts a batch of rows
-func (h *UnifiedExportImportHandler) insertBatch(tableName string, batch []map[string]interface{}) (int, int) {
+func (h *UnifiedExportImportHandler) insertBatch(tableName string, columns []string, rows [][]interface{}) (int, int) {
+	if len(columns) == 0 || len(rows) == 0 {
+		return 0, 0
+	}
+
+	quotedColumns := make([]string, len(columns))
+	for i, col := range columns {
+		quotedColumns[i] = quoteIdentifier(col)
+	}
+
+	singleRowPlaceholder := "(" + strings.TrimRight(strings.Repeat("?,", len(columns)), ",") + ")"
+	placeholders := make([]string, len(rows))
+	args := make([]interface{}, 0, len(rows)*len(columns))
+	for i, row := range rows {
+		placeholders[i] = singleRowPlaceholder
+		args = append(args, row...)
+	}
+
+	query := fmt.Sprintf(
+		"INSERT INTO %s (%s) VALUES %s",
+		quoteIdentifier(tableName),
+		strings.Join(quotedColumns, ", "),
+		strings.Join(placeholders, ","),
+	)
+
+	if err := h.DB.Exec(query, args...).Error; err == nil {
+		return len(rows), 0
+	}
+
+	singleInsertQuery := fmt.Sprintf(
+		"INSERT INTO %s (%s) VALUES %s",
+		quoteIdentifier(tableName),
+		strings.Join(quotedColumns, ", "),
+		singleRowPlaceholder,
+	)
+
 	successCount := 0
 	failureCount := 0
-
-	for _, rowData := range batch {
-		// Build dynamic insert query
-		columns := []string{}
-		placeholders := []string{}
-		values := []interface{}{}
-
-		for col, val := range rowData {
-			columns = append(columns, col)
-			placeholders = append(placeholders, "?")
-			values = append(values, val)
-		}
-
-		query := fmt.Sprintf(
-			"INSERT INTO %s (%s) VALUES (%s)",
-			tableName,
-			strings.Join(columns, ", "),
-			strings.Join(placeholders, ", "),
-		)
-
-		if err := h.DB.Exec(query, values...).Error; err != nil {
+	for _, row := range rows {
+		if err := h.DB.Exec(singleInsertQuery, row...).Error; err != nil {
 			failureCount++
 		} else {
 			successCount++
@@ -675,4 +794,21 @@ func (h *UnifiedExportImportHandler) insertBatch(tableName string, batch []map[s
 	}
 
 	return successCount, failureCount
+}
+
+func getOptimizedBatchSize() int {
+	defaultSize := 1000
+	if config.AppConfig == nil || config.AppConfig.ImportBatchSize <= 0 {
+		return defaultSize
+	}
+
+	size := config.AppConfig.ImportBatchSize
+	if size < 100 {
+		return 100
+	}
+	if size > 2000 {
+		return 2000
+	}
+
+	return size
 }

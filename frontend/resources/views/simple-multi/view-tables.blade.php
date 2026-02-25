@@ -62,6 +62,7 @@
                             <option value="50" selected>50</option>
                             <option value="100">100</option>
                             <option value="250">250</option>
+                            <option value="1000">1000</option>
                         </select>
                     </div>
                     <div class="flex flex-wrap items-center gap-3">

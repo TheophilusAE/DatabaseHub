@@ -1,21 +1,32 @@
 package handlers
 
 import (
+	"context"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
+	"dataImportDashboard/config"
 	"dataImportDashboard/models"
 	"dataImportDashboard/repository"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"gorm.io/gorm"
+)
+
+var (
+	postgresCopyPoolOnce sync.Once
+	postgresCopyPool     *pgxpool.Pool
+	postgresCopyPoolErr  error
 )
 
 type SimpleMultiTableHandler struct {
@@ -588,6 +599,12 @@ func (h *SimpleMultiTableHandler) GetTableData(c *gin.Context) {
 
 // UploadToMultipleTables handles uploading data to multiple tables at once
 func (h *SimpleMultiTableHandler) UploadToMultipleTables(c *gin.Context) {
+	truncateBeforeImport := strings.EqualFold(strings.TrimSpace(c.Query("truncate_before_import")), "true")
+	if truncateBeforeImport && !h.isAdminRequest(c) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only admin can truncate tables before import"})
+		return
+	}
+
 	// Parse multipart form
 	form, err := c.MultipartForm()
 	if err != nil {
@@ -623,12 +640,11 @@ func (h *SimpleMultiTableHandler) UploadToMultipleTables(c *gin.Context) {
 	for i, fileHeader := range files {
 		tableName := tableNames[i]
 
-		file, err := fileHeader.Open()
-		if err != nil {
+		if !isValidIdentifier(tableName) {
 			results = append(results, map[string]interface{}{
 				"table":   tableName,
 				"status":  "error",
-				"message": "Failed to open file: " + err.Error(),
+				"message": "Invalid table name",
 			})
 			continue
 		}
@@ -639,8 +655,36 @@ func (h *SimpleMultiTableHandler) UploadToMultipleTables(c *gin.Context) {
 			format = "json"
 		}
 
+		isPostgresCSV := config.AppConfig != nil && strings.EqualFold(config.AppConfig.DBType, "postgres") && format == "csv"
+
+		if truncateBeforeImport && !isPostgresCSV {
+			truncateQuery := fmt.Sprintf("TRUNCATE TABLE %s", quoteIdentifier(tableName))
+			if config.AppConfig != nil && strings.EqualFold(config.AppConfig.DBType, "postgres") {
+				truncateQuery += " RESTART IDENTITY"
+			}
+
+			if truncateErr := h.DB.Exec(truncateQuery).Error; truncateErr != nil {
+				results = append(results, map[string]interface{}{
+					"table":   tableName,
+					"status":  "error",
+					"message": "Failed to truncate table before import: " + truncateErr.Error(),
+				})
+				continue
+			}
+		}
+
+		file, err := fileHeader.Open()
+		if err != nil {
+			results = append(results, map[string]interface{}{
+				"table":   tableName,
+				"status":  "error",
+				"message": "Failed to open file: " + err.Error(),
+			})
+			continue
+		}
+
 		// Import data
-		successCount, failureCount, importErr := h.importToTable(file, tableName, format)
+		successCount, failureCount, importErr := h.importToTable(file, tableName, format, truncateBeforeImport)
 		file.Close()
 
 		// Log the import
@@ -682,9 +726,9 @@ func (h *SimpleMultiTableHandler) UploadToMultipleTables(c *gin.Context) {
 }
 
 // importToTable handles importing data to a specific table
-func (h *SimpleMultiTableHandler) importToTable(file io.Reader, tableName string, format string) (int, int, error) {
+func (h *SimpleMultiTableHandler) importToTable(file io.Reader, tableName string, format string, truncateBeforeImport bool) (int, int, error) {
 	if format == "csv" {
-		return h.importCSVToTable(file, tableName)
+		return h.importCSVToTable(file, tableName, truncateBeforeImport)
 	} else if format == "json" {
 		return h.importJSONToTable(file, tableName)
 	}
@@ -693,7 +737,25 @@ func (h *SimpleMultiTableHandler) importToTable(file io.Reader, tableName string
 }
 
 // importCSVToTable imports CSV data to a table
-func (h *SimpleMultiTableHandler) importCSVToTable(file io.Reader, tableName string) (int, int, error) {
+func (h *SimpleMultiTableHandler) importCSVToTable(file io.Reader, tableName string, truncateBeforeImport bool) (int, int, error) {
+	if !isValidIdentifier(tableName) {
+		return 0, 0, fmt.Errorf("invalid table name")
+	}
+
+	if config.AppConfig != nil && strings.EqualFold(config.AppConfig.DBType, "postgres") {
+		if readSeeker, ok := file.(io.ReadSeeker); ok {
+			return h.importCSVToTablePostgresCopyStream(readSeeker, tableName, truncateBeforeImport)
+		}
+	}
+
+	return h.importCSVToTableBatched(file, tableName)
+}
+
+func (h *SimpleMultiTableHandler) importCSVToTableBatched(file io.Reader, tableName string) (int, int, error) {
+	if !isValidIdentifier(tableName) {
+		return 0, 0, fmt.Errorf("invalid table name")
+	}
+
 	reader := csv.NewReader(file)
 	reader.LazyQuotes = true
 	reader.TrimLeadingSpace = true
@@ -704,10 +766,37 @@ func (h *SimpleMultiTableHandler) importCSVToTable(file io.Reader, tableName str
 		return 0, 0, fmt.Errorf("failed to read CSV headers: %w", err)
 	}
 
+	columns := make([]string, 0, len(headers))
+	columnIndexes := make([]int, 0, len(headers))
+	for i, header := range headers {
+		column := strings.TrimSpace(header)
+		if column == "" || !isValidIdentifier(column) {
+			continue
+		}
+		columns = append(columns, column)
+		columnIndexes = append(columnIndexes, i)
+	}
+
+	if len(columns) == 0 {
+		return 0, 0, fmt.Errorf("no valid CSV columns found")
+	}
+
 	successCount := 0
 	failureCount := 0
+	batchSize := getOptimizedImportBatchSize()
+	rowsBatch := make([][]interface{}, 0, batchSize)
 
-	// Read and insert rows
+	flushBatch := func() {
+		if len(rowsBatch) == 0 {
+			return
+		}
+		success, failed := h.insertRowsBatch(tableName, columns, rowsBatch)
+		successCount += success
+		failureCount += failed
+		rowsBatch = rowsBatch[:0]
+	}
+
+	// Read and insert rows in batches
 	for {
 		record, err := reader.Read()
 		if err == io.EOF {
@@ -718,44 +807,153 @@ func (h *SimpleMultiTableHandler) importCSVToTable(file io.Reader, tableName str
 			continue
 		}
 
-		// Create a map of column -> value
-		rowData := make(map[string]interface{})
-		for i, header := range headers {
-			if i < len(record) {
-				rowData[header] = record[i]
+		values := make([]interface{}, len(columns))
+		for i, idx := range columnIndexes {
+			if idx < len(record) {
+				cell := strings.TrimSpace(record[idx])
+				if cell == "" {
+					values[i] = nil
+				} else {
+					values[i] = cell
+				}
+			} else {
+				values[i] = nil
 			}
 		}
 
-		// Build dynamic insert query
-		columns := []string{}
-		placeholders := []string{}
-		values := []interface{}{}
-
-		for col, val := range rowData {
-			columns = append(columns, col)
-			placeholders = append(placeholders, "?")
-			values = append(values, val)
-		}
-
-		query := fmt.Sprintf(
-			"INSERT INTO %s (%s) VALUES (%s)",
-			tableName,
-			strings.Join(columns, ", "),
-			strings.Join(placeholders, ", "),
-		)
-
-		if err := h.DB.Exec(query, values...).Error; err != nil {
-			failureCount++
-		} else {
-			successCount++
+		rowsBatch = append(rowsBatch, values)
+		if len(rowsBatch) >= batchSize {
+			flushBatch()
 		}
 	}
+
+	flushBatch()
 
 	return successCount, failureCount, nil
 }
 
+func (h *SimpleMultiTableHandler) importCSVToTablePostgresCopyStream(file io.ReadSeeker, tableName string, truncateBeforeImport bool) (int, int, error) {
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		return 0, 0, fmt.Errorf("failed to seek CSV stream: %w", err)
+	}
+
+	reader := csv.NewReader(file)
+	reader.LazyQuotes = true
+	reader.TrimLeadingSpace = true
+
+	headers, err := reader.Read()
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to read CSV headers: %w", err)
+	}
+
+	columns := make([]string, 0, len(headers))
+	for _, header := range headers {
+		column := strings.TrimSpace(header)
+		if column == "" || !isValidIdentifier(column) {
+			return 0, 0, fmt.Errorf("invalid CSV column name: %s", header)
+		}
+		columns = append(columns, column)
+	}
+
+	if len(columns) == 0 {
+		return 0, 0, fmt.Errorf("no valid CSV columns found")
+	}
+
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		return 0, 0, fmt.Errorf("failed to reset CSV stream for COPY: %w", err)
+	}
+
+	pool, err := getPostgresCopyPool()
+	if err != nil {
+		if _, seekErr := file.Seek(0, io.SeekStart); seekErr == nil {
+			return h.importCSVToTableBatched(file, tableName)
+		}
+		return 0, 0, err
+	}
+
+	ctx := context.Background()
+	conn, err := pool.Acquire(ctx)
+	if err != nil {
+		if _, seekErr := file.Seek(0, io.SeekStart); seekErr == nil {
+			return h.importCSVToTableBatched(file, tableName)
+		}
+		return 0, 0, fmt.Errorf("failed to acquire postgres copy connection: %w", err)
+	}
+	defer conn.Release()
+
+	tx, err := conn.Conn().Begin(ctx)
+	if err != nil {
+		if _, seekErr := file.Seek(0, io.SeekStart); seekErr == nil {
+			return h.importCSVToTableBatched(file, tableName)
+		}
+		return 0, 0, fmt.Errorf("failed to begin postgres copy transaction: %w", err)
+	}
+
+	rollback := true
+	defer func() {
+		if rollback {
+			_ = tx.Rollback(ctx)
+		}
+	}()
+
+	_, _ = tx.Exec(ctx, "SET LOCAL synchronous_commit = OFF")
+
+	if truncateBeforeImport {
+		truncateSQL := fmt.Sprintf("TRUNCATE TABLE %s RESTART IDENTITY", quoteIdentifier(tableName))
+		if _, truncateErr := tx.Exec(ctx, truncateSQL); truncateErr != nil {
+			if _, seekErr := file.Seek(0, io.SeekStart); seekErr == nil {
+				return h.importCSVToTableBatched(file, tableName)
+			}
+			return 0, 0, fmt.Errorf("failed to truncate table before copy: %w", truncateErr)
+		}
+	}
+
+	quotedColumns := make([]string, len(columns))
+	for i, col := range columns {
+		quotedColumns[i] = quoteIdentifier(col)
+	}
+
+copyOptions := "FORMAT csv, HEADER true"
+	if truncateBeforeImport {
+		copyOptions += ", FREEZE true"
+	}
+
+	copySQL := fmt.Sprintf(
+		"COPY %s (%s) FROM STDIN WITH (%s)",
+		quoteIdentifier(tableName),
+		strings.Join(quotedColumns, ", "),
+		copyOptions,
+	)
+
+	commandTag, copyErr := tx.Conn().PgConn().CopyFrom(ctx, file, copySQL)
+	if copyErr != nil {
+		_ = tx.Rollback(ctx)
+		rollback = false
+		if _, seekErr := file.Seek(0, io.SeekStart); seekErr == nil {
+			return h.importCSVToTableBatched(file, tableName)
+		}
+		return 0, 0, fmt.Errorf("postgres COPY failed: %w", copyErr)
+	}
+
+	if commitErr := tx.Commit(ctx); commitErr != nil {
+		rollback = false
+		if _, seekErr := file.Seek(0, io.SeekStart); seekErr == nil {
+			return h.importCSVToTableBatched(file, tableName)
+		}
+		return 0, 0, fmt.Errorf("failed to commit copy transaction: %w", commitErr)
+	}
+
+	rollback = false
+
+	return int(commandTag.RowsAffected()), 0, nil
+}
+
 // importJSONToTable imports JSON data to a table
 func (h *SimpleMultiTableHandler) importJSONToTable(file io.Reader, tableName string) (int, int, error) {
+	if !isValidIdentifier(tableName) {
+		return 0, 0, fmt.Errorf("invalid table name")
+	}
+
 	var data []map[string]interface{}
 
 	decoder := json.NewDecoder(file)
@@ -765,34 +963,161 @@ func (h *SimpleMultiTableHandler) importJSONToTable(file io.Reader, tableName st
 
 	successCount := 0
 	failureCount := 0
+	batches := make(map[string][][]interface{})
+	batchColumns := make(map[string][]string)
+	batchSize := getOptimizedImportBatchSize()
+
+	flushBatchKey := func(key string) {
+		rows := batches[key]
+		if len(rows) == 0 {
+			return
+		}
+		success, failed := h.insertRowsBatch(tableName, batchColumns[key], rows)
+		successCount += success
+		failureCount += failed
+		batches[key] = rows[:0]
+	}
 
 	for _, rowData := range data {
-		// Build dynamic insert query
-		columns := []string{}
-		placeholders := []string{}
-		values := []interface{}{}
-
-		for col, val := range rowData {
-			columns = append(columns, col)
-			placeholders = append(placeholders, "?")
-			values = append(values, val)
+		if len(rowData) == 0 {
+			failureCount++
+			continue
 		}
 
-		query := fmt.Sprintf(
-			"INSERT INTO %s (%s) VALUES (%s)",
-			tableName,
-			strings.Join(columns, ", "),
-			strings.Join(placeholders, ", "),
-		)
+		columns := make([]string, 0, len(rowData))
+		for col := range rowData {
+			if isValidIdentifier(col) {
+				columns = append(columns, col)
+			}
+		}
+		if len(columns) == 0 {
+			failureCount++
+			continue
+		}
+		sort.Strings(columns)
 
-		if err := h.DB.Exec(query, values...).Error; err != nil {
+		key := strings.Join(columns, "|")
+		if _, exists := batchColumns[key]; !exists {
+			batchColumns[key] = columns
+			batches[key] = make([][]interface{}, 0, batchSize)
+		}
+
+		values := make([]interface{}, len(columns))
+		for i, col := range columns {
+			if value, ok := rowData[col]; ok {
+				values[i] = value
+			}
+		}
+
+		batches[key] = append(batches[key], values)
+		if len(batches[key]) >= batchSize {
+			flushBatchKey(key)
+		}
+	}
+
+	for key := range batches {
+		flushBatchKey(key)
+	}
+
+	return successCount, failureCount, nil
+}
+
+func getOptimizedImportBatchSize() int {
+	defaultSize := 1000
+	if config.AppConfig == nil || config.AppConfig.ImportBatchSize <= 0 {
+		return defaultSize
+	}
+
+	size := config.AppConfig.ImportBatchSize
+	if size < 100 {
+		return 100
+	}
+	if size > 2000 {
+		return 2000
+	}
+
+	return size
+}
+
+func getPostgresCopyPool() (*pgxpool.Pool, error) {
+	postgresCopyPoolOnce.Do(func() {
+		if config.AppConfig == nil {
+			postgresCopyPoolErr = fmt.Errorf("application config not initialized")
+			return
+		}
+		if !strings.EqualFold(config.AppConfig.DBType, "postgres") {
+			postgresCopyPoolErr = fmt.Errorf("postgres copy is only available for postgres")
+			return
+		}
+
+		pool, err := pgxpool.New(context.Background(), config.AppConfig.GetDSN())
+		if err != nil {
+			postgresCopyPoolErr = fmt.Errorf("failed to create postgres copy pool: %w", err)
+			return
+		}
+
+		postgresCopyPool = pool
+	})
+
+	if postgresCopyPoolErr != nil {
+		return nil, postgresCopyPoolErr
+	}
+
+	if postgresCopyPool == nil {
+		return nil, fmt.Errorf("postgres copy pool is not initialized")
+	}
+
+	return postgresCopyPool, nil
+}
+
+func (h *SimpleMultiTableHandler) insertRowsBatch(tableName string, columns []string, rows [][]interface{}) (int, int) {
+	if len(rows) == 0 || len(columns) == 0 {
+		return 0, 0
+	}
+
+	quotedColumns := make([]string, len(columns))
+	for i, col := range columns {
+		quotedColumns[i] = quoteIdentifier(col)
+	}
+
+	singleRowPlaceholder := "(" + strings.TrimRight(strings.Repeat("?,", len(columns)), ",") + ")"
+	placeholders := make([]string, len(rows))
+	args := make([]interface{}, 0, len(rows)*len(columns))
+
+	for i, row := range rows {
+		placeholders[i] = singleRowPlaceholder
+		args = append(args, row...)
+	}
+
+	query := fmt.Sprintf(
+		"INSERT INTO %s (%s) VALUES %s",
+		quoteIdentifier(tableName),
+		strings.Join(quotedColumns, ", "),
+		strings.Join(placeholders, ","),
+	)
+
+	if err := h.DB.Exec(query, args...).Error; err == nil {
+		return len(rows), 0
+	}
+
+	fallbackQuery := fmt.Sprintf(
+		"INSERT INTO %s (%s) VALUES %s",
+		quoteIdentifier(tableName),
+		strings.Join(quotedColumns, ", "),
+		singleRowPlaceholder,
+	)
+
+	successCount := 0
+	failureCount := 0
+	for _, row := range rows {
+		if err := h.DB.Exec(fallbackQuery, row...).Error; err != nil {
 			failureCount++
 		} else {
 			successCount++
 		}
 	}
 
-	return successCount, failureCount, nil
+	return successCount, failureCount
 }
 
 // ExportSelectedDataRequest represents the request for selective export
