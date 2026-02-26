@@ -13,10 +13,11 @@ import (
 // DatabaseConfigHandler handles database connection management
 type DatabaseConfigHandler struct {
 	dbManager *config.MultiDatabaseManager
+	connRepo  *repository.DatabaseConnectionRepository
 }
 
-func NewDatabaseConfigHandler(dbManager *config.MultiDatabaseManager) *DatabaseConfigHandler {
-	return &DatabaseConfigHandler{dbManager: dbManager}
+func NewDatabaseConfigHandler(dbManager *config.MultiDatabaseManager, connRepo *repository.DatabaseConnectionRepository) *DatabaseConfigHandler {
+	return &DatabaseConfigHandler{dbManager: dbManager, connRepo: connRepo}
 }
 
 // AddDatabaseConnection adds a new database connection
@@ -30,6 +31,13 @@ func (h *DatabaseConfigHandler) AddDatabaseConnection(c *gin.Context) {
 	if err := h.dbManager.AddConnection(&conn); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+
+	if h.connRepo != nil {
+		if err := h.connRepo.Upsert(&conn); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Connection added but failed to persist configuration"})
+			return
+		}
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
@@ -80,6 +88,13 @@ func (h *DatabaseConfigHandler) RemoveDatabaseConnection(c *gin.Context) {
 	if err := h.dbManager.RemoveConnection(name); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+
+	if h.connRepo != nil {
+		if err := h.connRepo.DeleteByName(name); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Connection removed from memory but failed to remove persisted config"})
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{

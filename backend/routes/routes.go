@@ -194,6 +194,7 @@ func (r *Router) Setup(engine *gin.Engine, allowedOrigins string) {
 	{
 		multiExport.GET("/table", r.multiTableExportHandler.ExportFromTable)                 // GET /multi-export/table?config_name=export1 - Export from table
 		multiExport.GET("/join-to-table", r.multiTableExportHandler.ExportJoinedDataToTable) // GET /multi-export/join-to-table?join_name=join1 - Export joined data to table
+		multiExport.GET("/join-file", r.multiTableExportHandler.ExportJoinedDataAsFile)      // GET /multi-export/join-file?join_name=join1 - Export joined data as file
 		multiExport.GET("/configs", r.multiTableExportHandler.ListExportConfigs)             // GET /multi-export/configs - List export configs
 		multiExport.POST("/configs", r.multiTableExportHandler.CreateExportConfig)           // POST /multi-export/configs - Create export config
 		multiExport.PUT("/configs/:id", r.multiTableExportHandler.UpdateExportConfig)        // PUT /multi-export/configs/1 - Update export config
@@ -213,6 +214,7 @@ func (r *Router) Setup(engine *gin.Engine, allowedOrigins string) {
 	simpleMulti := engine.Group("/simple-multi")
 	simpleMulti.Use(middleware.AuthRequired()) // ← Add this line
 	{
+		simpleMulti.GET("/databases", r.simpleMultiTableHandler.ListDatabases)
 		simpleMulti.GET("/tables", r.simpleMultiTableHandler.ListTables)
 		simpleMulti.GET("/tables/:table", r.simpleMultiTableHandler.GetTableData)
 		simpleMulti.GET("/tables/:table/columns", r.simpleMultiTableHandler.GetTableColumns)

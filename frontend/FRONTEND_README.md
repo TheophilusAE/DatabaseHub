@@ -1,6 +1,6 @@
-# Data Import Dashboard - Frontend
+﻿# DataBridge - Frontend
 
-Laravel-based frontend for the Data Import Dashboard application.
+Laravel-based frontend for the DataBridge application.
 
 ## Overview
 
@@ -83,13 +83,13 @@ npm run build
 
 ## Features
 
-### 📊 Dashboard
+### ðŸ“Š Dashboard
 - Overview of total records, documents, and imports
 - Server health status
 - Recent activity feed
 - Quick action buttons
 
-### 📝 Data Records Management
+### ðŸ“ Data Records Management
 - View all data records with pagination
 - Create new records
 - Edit existing records
@@ -97,7 +97,7 @@ npm run build
 - Filter by category and status
 - Search functionality
 
-### 📁 Document Management
+### ðŸ“ Document Management
 - Upload any file type (PDF, images, videos, etc.)
 - View all documents in a grid layout
 - Download documents
@@ -105,21 +105,21 @@ npm run build
 - Filter by category
 - Drag-and-drop file upload
 
-### 📤 Import Data
+### ðŸ“¤ Import Data
 - Import data from CSV files
 - Import data from JSON files
 - Real-time upload progress
 - View recent import history
 - Success/failure statistics
 
-### 📥 Export Data
+### ðŸ“¥ Export Data
 - Export to CSV format
 - Export to JSON format
 - Export to Excel format
 - Filter exports by category
 - View total records by category
 
-### 📜 Import History
+### ðŸ“œ Import History
 - View all import logs
 - See success/failure counts
 - Filter and search history
@@ -149,33 +149,33 @@ All views communicate directly with the Go backend API at `http://localhost:8080
 
 ```
 frontend/
-├── app/
-│   └── Http/
-│       └── Controllers/     # Laravel controllers
-│           ├── DashboardController.php
-│           ├── DataRecordController.php
-│           ├── DocumentController.php
-│           ├── ImportController.php
-│           └── ExportController.php
-├── resources/
-│   ├── views/              # Blade templates
-│   │   ├── layouts/
-│   │   │   └── app.blade.php
-│   │   ├── dashboard.blade.php
-│   │   ├── data-records/
-│   │   ├── documents/
-│   │   ├── import/
-│   │   └── export/
-│   ├── js/
-│   │   └── app.js         # JavaScript entry point
-│   └── css/
-│       └── app.css        # Tailwind CSS
-├── routes/
-│   └── web.php            # Web routes
-├── public/                # Public assets
-├── composer.json          # PHP dependencies
-├── package.json           # Node dependencies
-└── vite.config.js         # Vite configuration
+â”œâ”€â”€ app/
+â”‚   â””â”€â”€ Http/
+â”‚       â””â”€â”€ Controllers/     # Laravel controllers
+â”‚           â”œâ”€â”€ DashboardController.php
+â”‚           â”œâ”€â”€ DataRecordController.php
+â”‚           â”œâ”€â”€ DocumentController.php
+â”‚           â”œâ”€â”€ ImportController.php
+â”‚           â””â”€â”€ ExportController.php
+â”œâ”€â”€ resources/
+â”‚   â”œâ”€â”€ views/              # Blade templates
+â”‚   â”‚   â”œâ”€â”€ layouts/
+â”‚   â”‚   â”‚   â””â”€â”€ app.blade.php
+â”‚   â”‚   â”œâ”€â”€ dashboard.blade.php
+â”‚   â”‚   â”œâ”€â”€ data-records/
+â”‚   â”‚   â”œâ”€â”€ documents/
+â”‚   â”‚   â”œâ”€â”€ import/
+â”‚   â”‚   â””â”€â”€ export/
+â”‚   â”œâ”€â”€ js/
+â”‚   â”‚   â””â”€â”€ app.js         # JavaScript entry point
+â”‚   â””â”€â”€ css/
+â”‚       â””â”€â”€ app.css        # Tailwind CSS
+â”œâ”€â”€ routes/
+â”‚   â””â”€â”€ web.php            # Web routes
+â”œâ”€â”€ public/                # Public assets
+â”œâ”€â”€ composer.json          # PHP dependencies
+â”œâ”€â”€ package.json           # Node dependencies
+â””â”€â”€ vite.config.js         # Vite configuration
 ```
 
 ## Available Routes
@@ -268,7 +268,7 @@ Vite automatically watches for file changes when running `npm run dev`.
 
 ## License
 
-This project is part of the Data Import Dashboard system.
+This project is part of the DataBridge system.
 
 ## Support
 
@@ -280,4 +280,5 @@ For issues and questions:
 
 ---
 
-**Made with ❤️ using Laravel and Tailwind CSS**
+**Made with â¤ï¸ using Laravel and Tailwind CSS**
+

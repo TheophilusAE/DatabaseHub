@@ -1,38 +1,38 @@
-# 📊 Data Import Dashboard
+﻿# ðŸ“Š DataBridge
 
 A full-stack application for managing data records, documents, and file imports/exports. Built with Go (Backend) and Laravel (Frontend).
 
-## 🎉 NEW: Auto-Discovery Feature!
+## ðŸŽ‰ NEW: Auto-Discovery Feature!
 
 **Zero Configuration Required!** Administrators can now automatically discover and sync tables from databases:
 
-- 🔍 **Automatic Table Detection**: Scans and identifies all tables in your database
-- 📊 **Schema Introspection**: Automatically detects columns, types, and primary keys  
-- ⚡ **One-Click Sync**: Configure dozens of tables in seconds
-- 🔄 **Easy Re-sync**: Update configurations when schema changes
-- 🔒 **Admin-Only**: Secure configuration management restricted to administrators
+- ðŸ” **Automatic Table Detection**: Scans and identifies all tables in your database
+- ðŸ“Š **Schema Introspection**: Automatically detects columns, types, and primary keys  
+- âš¡ **One-Click Sync**: Configure dozens of tables in seconds
+- ðŸ”„ **Easy Re-sync**: Update configurations when schema changes
+- ðŸ”’ **Admin-Only**: Secure configuration management restricted to administrators
 
-**Quick Start (Admins):** Add database → Select database → Discover Tables → Sync All → **Done!** 🎊
+**Quick Start (Admins):** Add database â†’ Select database â†’ Discover Tables â†’ Sync All â†’ **Done!** ðŸŽŠ
 
 See [AUTO_DISCOVERY_QUICK_START.md](AUTO_DISCOVERY_QUICK_START.md) for complete guide.
 
 ---
 
-## 🏗️ Architecture
+## ðŸ—ï¸ Architecture
 
 ```
-┌─────────────────────┐         API Calls          ┌─────────────────────┐
-│                     │    (http://localhost:8080)  │                     │
-│  Laravel Frontend   │ ◄─────────────────────────► │   Go Backend API    │
-│  (Port 8000)        │                             │   (Port 8080)       │
-│                     │                             │                     │
-│  - Views/UI         │                             │  - REST API         │
-│  - Tailwind CSS     │                             │  - SQLite Database  │
-│  - JavaScript       │                             │  - File Uploads     │
-└─────────────────────┘                             └─────────────────────┘
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”         API Calls          â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚                     â”‚    (http://localhost:8080)  â”‚                     â”‚
+â”‚  Laravel Frontend   â”‚ â—„â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â–º â”‚   Go Backend API    â”‚
+â”‚  (Port 8000)        â”‚                             â”‚   (Port 8080)       â”‚
+â”‚                     â”‚                             â”‚                     â”‚
+â”‚  - Views/UI         â”‚                             â”‚  - REST API         â”‚
+â”‚  - Tailwind CSS     â”‚                             â”‚  - SQLite Database  â”‚
+â”‚  - JavaScript       â”‚                             â”‚  - File Uploads     â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜                             â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 ```
 
-## ✨ Features
+## âœ¨ Features
 
 ### Data Records Management
 -   Create, Read, Update, Delete (CRUD) operations
@@ -68,7 +68,7 @@ See [AUTO_DISCOVERY_QUICK_START.md](AUTO_DISCOVERY_QUICK_START.md) for complete 
 -   Detailed logging
 -   Pagination and search
 
-### 🔐 Role-Based Access Control (RBAC)
+### ðŸ” Role-Based Access Control (RBAC)
 -   **User Registration**: New users default to 'user' role
 -   **Admin Management**: Full CRUD access to all features
 -   **User Management**: Admins can create, edit, and delete users
@@ -76,21 +76,21 @@ See [AUTO_DISCOVERY_QUICK_START.md](AUTO_DISCOVERY_QUICK_START.md) for complete 
 -   **Access Control**: Role-based permissions for all features
 -   **Secure by Default**: Users cannot self-promote to admin
 
-#### Admin Permissions (👑 Administrator)
+#### Admin Permissions (ðŸ‘‘ Administrator)
 - Full CRUD access to users, data records, and documents
 - Complete import/export capabilities
 - User role management
 - Access to admin dashboard
 
-#### User Permissions (👤 Regular User)
+#### User Permissions (ðŸ‘¤ Regular User)
 - View-only access to data records
 - View-only access to documents
 - Can download documents
 - Access to user dashboard
 
-📖 **See [RBAC_GUIDE.md](RBAC_GUIDE.md) for complete documentation**
+ðŸ“– **See [RBAC_GUIDE.md](RBAC_GUIDE.md) for complete documentation**
 
-## 🚀 Quick Start
+## ðŸš€ Quick Start
 
 ### Prerequisites
 
@@ -113,7 +113,7 @@ cd backend
 .\start.bat
 ```
 
-Wait for: `✓ Server is ready and running!`
+Wait for: `âœ“ Server is ready and running!`
 
 The backend will be available at: `http://localhost:8080`
 
@@ -126,7 +126,7 @@ cd frontend
 
 The frontend will open automatically at: `http://localhost:8000`
 
-That's it! 🎉
+That's it! ðŸŽ‰
 
 #### 3. Create Your First Admin User
 
@@ -156,35 +156,35 @@ $user->save();
 
 Once you have an admin account, you can manage all users through the web interface!
 
-## 📁 Project Structure
+## ðŸ“ Project Structure
 
 ```
 DataImportDashboard/
-│
-├── backend/                    # Go Backend API
-│   ├── main.go                # Application entry point
-│   ├── config/                # Database & config
-│   ├── handlers/              # API handlers
-│   ├── models/                # Data models
-│   ├── repository/            # Database layer
-│   ├── routes/                # API routes
-│   ├── uploads/               # Uploaded files
-│   ├── start.bat              # Windows launcher
-│   └── *.md                   # Documentation
-│
-└── frontend/                  # Laravel Frontend
-    ├── app/
-    │   └── Http/Controllers/  # Controllers
-    ├── resources/
-    │   ├── views/            # Blade templates
-    │   ├── js/               # JavaScript
-    │   └── css/              # Tailwind CSS
-    ├── routes/web.php        # Routes
-    ├── start.bat             # Windows launcher
-    └── *.md                  # Documentation
+â”‚
+â”œâ”€â”€ backend/                    # Go Backend API
+â”‚   â”œâ”€â”€ main.go                # Application entry point
+â”‚   â”œâ”€â”€ config/                # Database & config
+â”‚   â”œâ”€â”€ handlers/              # API handlers
+â”‚   â”œâ”€â”€ models/                # Data models
+â”‚   â”œâ”€â”€ repository/            # Database layer
+â”‚   â”œâ”€â”€ routes/                # API routes
+â”‚   â”œâ”€â”€ uploads/               # Uploaded files
+â”‚   â”œâ”€â”€ start.bat              # Windows launcher
+â”‚   â””â”€â”€ *.md                   # Documentation
+â”‚
+â””â”€â”€ frontend/                  # Laravel Frontend
+    â”œâ”€â”€ app/
+    â”‚   â””â”€â”€ Http/Controllers/  # Controllers
+    â”œâ”€â”€ resources/
+    â”‚   â”œâ”€â”€ views/            # Blade templates
+    â”‚   â”œâ”€â”€ js/               # JavaScript
+    â”‚   â””â”€â”€ css/              # Tailwind CSS
+    â”œâ”€â”€ routes/web.php        # Routes
+    â”œâ”€â”€ start.bat             # Windows launcher
+    â””â”€â”€ *.md                  # Documentation
 ```
 
-## 🔌 API Endpoints
+## ðŸ”Œ API Endpoints
 
 ### Data Records
 - `GET /data` - List all records
@@ -212,7 +212,7 @@ DataImportDashboard/
 ### System
 - `GET /health` - Server health check
 
-## 🎨 Tech Stack
+## ðŸŽ¨ Tech Stack
 
 ### Backend
 - **Language**: Go 1.21+
@@ -229,7 +229,7 @@ DataImportDashboard/
 - **Build Tool**: Vite
 - **JavaScript**: Vanilla JS with API fetch
 
-## 📖 Documentation
+## ðŸ“– Documentation
 
 Comprehensive documentation is available in each directory:
 
@@ -245,7 +245,7 @@ Comprehensive documentation is available in each directory:
 - [`frontend/FRONTEND_README.md`](frontend/FRONTEND_README.md) - Full frontend documentation
 - [`frontend/QUICK_START.md`](frontend/QUICK_START.md) - Frontend quick start
 
-## 🧪 Testing
+## ðŸ§ª Testing
 
 ### Test Backend API with Postman
 
@@ -263,7 +263,7 @@ cd backend
 5. Import sample CSV/JSON files
 6. Export data in different formats
 
-## 🔧 Configuration
+## ðŸ”§ Configuration
 
 ### Backend Configuration
 
@@ -287,11 +287,11 @@ window.API_BASE_URL = 'http://localhost:8080';
 
 Edit `frontend/.env`:
 ```env
-APP_NAME="Data Import Dashboard"
+APP_NAME="DataBridge"
 APP_URL=http://localhost:8000
 ```
 
-## 🛠️ Development
+## ðŸ› ï¸ Development
 
 ### Backend Development
 
@@ -328,7 +328,7 @@ npm run build
 php artisan cache:clear
 ```
 
-## 📊 Sample Data
+## ðŸ“Š Sample Data
 
 Sample files are included in the backend directory:
 
@@ -338,7 +338,7 @@ Sample files are included in the backend directory:
 
 Use these files to test import functionality.
 
-## 🐛 Troubleshooting
+## ðŸ› Troubleshooting
 
 ### Backend Issues
 
@@ -376,7 +376,7 @@ php artisan view:clear
 php artisan serve --port=8001
 ```
 
-## 🚀 Deployment
+## ðŸš€ Deployment
 
 ### Backend Deployment
 
@@ -415,11 +415,11 @@ php artisan serve --port=8001
    php artisan view:cache
    ```
 
-## 📝 License
+## ðŸ“ License
 
-This project is part of the Data Import Dashboard system.
+This project is part of the DataBridge system.
 
-## 🤝 Contributing
+## ðŸ¤ Contributing
 
 1. Fork the repository
 2. Create a feature branch
@@ -427,14 +427,14 @@ This project is part of the Data Import Dashboard system.
 4. Test thoroughly
 5. Submit a pull request
 
-## 📧 Support
+## ðŸ“§ Support
 
 - Check documentation in `/backend` and `/frontend`
 - Review API documentation
 - Check browser console and server logs
 - Test with Postman
 
-## 🎯 Features Roadmap
+## ðŸŽ¯ Features Roadmap
 
 - [ ] User authentication and authorization
 - [ ] Advanced search and filtering
@@ -445,7 +445,7 @@ This project is part of the Data Import Dashboard system.
 - [ ] API rate limiting
 - [ ] Audit logging
 
-## ⚡ Performance Tips
+## âš¡ Performance Tips
 
 - Backend handles up to 1000 concurrent requests
 - Frontend uses pagination for large datasets
@@ -453,7 +453,7 @@ This project is part of the Data Import Dashboard system.
 - Database auto-optimizes with GORM
 - Static assets cached with Vite
 
-## 🔒 Security
+## ðŸ”’ Security
 
 - CORS configured for frontend origin
 - File upload validation
@@ -463,8 +463,9 @@ This project is part of the Data Import Dashboard system.
 
 ---
 
-**Made with ❤️ using Go and Laravel**
+**Made with â¤ï¸ using Go and Laravel**
 
 **Project Status**:   Production Ready
 
 **Last Updated**: February 2026
+

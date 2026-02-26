@@ -36,7 +36,7 @@ func (h *DocumentHandler) Upload(c *gin.Context) {
 	// Validate file size (supports up to 1TB)
 	if header.Size > config.AppConfig.MaxUploadSize {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": fmt.Sprintf("File size exceeds maximum allowed size of %d bytes", config.AppConfig.MaxUploadSize),
+			"error": fmt.Sprintf("File size exceeds the maximum allowed size of %s (received %s)", formatBytes(config.AppConfig.MaxUploadSize), formatBytes(header.Size)),
 		})
 		return
 	}
@@ -91,7 +91,7 @@ func (h *DocumentHandler) Upload(c *gin.Context) {
 		documentType = "other"
 	}
 	description := c.PostForm("description")
-	
+
 	// Get uploaded_by from form (frontend auto-fills with authenticated user's name)
 	uploadedBy := strings.TrimSpace(c.PostForm("uploaded_by"))
 	if uploadedBy == "" {
@@ -248,4 +248,17 @@ func (h *DocumentHandler) GetByCategory(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": documents})
+}
+
+func formatBytes(bytes int64) string {
+	if bytes < 1024 {
+		return fmt.Sprintf("%d B", bytes)
+	}
+	if bytes < 1024*1024 {
+		return fmt.Sprintf("%.2f KB", float64(bytes)/1024)
+	}
+	if bytes < 1024*1024*1024 {
+		return fmt.Sprintf("%.2f MB", float64(bytes)/(1024*1024))
+	}
+	return fmt.Sprintf("%.2f GB", float64(bytes)/(1024*1024*1024))
 }

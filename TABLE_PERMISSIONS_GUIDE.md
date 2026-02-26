@@ -1,12 +1,12 @@
-# 🔐 Table-Level Authorization System
+﻿# ðŸ” Table-Level Authorization System
 
 ## Overview
 
-The Data Import Dashboard now supports **table-level permissions** where administrators can control which tables each user can view and access. This provides fine-grained access control for multi-tenant environments or scenarios where users should only see specific data sets.
+The DataBridge now supports **table-level permissions** where administrators can control which tables each user can view and access. This provides fine-grained access control for multi-tenant environments or scenarios where users should only see specific data sets.
 
 ---
 
-## 🎯 Key Features
+## ðŸŽ¯ Key Features
 
   **Granular Permissions**: Control access at the table level  
   **Admin Override**: Administrators always have full access to all tables  
@@ -17,7 +17,7 @@ The Data Import Dashboard now supports **table-level permissions** where adminis
 
 ---
 
-## 🏗️ Architecture
+## ðŸ—ï¸ Architecture
 
 ### Database Schema
 
@@ -61,12 +61,12 @@ The Data Import Dashboard now supports **table-level permissions** where adminis
    - UI for selecting which tables a user can access
    - Real-time updates and visual feedback
 
-2. **User Index**: Updated to include "🔐 Permissions" button
+2. **User Index**: Updated to include "ðŸ” Permissions" button
 3. **Controller**: Added `permissions()` method to UserController
 
 ---
 
-## 📚 API Endpoints
+## ðŸ“š API Endpoints
 
 ### Get User Permissions
 ```http
@@ -151,7 +151,7 @@ Returns whether user has access to a specific table.
 
 ---
 
-## 🎨 How to Use
+## ðŸŽ¨ How to Use
 
 ### For Administrators
 
@@ -159,11 +159,11 @@ Returns whether user has access to a specific table.
 
 1. **Navigate to User Management**
    ```
-   Admin Dashboard → Users
+   Admin Dashboard â†’ Users
    ```
 
 2. **Select a User**
-   - Click the "🔐 Permissions" button next to any regular user
+   - Click the "ðŸ” Permissions" button next to any regular user
    - Note: Admin users don't need permissions (they have full access)
 
 3. **Select Tables**
@@ -172,7 +172,7 @@ Returns whether user has access to a specific table.
    - Click "Deselect All" to remove all access
 
 4. **Save Permissions**
-   - Click "💾 Save Permissions" button
+   - Click "ðŸ’¾ Save Permissions" button
    - Changes take effect immediately
 
 #### Visual Indicators
@@ -239,7 +239,7 @@ const data = await response.json();
 
 ---
 
-## 🔧 Integration with Existing Features
+## ðŸ”§ Integration with Existing Features
 
 ### Table Configuration
 
@@ -267,7 +267,7 @@ These can be enabled by updating the handlers to check respective permissions.
 
 ---
 
-## 🚀 Best Practices
+## ðŸš€ Best Practices
 
 ### Security Considerations
 
@@ -299,7 +299,7 @@ These can be enabled by updating the handlers to check respective permissions.
 
 ---
 
-## 🐛 Troubleshooting
+## ðŸ› Troubleshooting
 
 ### User Can't See Any Tables
 
@@ -307,7 +307,7 @@ These can be enabled by updating the handlers to check respective permissions.
 
 **Solutions**:
 1. Check if user has been assigned any table permissions
-2. Go to Admin → Users → Click Permissions → Assign tables
+2. Go to Admin â†’ Users â†’ Click Permissions â†’ Assign tables
 3. Verify user role is not 'admin' (admins see all tables automatically)
 
 ### Permission Changes Not Taking Effect
@@ -342,7 +342,7 @@ These can be enabled by updating the handlers to check respective permissions.
 
 ---
 
-## 📈 Future Enhancements
+## ðŸ“ˆ Future Enhancements
 
 ### Planned Features
 
@@ -362,7 +362,7 @@ These can be enabled by updating the handlers to check respective permissions.
 
 ---
 
-## 📝 Migration Guide
+## ðŸ“ Migration Guide
 
 ### Upgrading from Previous Version
 
@@ -379,7 +379,7 @@ These can be enabled by updating the handlers to check respective permissions.
 3. **Assign Initial Permissions**
    - All existing users will have no table access by default
    - Admins automatically have access to everything
-   - Assign tables to regular users via Admin → Users → Permissions
+   - Assign tables to regular users via Admin â†’ Users â†’ Permissions
 
 ### For Developers
 
@@ -427,7 +427,7 @@ If extending the system:
 
 ---
 
-## 📞 Support
+## ðŸ“ž Support
 
 For issues or questions:
 1. Check the troubleshooting section above
@@ -440,3 +440,4 @@ For issues or questions:
 **Last Updated**: February 16, 2026  
 **Version**: 1.0.0  
 **Feature**: Table-Level Authorization
+

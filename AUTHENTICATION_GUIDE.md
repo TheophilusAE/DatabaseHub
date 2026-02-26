@@ -1,10 +1,10 @@
-# Authentication System Documentation
+﻿# Authentication System Documentation
 
 ## Overview
-The Data Import Dashboard now includes a complete authentication system with role-based access control (RBAC). There are two user types:
+The DataBridge now includes a complete authentication system with role-based access control (RBAC). There are two user types:
 
-- **Admin** (👑): Full CRUD access and system management
-- **User** (👤): Read-only access to view data and documents
+- **Admin** (ðŸ‘‘): Full CRUD access and system management
+- **User** (ðŸ‘¤): Read-only access to view data and documents
 
 ---
 
@@ -24,13 +24,13 @@ The Data Import Dashboard now includes a complete authentication system with rol
 
 ## Features
 
-### 🔐 Authentication
+### ðŸ” Authentication
 - **Login**: Secure email/password authentication
 - **Register**: Create new accounts with role selection
 - **Logout**: Secure session termination
 - **Session Management**: Automatic session handling with "Remember Me" option
 
-### 👑 Admin Capabilities
+### ðŸ‘‘ Admin Capabilities
 Admins have full access to:
 -   **Full CRUD Operations**: Create, Read, Update, Delete all records
 -   **Document Management**: Upload, download, and manage all documents
@@ -39,14 +39,14 @@ Admins have full access to:
 -   **System Management**: Full administrative control over the platform
 -   **Dedicated Admin Dashboard**: Separate dashboard with enhanced features
 
-### 👤 User Capabilities
+### ðŸ‘¤ User Capabilities
 Regular users have limited access:
 -   **View Records**: Browse and search all data records
 -   **View Documents**: Access and download available documents
 -   **Dedicated User Dashboard**: Personalized dashboard showing their permissions
-- ❌ **No CRUD Operations**: Cannot create, edit, or delete records
-- ❌ **No Import/Export**: Cannot import or export data
-- ❌ **No System Management**: Cannot access admin features
+- âŒ **No CRUD Operations**: Cannot create, edit, or delete records
+- âŒ **No Import/Export**: Cannot import or export data
+- âŒ **No System Management**: Cannot access admin features
 
 ---
 
@@ -135,24 +135,24 @@ php artisan db:seed --class=UserSeeder
 
 ## Security Features
 
-### 🔒 Password Security
+### ðŸ”’ Password Security
 - Passwords are hashed using Laravel's bcrypt
 - Minimum 8 characters required
 - Confirm password validation
 
-### 🛡️ Session Security
+### ðŸ›¡ï¸ Session Security
 - CSRF protection on all forms
 - Secure session management
 - Automatic session regeneration on login
 - Session invalidation on logout
 
-### 🚪 Access Control
+### ðŸšª Access Control
 - Middleware protection on all routes
 - Role-based route access
 - Automatic redirection for unauthorized access
 - Admin and User middleware enforcing permissions
 
-### 🚫 Unauthorized Access
+### ðŸš« Unauthorized Access
 - 403 errors for role violations
 - Automatic redirect to login for unauthenticated users
 - Clear error messages for failed authentication
@@ -163,7 +163,7 @@ php artisan db:seed --class=UserSeeder
 
 ### Modern Design
 - **Gradient Headers**: Beautiful blue-to-purple gradients for dashboards
-- **Role Badges**: Clear visual indicators (👑 Admin / 👤 User)
+- **Role Badges**: Clear visual indicators (ðŸ‘‘ Admin / ðŸ‘¤ User)
 - **User Dropdown**: Avatar with name, email, and logout button
 - **Responsive Navigation**: Shows/hides menu items based on role
 
@@ -357,4 +357,5 @@ cd D:\DataImportDashboard\frontend
 cmd /c "npm run dev"
 ```
 
-Now visit: **http://localhost:8000** and login! 🚀
+Now visit: **http://localhost:8000** and login! ðŸš€
+

@@ -70,9 +70,15 @@
                         <h2 class="text-lg font-bold text-gray-900">Available Tables</h2>
                         <p class="text-sm text-gray-600 mt-1">Select which tables this user can view</p>
                     </div>
-                    <button onclick="toggleAllPermissions()" id="toggleAllBtn" class="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors text-sm">
-                        Select All
-                    </button>
+                    <div class="flex items-center gap-3">
+                        <select id="database-filter" onchange="onDatabaseFilterChange(this.value)"
+                                class="px-3 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[220px]">
+                            <option value="all">All Databases</option>
+                        </select>
+                        <button onclick="toggleAllPermissions()" id="toggleAllBtn" class="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                            Select All
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -108,9 +114,18 @@ const currentUserRole = '{{ session('user')['role'] ?? '' }}';
 let allTables = [];
 let userPermissions = [];
 let allSelected = false;
+let selectedDatabase = 'all';
+let databaseMetaByKey = {};
 
 function buildPermissionsUrl(path) {
     const url = new URL(`${apiUrl}/simple-multi/permissions${path}`);
+    if (currentUserId) url.searchParams.set('user_id', String(currentUserId));
+    if (currentUserRole) url.searchParams.set('user_role', currentUserRole);
+    return url.toString();
+}
+
+function buildSimpleMultiUrl(path) {
+    const url = new URL(`${apiUrl}/simple-multi${path}`);
     if (currentUserId) url.searchParams.set('user_id', String(currentUserId));
     if (currentUserRole) url.searchParams.set('user_role', currentUserRole);
     return url.toString();
@@ -126,29 +141,36 @@ function authHeaders() {
 
 async function loadData() {
     try {
-        // ✅ No credentials needed - Go backend returns all tables for admin management
-        const tablesResponse = await fetch(buildPermissionsUrl(`/users/${userId}/tables`), {
-            headers: authHeaders()
-        });
-        
+        const [tablesResponse, permResponse, databasesResponse] = await Promise.all([
+            fetch(buildPermissionsUrl(`/users/${userId}/tables`), { headers: authHeaders() }),
+            fetch(buildPermissionsUrl(`/users/${userId}`), { headers: authHeaders() }),
+            fetch(buildSimpleMultiUrl('/databases'), { headers: authHeaders() })
+        ]);
+
         if (!tablesResponse.ok) {
             throw new Error(`HTTP ${tablesResponse.status}: ${tablesResponse.statusText}`);
         }
-        
-        const tablesData = await tablesResponse.json();
-        allTables = tablesData.data || [];
-
-        const permResponse = await fetch(buildPermissionsUrl(`/users/${userId}`), {
-            headers: authHeaders()
-        });
-        
         if (!permResponse.ok) {
             throw new Error(`HTTP ${permResponse.status}: ${permResponse.statusText}`);
         }
-        
+
+        const tablesData = await tablesResponse.json();
+        allTables = tablesData.data || [];
+
         const permData = await permResponse.json();
         userPermissions = permData.data || [];
 
+        databaseMetaByKey = {};
+        if (databasesResponse.ok) {
+            const databasesData = await databasesResponse.json();
+            (databasesData.databases || []).forEach(db => {
+                if (db && db.name) {
+                    databaseMetaByKey[String(db.name)] = db;
+                }
+            });
+        }
+
+        renderDatabaseFilter();
         renderTables();
     } catch (error) {
         console.error('Error loading data:', error);
@@ -165,14 +187,19 @@ async function loadData() {
 function renderTables() {
     const container = document.getElementById('permissions-container');
     if (!container) return;
+
+    const filteredTables = selectedDatabase === 'all'
+        ? allTables
+        : allTables.filter(table => String(table.database_name || 'default').toLowerCase() === selectedDatabase.toLowerCase());
     
-    if (allTables.length === 0) {
+    if (filteredTables.length === 0) {
         container.innerHTML = `
             <div class="text-center py-8 text-gray-500">
                 <p class="font-bold">No tables available</p>
-                <p class="text-sm mt-2">This user has no permitted tables or no tables are configured</p>
+                <p class="text-sm mt-2">No tables found for the selected database</p>
             </div>
         `;
+        updateToggleButtonState();
         return;
     }
 
@@ -181,8 +208,10 @@ function renderTables() {
         permissionMap[perm.table_config_id] = perm;
     });
 
-    container.innerHTML = allTables.map(table => {
+    container.innerHTML = filteredTables.map(table => {
         const hasPermission = permissionMap[table.id];
+        const tableDatabaseKey = String(table.database_name || 'default');
+        const tableDatabaseLabel = getDatabaseDisplayName(tableDatabaseKey);
         return `
             <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                 <div class="flex items-center">
@@ -195,7 +224,7 @@ function renderTables() {
                     >
                     <label for="table-${table.id}" class="ml-3 cursor-pointer">
                         <div class="text-sm font-bold text-gray-900">${escapeHtml(table.name)}</div>
-                        <div class="text-xs text-gray-600">${escapeHtml(table.database_name)} - ${escapeHtml(table.table_name)}</div>
+                        <div class="text-xs text-gray-600">${escapeHtml(tableDatabaseLabel)} - ${escapeHtml(table.table_name)}</div>
                         ${table.description ? `<div class="text-xs text-gray-500 mt-1">${escapeHtml(table.description)}</div>` : ''}
                     </label>
                 </div>
@@ -208,6 +237,85 @@ function renderTables() {
 
     const loading = document.getElementById('loading');
     if (loading) loading.remove();
+
+    updateToggleButtonState();
+}
+
+function renderDatabaseFilter() {
+    const select = document.getElementById('database-filter');
+    if (!select) return;
+
+    const uniqueDatabases = Array.from(new Set(
+        allTables.map(table => String(table.database_name || 'default')).filter(Boolean)
+    )).sort((a, b) => a.localeCompare(b));
+
+    const labelCount = {};
+    uniqueDatabases.forEach(db => {
+        const display = getDatabaseDisplayName(db);
+        labelCount[display] = (labelCount[display] || 0) + 1;
+    });
+
+    select.innerHTML = '<option value="all">All Databases</option>' +
+        uniqueDatabases.map(db => {
+            const display = getDatabaseDisplayName(db);
+            const finalLabel = labelCount[display] > 1 ? `${display} [${db}]` : display;
+            return `<option value="${escapeHtml(db)}">${escapeHtml(finalLabel)}</option>`;
+        }).join('');
+
+    if (selectedDatabase !== 'all' && !uniqueDatabases.some(db => db.toLowerCase() === selectedDatabase.toLowerCase())) {
+        selectedDatabase = 'all';
+    }
+    select.value = selectedDatabase;
+}
+
+function getDatabaseDisplayName(databaseKey) {
+    const normalizedKey = String(databaseKey || 'default');
+    const metadata = databaseMetaByKey[normalizedKey];
+    let resolvedName = metadata?.db_name;
+
+    if (!resolvedName) {
+        const metadataValues = Object.values(databaseMetaByKey || {});
+
+        const byExactDbName = metadataValues.find(item => String(item?.db_name || '').toLowerCase() === normalizedKey.toLowerCase());
+        if (byExactDbName?.db_name) {
+            resolvedName = byExactDbName.db_name;
+        } else {
+            const byType = metadataValues.filter(item => String(item?.type || '').toLowerCase() === normalizedKey.toLowerCase());
+            if (byType.length > 0) {
+                const preferred = byType.find(item => String(item?.name || '').toLowerCase() === 'default') || byType[0];
+                resolvedName = preferred?.db_name;
+            }
+        }
+    }
+
+    const rawName = String(resolvedName || normalizedKey).trim();
+
+    const matchInParentheses = rawName.match(/\(([^)]+)\)\s*$/);
+    if (matchInParentheses && matchInParentheses[1]) {
+        return matchInParentheses[1].trim();
+    }
+
+    return rawName;
+}
+
+function onDatabaseFilterChange(value) {
+    selectedDatabase = value || 'all';
+    renderTables();
+}
+
+function updateToggleButtonState() {
+    const visibleCheckboxes = Array.from(document.querySelectorAll('#permissions-container [data-table-id]'));
+    const btn = document.getElementById('toggleAllBtn');
+    if (!btn) return;
+
+    if (visibleCheckboxes.length === 0) {
+        allSelected = false;
+        btn.textContent = 'Select All';
+        return;
+    }
+
+    allSelected = visibleCheckboxes.every(cb => cb.checked);
+    btn.textContent = allSelected ? 'Deselect All' : 'Select All';
 }
 
 function escapeHtml(text) {
@@ -219,7 +327,7 @@ function escapeHtml(text) {
 
 function toggleAllPermissions() {
     allSelected = !allSelected;
-    const checkboxes = document.querySelectorAll('[data-table-id]');
+    const checkboxes = document.querySelectorAll('#permissions-container [data-table-id]');
     checkboxes.forEach(cb => cb.checked = allSelected);
     const btn = document.getElementById('toggleAllBtn');
     if (btn) btn.textContent = allSelected ? 'Deselect All' : 'Select All';

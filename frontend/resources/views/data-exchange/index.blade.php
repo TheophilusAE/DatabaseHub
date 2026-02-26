@@ -343,8 +343,10 @@ function onImportFileSelected(input) {
 
     if (input.files && input.files.length > 0) {
         const file = input.files[0];
+        input.classList.add('file-selected');
         label.textContent = `${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`;
     } else {
+        input.classList.remove('file-selected');
         label.textContent = 'CSV or JSON';
     }
 }
@@ -911,6 +913,10 @@ function showAlert(message, type) {
 
 .animate-fade-in {
     animation: fade-in 0.3s ease-out;
+}
+
+.import-file-input.file-selected::file-selector-button {
+    display: none;
 }
 </style>
 @endsection

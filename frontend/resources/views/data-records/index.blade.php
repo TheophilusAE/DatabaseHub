@@ -61,6 +61,12 @@
                 </svg>
                 Export
             </a>
+
+            <!-- Database Selector -->
+            <select id="database-select" onchange="onDatabaseChange(this.value)"
+                    class="px-4 py-3 border-2 border-gray-300 rounded-xl bg-white text-gray-700 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[220px]">
+                <option value="default">Default Database</option>
+            </select>
             
             <!-- Refresh Button -->
             <button onclick="loadDatabaseTables()" class="inline-flex items-center px-4 py-3 bg-gradient-to-r from-blue-600 to-green-600 text-white rounded-xl shadow-lg hover:from-blue-700 hover:to-green-700 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl">
@@ -152,6 +158,8 @@ const USER_ID = '{{ session("user")["id"] ?? "" }}';
 let currentTableName = '';
 let currentPageNum = 1;
 let currentPageSize = 25;
+let selectedDatabase = 'default';
+let availableDatabases = [];
 
 // Helper function to build authenticated API URL
 function buildApiUrl(endpoint, params = {}) {
@@ -169,8 +177,57 @@ function buildApiUrl(endpoint, params = {}) {
             url.searchParams.append(key, params[key]);
         }
     });
+
+    if (!Object.prototype.hasOwnProperty.call(params, 'database') && selectedDatabase) {
+        url.searchParams.append('database', selectedDatabase);
+    }
     
     return url.toString();
+}
+
+async function loadDatabases() {
+    try {
+        const response = await fetch(buildApiUrl('/simple-multi/databases'));
+        if (!response.ok) {
+            throw new Error(`Failed to load databases (HTTP ${response.status})`);
+        }
+
+        const data = await response.json();
+        availableDatabases = data.databases || [];
+
+        if (availableDatabases.length === 0) {
+            availableDatabases = [{ name: 'default', db_name: 'default' }];
+        }
+
+        if (!availableDatabases.some(db => db.name === selectedDatabase)) {
+            selectedDatabase = availableDatabases[0].name;
+        }
+
+        renderDatabaseOptions();
+    } catch (error) {
+        console.error('Error loading databases:', error);
+        availableDatabases = [{ name: 'default', db_name: 'default' }];
+        selectedDatabase = 'default';
+        renderDatabaseOptions();
+    }
+}
+
+function renderDatabaseOptions() {
+    const select = document.getElementById('database-select');
+    if (!select) return;
+
+    select.innerHTML = availableDatabases.map(db => {
+        const dbLabel = db.db_name || db.name;
+        return `<option value="${db.name}">${dbLabel}</option>`;
+    }).join('');
+
+    select.value = selectedDatabase;
+}
+
+function onDatabaseChange(databaseName) {
+    selectedDatabase = databaseName || 'default';
+    closeTableViewer();
+    loadDatabaseTables();
 }
 
 async function loadDatabaseTables() {
@@ -391,9 +448,10 @@ function getUserRole() {
     return USER_ROLE;
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     console.log('User Role:', USER_ROLE);
     console.log('User ID:', USER_ID);
+    await loadDatabases();
     loadDatabaseTables(); // Load database tables on page load
 });
 

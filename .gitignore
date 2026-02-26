@@ -1,1 +1,23 @@
 stress_tests/sample_10GB.pdf
+
+# Test directories
+**/test/
+**/tests/
+stress_tests/
+
+# Common test file patterns
+*_test.go
+*_test.py
+*_test.js
+*_test.ts
+*.test.js
+*.test.ts
+*.test.jsx
+*.test.tsx
+*.spec.js
+*.spec.ts
+*.spec.jsx
+*.spec.tsx
+
+# Framework test configs
+phpunit.xml

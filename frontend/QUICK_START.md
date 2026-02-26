@@ -1,4 +1,4 @@
-# Data Import Dashboard - Quick Start Guide
+﻿# DataBridge - Quick Start Guide
 
 Get the Laravel frontend up and running in minutes!
 
@@ -6,11 +6,11 @@ Get the Laravel frontend up and running in minutes!
 
 Before starting, ensure you have:
 
-- ✅ PHP 8.2+ installed (`php -v`)
-- ✅ Composer installed (`composer -V`)
-- ✅ Node.js 18+ installed (`node -v`)
-- ✅ npm installed (`npm -v`)
-- ✅ Backend API running on http://localhost:8080
+- âœ… PHP 8.2+ installed (`php -v`)
+- âœ… Composer installed (`composer -V`)
+- âœ… Node.js 18+ installed (`node -v`)
+- âœ… npm installed (`npm -v`)
+- âœ… Backend API running on http://localhost:8080
 
 ## Quick Start (5 Minutes)
 
@@ -62,8 +62,8 @@ You should see the Dashboard!
 ### 1. Check Backend Connection
 
 On the dashboard, look at the **Server Status** card:
-- 🟢 **Green "Online"** = Backend connected ✅
-- 🔴 **Red "Offline"** = Backend not running ❌
+- ðŸŸ¢ **Green "Online"** = Backend connected âœ…
+- ðŸ”´ **Red "Offline"** = Backend not running âŒ
 
 If offline, ensure the Go backend is running:
 ```powershell
@@ -83,7 +83,7 @@ Click through the navigation:
 
 ## Common Issues & Solutions
 
-### ❌ Issue: "composer: command not found"
+### âŒ Issue: "composer: command not found"
 
 **Solution**: Install Composer
 ```powershell
@@ -91,7 +91,7 @@ Click through the navigation:
 https://getcomposer.org/download/
 ```
 
-### ❌ Issue: "php: command not found"
+### âŒ Issue: "php: command not found"
 
 **Solution**: Install PHP
 ```powershell
@@ -100,7 +100,7 @@ https://windows.php.net/download/
 # Or use Laragon/XAMPP which includes PHP
 ```
 
-### ❌ Issue: Backend Connection Failed
+### âŒ Issue: Backend Connection Failed
 
 **Symptoms**: Dashboard shows "Offline" or "Error"
 
@@ -113,7 +113,7 @@ https://windows.php.net/download/
 2. Wait for "Server is ready and running!"
 3. Refresh dashboard
 
-### ❌ Issue: Styling Not Working
+### âŒ Issue: Styling Not Working
 
 **Symptoms**: Page looks unstyled, no colors
 
@@ -122,7 +122,7 @@ https://windows.php.net/download/
 2. Hard refresh browser: `Ctrl + Shift + R`
 3. Check terminal for Vite errors
 
-### ❌ Issue: Port 8000 Already in Use
+### âŒ Issue: Port 8000 Already in Use
 
 **Solution**: Use different port
 ```powershell
@@ -130,7 +130,7 @@ php artisan serve --port=8001
 ```
 Then access at: `http://localhost:8001`
 
-### ❌ Issue: Permission Denied Errors
+### âŒ Issue: Permission Denied Errors
 
 **Solution**: Run as Administrator
 1. Right-click PowerShell
@@ -178,7 +178,7 @@ Then access at: `http://localhost:8001`
 
 ### Test Data Records
 
-1. Go to **Data Records** → **Add New Record**
+1. Go to **Data Records** â†’ **Add New Record**
 2. Fill in:
    - Name: `Test Product`
    - Category: `electronics`
@@ -189,7 +189,7 @@ Then access at: `http://localhost:8001`
 
 ### Test File Upload
 
-1. Go to **Documents** → **Upload Document**
+1. Go to **Documents** â†’ **Upload Document**
 2. Select any file (PDF, image, etc.)
 3. Choose category
 4. Click **Upload Document**
@@ -241,16 +241,16 @@ php artisan view:cache
 
 ```
 frontend/
-├── app/
-│   └── Http/Controllers/    # Your controllers
-├── resources/
-│   ├── views/              # Blade templates (HTML)
-│   ├── js/                 # JavaScript files
-│   └── css/                # Stylesheets
-├── routes/
-│   └── web.php             # Route definitions
-├── public/                 # Public assets
-└── storage/                # App storage
+â”œâ”€â”€ app/
+â”‚   â””â”€â”€ Http/Controllers/    # Your controllers
+â”œâ”€â”€ resources/
+â”‚   â”œâ”€â”€ views/              # Blade templates (HTML)
+â”‚   â”œâ”€â”€ js/                 # JavaScript files
+â”‚   â””â”€â”€ css/                # Stylesheets
+â”œâ”€â”€ routes/
+â”‚   â””â”€â”€ web.php             # Route definitions
+â”œâ”€â”€ public/                 # Public assets
+â””â”€â”€ storage/                # App storage
 ```
 
 ## Useful Commands
@@ -273,14 +273,14 @@ php artisan migrate
 
 ## Next Steps
 
-✅ **You're all set!** The frontend is running.
+âœ… **You're all set!** The frontend is running.
 
 **Try these next:**
 
-1. 🎨 **Customize**: Edit views to match your brand
-2. 📊 **Import Data**: Upload CSV/JSON files
-3. 📁 **Upload Files**: Test document management
-4. 🚀 **Deploy**: Move to production server
+1. ðŸŽ¨ **Customize**: Edit views to match your brand
+2. ðŸ“Š **Import Data**: Upload CSV/JSON files
+3. ðŸ“ **Upload Files**: Test document management
+4. ðŸš€ **Deploy**: Move to production server
 
 ## Getting Help
 
@@ -291,7 +291,7 @@ php artisan migrate
 
 **Check Logs**:
 - Laravel logs: `storage/logs/laravel.log`
-- Browser console: `F12` → Console tab
+- Browser console: `F12` â†’ Console tab
 - Backend logs: Check backend terminal
 
 **Test Backend**:
@@ -305,19 +305,20 @@ http://localhost:8080/health
 
 ## Tips & Tricks
 
-💡 **Hot Tip**: Keep both terminals open (Laravel + Vite) for best development experience
+ðŸ’¡ **Hot Tip**: Keep both terminals open (Laravel + Vite) for best development experience
 
-💡 **Debug Tip**: Check browser console (F12) for JavaScript errors
+ðŸ’¡ **Debug Tip**: Check browser console (F12) for JavaScript errors
 
-💡 **Speed Tip**: Use `--host` flag to access from other devices on your network:
+ðŸ’¡ **Speed Tip**: Use `--host` flag to access from other devices on your network:
 ```powershell
 php artisan serve --host=0.0.0.0 --port=8000
 ```
 
-💡 **API Tip**: All API calls go to `http://localhost:8080` - edit in `resources/js/app.js` if needed
+ðŸ’¡ **API Tip**: All API calls go to `http://localhost:8080` - edit in `resources/js/app.js` if needed
 
 ---
 
-**Happy Coding! 🚀**
+**Happy Coding! ðŸš€**
 
 Need help? Check the `FRONTEND_README.md` for detailed documentation.
+

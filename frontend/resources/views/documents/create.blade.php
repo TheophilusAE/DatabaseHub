@@ -212,6 +212,8 @@
 const userRole = '{{ session("user")["role"] ?? "user" }}';
 const userName = '{{ session("user")["name"] ?? "Anonymous" }}';
 const isAdmin = userRole === 'admin';
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024 * 1024;
+const MAX_FILE_SIZE_LABEL = '10GB';
 
 document.addEventListener('DOMContentLoaded', function() {
     loadCategories();
@@ -285,6 +287,11 @@ async function createCategory() {
 function handleFileSelect(event) {
     const file = event.target.files[0];
     if (file) {
+        if (!isFileSizeValid(file)) {
+            clearFileSelection();
+            return;
+        }
+
         const fileSize = formatFileSize(file.size);
         const fileType = file.type || 'Unknown type';
         const icon = getFileTypeIcon(file.name);
@@ -338,6 +345,15 @@ function clearFileSelection() {
     document.getElementById('selected-file').innerHTML = '';
 }
 
+function isFileSizeValid(file) {
+    if (file.size <= MAX_FILE_SIZE_BYTES) {
+        return true;
+    }
+
+    showAlert(`File "${file.name}" is ${formatFileSize(file.size)}. Maximum allowed size is ${MAX_FILE_SIZE_LABEL}.`, 'error');
+    return false;
+}
+
 function formatFileSize(bytes) {
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
@@ -349,13 +365,19 @@ document.getElementById('upload-form').addEventListener('submit', async function
     e.preventDefault();
     
     const fileInput = document.getElementById('file-upload');
+    const selectedFile = fileInput.files[0];
     const category = document.getElementById('category').value;
     const documentType = document.getElementById('document-type').value;
     const description = document.getElementById('description').value;
     const uploadedBy = document.getElementById('uploaded-by').value || userName || 'anonymous';
     
-    if (!fileInput.files[0]) {
+    if (!selectedFile) {
         showAlert('Please select a file to upload', 'error');
+        return;
+    }
+
+    if (!isFileSizeValid(selectedFile)) {
+        clearFileSelection();
         return;
     }
 
@@ -384,7 +406,7 @@ document.getElementById('upload-form').addEventListener('submit', async function
     
     // Create form data
     const formData = new FormData();
-    formData.append('file', fileInput.files[0]);
+    formData.append('file', selectedFile);
     formData.append('category', category);
     formData.append('document_type', documentType);
     formData.append('description', description);
@@ -504,6 +526,11 @@ dropZone.addEventListener('drop', (e) => {
     
     const files = e.dataTransfer.files;
     if (files.length > 0) {
+        if (!isFileSizeValid(files[0])) {
+            clearFileSelection();
+            return;
+        }
+
         document.getElementById('file-upload').files = files;
         handleFileSelect({ target: { files: files } });
     }

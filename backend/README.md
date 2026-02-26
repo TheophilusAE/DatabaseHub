@@ -1,47 +1,47 @@
-# Data Import Dashboard - Backend (Go)
+﻿# DataBridge - Backend (Go)
 
 A robust Go backend API for importing and exporting data and documents from a database. Built with Gin framework and GORM ORM.
 
 ## Features
 
-- 📊 **Data Import/Export**: Support for CSV and JSON formats
-- 📁 **Document Management**: Upload, download, and manage **ALL file types** (PDF, Word, Excel, images, videos, ZIP, etc.)
-- 🗄️ **Database Support**: MySQL and PostgreSQL
-- 📝 **Import Logging**: Track all import operations with detailed logs
-- 🔍 **Pagination**: Efficient data retrieval with pagination
-- 🏷️ **Categories**: Organize data and documents by categories
-- 🔄 **Remote Database**: Connect to database running on another device
-- 🌐 **CORS Support**: Ready for frontend integration with Laravel
-- 📦 **Universal File Support**: No restrictions on file types or extensions
+- ðŸ“Š **Data Import/Export**: Support for CSV and JSON formats
+- ðŸ“ **Document Management**: Upload, download, and manage **ALL file types** (PDF, Word, Excel, images, videos, ZIP, etc.)
+- ðŸ—„ï¸ **Database Support**: MySQL and PostgreSQL
+- ðŸ“ **Import Logging**: Track all import operations with detailed logs
+- ðŸ” **Pagination**: Efficient data retrieval with pagination
+- ðŸ·ï¸ **Categories**: Organize data and documents by categories
+- ðŸ”„ **Remote Database**: Connect to database running on another device
+- ðŸŒ **CORS Support**: Ready for frontend integration with Laravel
+- ðŸ“¦ **Universal File Support**: No restrictions on file types or extensions
 
 ## Project Structure
 
 ```
 backend/
-├── config/              # Configuration and database setup
-│   ├── config.go        # Application configuration
-│   └── database.go      # Database connection
-├── models/              # Data models
-│   ├── data_record.go   # Generic data record model
-│   ├── document.go      # Document/file model
-│   └── import_log.go    # Import operation tracking
-├── repository/          # Database operations
-│   ├── data_record_repository.go
-│   ├── document_repository.go
-│   └── import_log_repository.go
-├── handlers/            # HTTP request handlers
-│   ├── data_record_handler.go
-│   ├── document_handler.go
-│   ├── import_handler.go
-│   └── export_handler.go
-├── middleware/          # Middleware functions
-│   └── cors.go          # CORS configuration
-├── routes/              # API route definitions
-│   └── routes.go
-├── uploads/             # File upload directory (auto-created)
-├── main.go              # Application entry point
-├── go.mod               # Go module dependencies
-└── .env                 # Environment configuration
+â”œâ”€â”€ config/              # Configuration and database setup
+â”‚   â”œâ”€â”€ config.go        # Application configuration
+â”‚   â””â”€â”€ database.go      # Database connection
+â”œâ”€â”€ models/              # Data models
+â”‚   â”œâ”€â”€ data_record.go   # Generic data record model
+â”‚   â”œâ”€â”€ document.go      # Document/file model
+â”‚   â””â”€â”€ import_log.go    # Import operation tracking
+â”œâ”€â”€ repository/          # Database operations
+â”‚   â”œâ”€â”€ data_record_repository.go
+â”‚   â”œâ”€â”€ document_repository.go
+â”‚   â””â”€â”€ import_log_repository.go
+â”œâ”€â”€ handlers/            # HTTP request handlers
+â”‚   â”œâ”€â”€ data_record_handler.go
+â”‚   â”œâ”€â”€ document_handler.go
+â”‚   â”œâ”€â”€ import_handler.go
+â”‚   â””â”€â”€ export_handler.go
+â”œâ”€â”€ middleware/          # Middleware functions
+â”‚   â””â”€â”€ cors.go          # CORS configuration
+â”œâ”€â”€ routes/              # API route definitions
+â”‚   â””â”€â”€ routes.go
+â”œâ”€â”€ uploads/             # File upload directory (auto-created)
+â”œâ”€â”€ main.go              # Application entry point
+â”œâ”€â”€ go.mod               # Go module dependencies
+â””â”€â”€ .env                 # Environment configuration
 ```
 
 ## Prerequisites
@@ -440,3 +440,4 @@ MIT License
 ## Support
 
 For issues or questions, please create an issue in the repository.
+

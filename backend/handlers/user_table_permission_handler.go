@@ -1,17 +1,22 @@
 package handlers
 
 import (
+	"dataImportDashboard/config"
+	"dataImportDashboard/models"
 	"dataImportDashboard/repository"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type UserTablePermissionHandler struct {
 	permRepo  *repository.UserTablePermissionRepository
 	tableRepo *repository.TableConfigRepository
+	dbManager *config.MultiDatabaseManager
 }
 
 func getRequestUserRole(c *gin.Context) string {
@@ -33,10 +38,16 @@ func getRequestUserRole(c *gin.Context) string {
 func NewUserTablePermissionHandler(
 	permRepo *repository.UserTablePermissionRepository,
 	tableRepo *repository.TableConfigRepository,
+	dbManager *config.MultiDatabaseManager,
 ) *UserTablePermissionHandler {
+	if dbManager == nil {
+		dbManager = config.GetMultiDatabaseManager()
+	}
+
 	return &UserTablePermissionHandler{
 		permRepo:  permRepo,
 		tableRepo: tableRepo,
+		dbManager: dbManager,
 	}
 }
 
@@ -54,8 +65,14 @@ func (h *UserTablePermissionHandler) GetAccessibleTables(c *gin.Context) {
 		return
 	}
 
-	// ✅ ALWAYS return ALL tables for admin management page
-	// Laravel already protects this route - only admins can access it
+	// Auto-discover and sync tables from all active DB connections
+	if syncErr := h.syncDiscoveredTablesForPermissions(); syncErr != nil {
+		// Continue with existing data even if discovery partially fails
+		fmt.Printf("Warning: table auto-discovery sync failed: %v\n", syncErr)
+	}
+
+	// ✅ ALWAYS return ALL synced tables for admin management page
+	// Laravel + middleware already protect this route
 	allTables, err := h.tableRepo.GetAll()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -65,11 +82,182 @@ func (h *UserTablePermissionHandler) GetAccessibleTables(c *gin.Context) {
 		return
 	}
 
+	connectionNames := map[string]bool{}
+	if h.dbManager != nil {
+		for _, name := range h.dbManager.ListConnections() {
+			connectionNames[strings.ToLower(strings.TrimSpace(name))] = true
+		}
+	}
+
+	filteredTables := make([]models.TableConfig, 0, len(allTables))
+	for _, table := range allTables {
+		dbName := strings.ToLower(strings.TrimSpace(table.DatabaseName))
+		if dbName == "" {
+			continue
+		}
+
+		if len(connectionNames) == 0 || connectionNames[dbName] {
+			filteredTables = append(filteredTables, table)
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"data":    allTables,
-		"count":   len(allTables),
+		"data":    filteredTables,
+		"count":   len(filteredTables),
 	})
+}
+
+func (h *UserTablePermissionHandler) syncDiscoveredTablesForPermissions() error {
+	if h.dbManager == nil {
+		return nil
+	}
+
+	connections := h.dbManager.ListConnectionDetails()
+	for _, conn := range connections {
+		if conn == nil {
+			continue
+		}
+
+		databaseKey := strings.TrimSpace(conn.Name)
+		if databaseKey == "" {
+			continue
+		}
+
+		dbConn, err := h.dbManager.GetConnection(databaseKey)
+		if err != nil {
+			continue
+		}
+
+		tableNames, err := h.listTablesForConnection(dbConn, conn.Type)
+		if err != nil {
+			continue
+		}
+
+		for _, tableName := range tableNames {
+			tableName = strings.TrimSpace(tableName)
+			if tableName == "" {
+				continue
+			}
+
+			existing, findErr := h.tableRepo.FindByDatabaseAndTable(databaseKey, tableName)
+			if findErr == nil && existing != nil && existing.ID != 0 {
+				if !existing.IsActive {
+					existing.IsActive = true
+					_ = h.tableRepo.Update(existing)
+				}
+				continue
+			}
+
+			primaryKey, pkErr := h.getPrimaryKeyForConnection(dbConn, conn.Type, tableName)
+			if pkErr != nil || strings.TrimSpace(primaryKey) == "" {
+				primaryKey = "id"
+			}
+
+			displayDBName := strings.TrimSpace(conn.DBName)
+			if displayDBName == "" {
+				displayDBName = databaseKey
+			}
+
+			tableConfig := models.TableConfig{
+				Name:         fmt.Sprintf("%s_%s", databaseKey, tableName),
+				DatabaseName: databaseKey,
+				Table:        tableName,
+				Description:  fmt.Sprintf("Auto-discovered from database '%s'", displayDBName),
+				Columns:      "[]",
+				PrimaryKey:   primaryKey,
+				IsActive:     true,
+				CreatedBy:    "system-auto",
+			}
+
+			_ = h.tableRepo.Create(&tableConfig)
+		}
+	}
+
+	return nil
+}
+
+func (h *UserTablePermissionHandler) listTablesForConnection(db *gorm.DB, dbType string) ([]string, error) {
+	dbKind := strings.ToLower(strings.TrimSpace(dbType))
+	query := ""
+
+	switch dbKind {
+	case "mysql":
+		query = `
+			SELECT table_name
+			FROM information_schema.tables
+			WHERE table_schema = DATABASE()
+			AND table_type = 'BASE TABLE'
+			ORDER BY table_name
+		`
+	default:
+		query = `
+			SELECT table_name
+			FROM information_schema.tables
+			WHERE table_schema = 'public'
+			AND table_type = 'BASE TABLE'
+			ORDER BY table_name
+		`
+	}
+
+	rows, err := db.Raw(query).Rows()
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	tables := []string{}
+	for rows.Next() {
+		var tableName string
+		if scanErr := rows.Scan(&tableName); scanErr != nil {
+			continue
+		}
+		tables = append(tables, tableName)
+	}
+
+	return tables, nil
+}
+
+func (h *UserTablePermissionHandler) getPrimaryKeyForConnection(db *gorm.DB, dbType string, tableName string) (string, error) {
+	dbKind := strings.ToLower(strings.TrimSpace(dbType))
+	query := ""
+
+	switch dbKind {
+	case "mysql":
+		query = `
+			SELECT kcu.column_name
+			FROM information_schema.table_constraints tc
+			JOIN information_schema.key_column_usage kcu
+				ON tc.constraint_name = kcu.constraint_name
+				AND tc.table_schema = kcu.table_schema
+				AND tc.table_name = kcu.table_name
+			WHERE tc.constraint_type = 'PRIMARY KEY'
+			AND tc.table_schema = DATABASE()
+			AND tc.table_name = ?
+			ORDER BY kcu.ordinal_position
+			LIMIT 1
+		`
+	default:
+		query = `
+			SELECT kcu.column_name
+			FROM information_schema.table_constraints tc
+			JOIN information_schema.key_column_usage kcu
+				ON tc.constraint_name = kcu.constraint_name
+				AND tc.table_schema = kcu.table_schema
+			WHERE tc.constraint_type = 'PRIMARY KEY'
+			AND tc.table_schema = 'public'
+			AND tc.table_name = ?
+			ORDER BY kcu.ordinal_position
+			LIMIT 1
+		`
+	}
+
+	var primaryKey string
+	if err := db.Raw(query, tableName).Scan(&primaryKey).Error; err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(primaryKey), nil
 }
 
 // GetUserPermissions gets all permission records for a specific user

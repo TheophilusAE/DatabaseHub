@@ -20,7 +20,7 @@ import (
 
 func main() {
 	fmt.Println("=========================================")
-	fmt.Println("Data Import Dashboard - Backend Server")
+	fmt.Println("DataBridge - Backend Server")
 	fmt.Println("=========================================")
 	fmt.Println()
 
@@ -74,6 +74,7 @@ func main() {
 		&models.Document{},
 		&models.DocumentCategory{},
 		&models.ImportLog{},
+		&models.DatabaseConnectionConfig{},
 		&models.TableConfig{},
 		&models.TableJoin{},
 		&models.ImportMapping{},
@@ -117,6 +118,37 @@ func main() {
 	importMappingRepo := repository.NewImportMappingRepository(db)
 	exportConfigRepo := repository.NewExportConfigRepository(db)
 	userTablePermissionRepo := repository.NewUserTablePermissionRepository(db)
+	databaseConnectionRepo := repository.NewDatabaseConnectionRepository(db)
+
+	if err := databaseConnectionRepo.Upsert(defaultConn); err != nil {
+		log.Printf("Warning: Failed to persist default database connection: %v", err)
+	}
+
+	persistedConnections, err := databaseConnectionRepo.FindAllActive()
+	if err != nil {
+		log.Printf("Warning: Failed to load persisted database connections: %v", err)
+	} else {
+		for _, persisted := range persistedConnections {
+			if persisted.Name == "default" {
+				continue
+			}
+
+			conn := &config.DatabaseConnection{
+				Name:     persisted.Name,
+				Type:     persisted.Type,
+				Host:     persisted.Host,
+				Port:     persisted.Port,
+				User:     persisted.User,
+				Password: persisted.Password,
+				DBName:   persisted.DBName,
+				SSLMode:  persisted.SSLMode,
+			}
+
+			if addErr := dbManager.AddConnection(conn); addErr != nil {
+				log.Printf("Warning: Failed to restore persisted connection '%s': %v", persisted.Name, addErr)
+			}
+		}
+	}
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(userRepo)
@@ -128,12 +160,12 @@ func main() {
 	exportHandler := handlers.NewExportHandler(dataRecordRepo)
 
 	// Initialize multi-table handlers
-	dbConfigHandler := handlers.NewDatabaseConfigHandler(dbManager)
+	dbConfigHandler := handlers.NewDatabaseConfigHandler(dbManager, databaseConnectionRepo)
 	tableConfigHandler := handlers.NewTableConfigHandler(tableConfigRepo, tableJoinRepo, userTablePermissionRepo)
 	multiTableImportHandler := handlers.NewMultiTableImportHandler(tableConfigRepo, importMappingRepo, importLogRepo, dbManager)
 	multiTableExportHandler := handlers.NewMultiTableExportHandler(tableConfigRepo, tableJoinRepo, exportConfigRepo, dbManager)
-	simpleMultiTableHandler := handlers.NewSimpleMultiTableHandler(db, userTablePermissionRepo, tableConfigRepo)
-	userTablePermissionHandler := handlers.NewUserTablePermissionHandler(userTablePermissionRepo, tableConfigRepo)
+	simpleMultiTableHandler := handlers.NewSimpleMultiTableHandler(db, dbManager, userTablePermissionRepo, tableConfigRepo)
+	userTablePermissionHandler := handlers.NewUserTablePermissionHandler(userTablePermissionRepo, tableConfigRepo, dbManager)
 	databaseDiscoveryHandler := handlers.NewDatabaseDiscoveryHandler(dbManager, tableConfigRepo)
 
 	// Initialize unified export/import handler

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Data Import Dashboard')</title>
+    <title>@yield('title', 'DataBridge')</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         @keyframes fadeIn {
@@ -64,7 +64,7 @@
                                 </svg>
                             </div>
                             <span class="hidden sm:inline text-lg md:text-xl font-bold bg-gradient-to-r from-blue-700 to-green-600 bg-clip-text text-transparent">
-                                Data Import Dashboard
+                                DataBridge
                             </span>
                         </a>
                     </div>
@@ -227,7 +227,7 @@
         <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0">
                 <p class="text-center text-gray-600 text-sm font-medium">
-                    Data Import Dashboard &copy; {{ date('Y') }}
+                    DataBridge &copy; {{ date('Y') }}
                 </p>
                 <div class="flex items-center space-x-4 text-sm text-gray-500">
                     <span class="flex items-center">

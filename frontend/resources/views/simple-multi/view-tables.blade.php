@@ -23,12 +23,21 @@
                     </svg>
                     Available Tables
                 </h2>
-                <button onclick="loadTables()" class="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-all transform hover:scale-105 shadow-lg font-semibold flex items-center">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                    </svg>
-                    Refresh
-                </button>
+                <div class="flex items-center gap-3">
+                    <div>
+                        <label for="databaseSelect" class="sr-only">Database</label>
+                        <select id="databaseSelect" onchange="onDatabaseChange(this.value)"
+                                class="px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-semibold text-gray-700 bg-white min-w-[220px]">
+                            <option value="default">Default Database</option>
+                        </select>
+                    </div>
+                    <button onclick="loadTables()" class="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-all transform hover:scale-105 shadow-lg font-semibold flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        Refresh
+                    </button>
+                </div>
             </div>
             <div id="tablesListContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 <div class="text-center py-12 col-span-full">
@@ -152,6 +161,8 @@ let selectedRowData = null;
 let editorMode = 'create';
 let tableSearchQuery = '';
 let searchDebounceTimer = null;
+let availableDatabases = [];
+let currentDatabase = 'default';
 
 // ✅ FIXED: Point to Go backend API
 const API_URL = 'http://localhost:8080';
@@ -171,14 +182,81 @@ function getAuthHeaders() {
 }
 
 document.addEventListener('DOMContentLoaded', async function() {
+    await loadDatabases();
     await loadTables();
 });
 
+function appendDatabaseQuery(url) {
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}database=${encodeURIComponent(currentDatabase)}`;
+}
+
+async function loadDatabases() {
+    try {
+        const response = await fetch(`${API_URL}/simple-multi/databases`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: getAuthHeaders()
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to load databases');
+        }
+
+        const data = await response.json();
+        availableDatabases = data.databases || [];
+
+        if (availableDatabases.length === 0) {
+            availableDatabases = [{ name: 'default', db_name: 'default', type: 'default' }];
+        }
+
+        const hasCurrent = availableDatabases.some(db => db.name === currentDatabase);
+        if (!hasCurrent) {
+            currentDatabase = availableDatabases[0].name;
+        }
+
+        renderDatabaseSelector();
+    } catch (error) {
+        console.error('Load databases error:', error);
+        availableDatabases = [{ name: 'default', db_name: 'default', type: 'default' }];
+        currentDatabase = 'default';
+        renderDatabaseSelector();
+        showAlert('Using default database. Unable to load database list.', 'error');
+    }
+}
+
+function renderDatabaseSelector() {
+    const select = document.getElementById('databaseSelect');
+    if (!select) return;
+
+    select.innerHTML = availableDatabases.map(db => {
+        const label = getDatabaseDisplayName(db);
+        return `<option value="${db.name}">${label}</option>`;
+    }).join('');
+
+    select.value = currentDatabase;
+}
+
+function getDatabaseDisplayName(databaseItem) {
+    const rawName = String(databaseItem?.db_name || databaseItem?.name || 'default').trim();
+    const matchInParentheses = rawName.match(/\(([^)]+)\)\s*$/);
+    if (matchInParentheses && matchInParentheses[1]) {
+        return matchInParentheses[1].trim();
+    }
+    return rawName;
+}
+
+function onDatabaseChange(databaseName) {
+    currentDatabase = databaseName || 'default';
+    closeTableViewer();
+    loadTables();
+}
+
 async function loadTables() {
     try {
-        let url = `${API_URL}/simple-multi/tables`;
+        let url = appendDatabaseQuery(`${API_URL}/simple-multi/tables`);
         if (userId && userRole !== 'admin') {
-            url += `?user_id=${userId}&user_role=${userRole}`;
+            url += `&user_id=${userId}&user_role=${userRole}`;
         }
         
         const response = await fetch(url, {
@@ -281,7 +359,7 @@ async function viewTable(tableName) {
 }
 
 async function loadTableColumns() {
-    const response = await fetch(`${API_URL}/simple-multi/tables/${currentTable}/columns`, {
+    const response = await fetch(appendDatabaseQuery(`${API_URL}/simple-multi/tables/${currentTable}/columns`), {
         method: 'GET',
         credentials: 'include',
         headers: getAuthHeaders()
@@ -300,6 +378,7 @@ async function loadTableColumns() {
 async function loadTableData() {
     try {
         let dataUrl = `${API_URL}/simple-multi/tables/${currentTable}?page=${currentPage}&page_size=${pageSize}`;
+        dataUrl = appendDatabaseQuery(dataUrl);
         if (tableSearchQuery) {
             dataUrl += `&search=${encodeURIComponent(tableSearchQuery)}`;
         }
@@ -561,7 +640,7 @@ document.getElementById('rowEditorForm').addEventListener('submit', async functi
                 data: payloadData,
             };
 
-        const response = await fetch(`${API_URL}/simple-multi/tables/${currentTable}/rows`, {
+        const responseWithDatabase = await fetch(appendDatabaseQuery(`${API_URL}/simple-multi/tables/${currentTable}/rows`), {
             method,
             credentials: 'include',
             headers: {
@@ -571,8 +650,8 @@ document.getElementById('rowEditorForm').addEventListener('submit', async functi
             body: JSON.stringify(requestBody),
         });
 
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok) {
+        const result = await responseWithDatabase.json().catch(() => ({}));
+        if (!responseWithDatabase.ok) {
             throw new Error(result.error || 'Operation failed');
         }
 
@@ -603,7 +682,7 @@ async function deleteSelectedRow() {
     }
 
     try {
-        const response = await fetch(`${API_URL}/simple-multi/tables/${currentTable}/rows`, {
+        const response = await fetch(appendDatabaseQuery(`${API_URL}/simple-multi/tables/${currentTable}/rows`), {
             method: 'DELETE',
             credentials: 'include',
             headers: {

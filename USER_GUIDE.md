@@ -1,6 +1,6 @@
-# Data Import Dashboard - Screenshots & Guide
+﻿# DataBridge - Screenshots & Guide
 
-## 🖼️ Application Screenshots
+## ðŸ–¼ï¸ Application Screenshots
 
 ### Dashboard
 ![Dashboard](docs/screenshots/dashboard.png)
@@ -58,15 +58,15 @@
 - Pagination and sorting
 - Detailed statistics
 
-## 📱 Responsive Design
+## ðŸ“± Responsive Design
 
 The application is fully responsive and works on:
-- 🖥️ Desktop (1920x1080+)
-- 💻 Laptop (1366x768+)
-- 📱 Tablet (768x1024+)
-- 📱 Mobile (375x667+)
+- ðŸ–¥ï¸ Desktop (1920x1080+)
+- ðŸ’» Laptop (1366x768+)
+- ðŸ“± Tablet (768x1024+)
+- ðŸ“± Mobile (375x667+)
 
-## 🎨 Color Scheme
+## ðŸŽ¨ Color Scheme
 
 - **Primary**: Blue (#2563eb) - Actions, links, buttons
 - **Success**: Green (#10b981) - Success messages, active status
@@ -74,29 +74,29 @@ The application is fully responsive and works on:
 - **Danger**: Red (#ef4444) - Errors, delete actions
 - **Gray**: Various shades for text and backgrounds
 
-## 🧭 Navigation Flow
+## ðŸ§­ Navigation Flow
 
 ```
 Dashboard (/)
-├── Data Records (/data-records)
-│   ├── Create New (/data-records/create)
-│   └── Edit Record (/data-records/:id/edit)
-│
-├── Documents (/documents)
-│   └── Upload Document (/documents/create)
-│
-├── Import (/import)
-│   ├── Import CSV
-│   ├── Import JSON
-│   └── Import History (/import/history)
-│
-└── Export (/export)
-    ├── Export CSV
-    ├── Export JSON
-    └── Export Excel
+â”œâ”€â”€ Data Records (/data-records)
+â”‚   â”œâ”€â”€ Create New (/data-records/create)
+â”‚   â””â”€â”€ Edit Record (/data-records/:id/edit)
+â”‚
+â”œâ”€â”€ Documents (/documents)
+â”‚   â””â”€â”€ Upload Document (/documents/create)
+â”‚
+â”œâ”€â”€ Import (/import)
+â”‚   â”œâ”€â”€ Import CSV
+â”‚   â”œâ”€â”€ Import JSON
+â”‚   â””â”€â”€ Import History (/import/history)
+â”‚
+â””â”€â”€ Export (/export)
+    â”œâ”€â”€ Export CSV
+    â”œâ”€â”€ Export JSON
+    â””â”€â”€ Export Excel
 ```
 
-## 🎯 User Workflows
+## ðŸŽ¯ User Workflows
 
 ### Workflow 1: Add New Data Record
 1. Click "Data Records" in navigation
@@ -134,7 +134,7 @@ Dashboard (/)
 4. Click download button
 5. File downloads automatically
 
-## 💡 Tips & Best Practices
+## ðŸ’¡ Tips & Best Practices
 
 ### Data Management
 - Use consistent category names
@@ -154,7 +154,7 @@ Dashboard (/)
 - Check import history for errors
 - Export regularly for backups
 
-## 🔍 Search & Filter Tips
+## ðŸ” Search & Filter Tips
 
 ### Data Records Page
 - **Search**: Type name or description
@@ -167,20 +167,20 @@ Dashboard (/)
 - **Category Filter**: Filter by document type
 - Results update instantly
 
-## 🎨 Customization
+## ðŸŽ¨ Customization
 
 ### Change Colors
 Edit `frontend/resources/views/layouts/app.blade.php`:
 ```php
 <!-- Change primary color -->
-class="bg-blue-600"  → class="bg-purple-600"
+class="bg-blue-600"  â†’ class="bg-purple-600"
 ```
 
 ### Change Logo/Branding
 Edit navigation in `layouts/app.blade.php`:
 ```php
 <a href="/" class="text-xl font-bold">
-    📊 Your Company Name
+    ðŸ“Š Your Company Name
 </a>
 ```
 
@@ -190,47 +190,47 @@ Edit navigation in `layouts/app.blade.php`:
 3. Update API calls
 4. Test thoroughly
 
-## 📐 Layout Structure
+## ðŸ“ Layout Structure
 
 All pages follow this structure:
 ```
-┌────────────────────────────────────┐
-│         Navigation Bar             │
-├────────────────────────────────────┤
-│         Alert Messages             │
-├────────────────────────────────────┤
-│                                    │
-│         Page Content               │
-│                                    │
-│  ┌──────────────────────────────┐ │
-│  │                              │ │
-│  │     Main Content Area        │ │
-│  │                              │ │
-│  └──────────────────────────────┘ │
-│                                    │
-├────────────────────────────────────┤
-│            Footer                  │
-└────────────────────────────────────┘
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚         Navigation Bar             â”‚
+â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚         Alert Messages             â”‚
+â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚                                    â”‚
+â”‚         Page Content               â”‚
+â”‚                                    â”‚
+â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”‚
+â”‚  â”‚                              â”‚ â”‚
+â”‚  â”‚     Main Content Area        â”‚ â”‚
+â”‚  â”‚                              â”‚ â”‚
+â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜ â”‚
+â”‚                                    â”‚
+â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
+â”‚            Footer                  â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 ```
 
-## 🚦 Status Indicators
+## ðŸš¦ Status Indicators
 
 ### Server Status (Dashboard)
-- 🟢 **Green "Online"**: Backend connected and healthy
-- 🔴 **Red "Offline"**: Backend not responding
-- ⚠️ **Yellow "Error"**: Connection issues
+- ðŸŸ¢ **Green "Online"**: Backend connected and healthy
+- ðŸ”´ **Red "Offline"**: Backend not responding
+- âš ï¸ **Yellow "Error"**: Connection issues
 
 ### Record Status
-- 🟢 **Active**: Currently in use
-- ⚪ **Inactive**: Not currently active
-- 🟡 **Pending**: Awaiting action
+- ðŸŸ¢ **Active**: Currently in use
+- âšª **Inactive**: Not currently active
+- ðŸŸ¡ **Pending**: Awaiting action
 
 ### Import Status
-- 🟢 **Completed**: Import successful
-- 🔴 **Failed**: Import had errors
-- 🟡 **Processing**: Import in progress
+- ðŸŸ¢ **Completed**: Import successful
+- ðŸ”´ **Failed**: Import had errors
+- ðŸŸ¡ **Processing**: Import in progress
 
-## 📊 Data Format Examples
+## ðŸ“Š Data Format Examples
 
 ### CSV Format
 ```csv
@@ -252,7 +252,7 @@ Product 2,Another item,furniture,149.99,active
 ]
 ```
 
-## 🎓 Learning Resources
+## ðŸŽ“ Learning Resources
 
 ### Laravel
 - Official Docs: https://laravel.com/docs
@@ -266,7 +266,7 @@ Product 2,Another item,furniture,149.99,active
 - Go Docs: https://go.dev/doc
 - Gin Framework: https://gin-gonic.com/docs
 
-## 📞 Getting Help
+## ðŸ“ž Getting Help
 
 1. **Check Documentation**
    - Backend: `backend/README.md`
@@ -306,6 +306,7 @@ Before deploying to production:
 
 ---
 
-**Ready to use! 🚀**
+**Ready to use! ðŸš€**
 
 For detailed setup instructions, see `QUICK_START.md` in each directory.
+

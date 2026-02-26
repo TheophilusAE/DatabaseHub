@@ -73,7 +73,7 @@ func (h *MultiTableExportHandler) exportFromSingleTable(c *gin.Context, exportCo
 	}
 
 	// Get database connection
-	db, err := h.dbManager.GetConnection(tableConfig.DatabaseName)
+	db, err := h.resolveConnection(tableConfig.DatabaseName)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Database connection error: %v", err)})
 		return
@@ -132,8 +132,8 @@ func (h *MultiTableExportHandler) exportFromJoin(c *gin.Context, exportConfig *m
 		return
 	}
 
-	// Get database connections (assuming both tables are in same database for now)
-	db, err := h.dbManager.GetConnection(tableJoin.LeftTable.DatabaseName)
+	// Get database connection (supports legacy stored database aliases)
+	db, err := h.resolveConnection(tableJoin.LeftTable.DatabaseName)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Database connection error: %v", err)})
 		return
@@ -152,7 +152,7 @@ func (h *MultiTableExportHandler) exportFromJoin(c *gin.Context, exportConfig *m
 
 	// Build JOIN query
 	query := fmt.Sprintf(
-		"SELECT %s FROM %s AS left_table %s JOIN %s AS right_table ON %s",
+		"SELECT %s FROM %s %s JOIN %s ON %s",
 		strings.Join(selectColumns, ", "),
 		tableJoin.LeftTable.Table,
 		tableJoin.JoinType,
@@ -190,6 +190,61 @@ func (h *MultiTableExportHandler) exportFromJoin(c *gin.Context, exportConfig *m
 	}
 }
 
+// ExportJoinedDataAsFile exports joined data directly by join_name without requiring export configuration
+func (h *MultiTableExportHandler) ExportJoinedDataAsFile(c *gin.Context) {
+	joinName := c.Query("join_name")
+	if joinName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "join_name is required"})
+		return
+	}
+
+	format := strings.ToLower(strings.TrimSpace(c.DefaultQuery("format", "csv")))
+	if format == "" {
+		format = "csv"
+	}
+
+	tableJoin, err := h.tableJoinRepo.FindByName(joinName)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Table join configuration not found"})
+		return
+	}
+
+	if tableJoin.LeftTable.ID == 0 || tableJoin.RightTable.ID == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Join table references are incomplete"})
+		return
+	}
+
+	db, err := h.resolveConnection(tableJoin.LeftTable.DatabaseName)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Database connection error: %v", err)})
+		return
+	}
+
+	selectColumns := []string{"*"}
+	if strings.TrimSpace(tableJoin.SelectColumns) != "" {
+		var parsed []string
+		if err := json.Unmarshal([]byte(tableJoin.SelectColumns), &parsed); err == nil && len(parsed) > 0 {
+			selectColumns = parsed
+		}
+	}
+
+	query := fmt.Sprintf(
+		"SELECT %s FROM %s %s JOIN %s ON %s",
+		strings.Join(selectColumns, ", "),
+		tableJoin.LeftTable.Table,
+		tableJoin.JoinType,
+		tableJoin.RightTable.Table,
+		tableJoin.JoinCondition,
+	)
+
+	switch format {
+	case "json":
+		h.exportToJSON(c, db, query)
+	default:
+		h.exportToCSV(c, db, query, tableJoin.Name)
+	}
+}
+
 // ExportJoinedDataToTable exports joined data and imports it into a target table
 func (h *MultiTableExportHandler) ExportJoinedDataToTable(c *gin.Context) {
 	joinName := c.Query("join_name")
@@ -211,7 +266,7 @@ func (h *MultiTableExportHandler) ExportJoinedDataToTable(c *gin.Context) {
 	}
 
 	// Get source database
-	sourceDB, err := h.dbManager.GetConnection(tableJoin.LeftTable.DatabaseName)
+	sourceDB, err := h.resolveConnection(tableJoin.LeftTable.DatabaseName)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Source database connection error"})
 		return
@@ -225,7 +280,7 @@ func (h *MultiTableExportHandler) ExportJoinedDataToTable(c *gin.Context) {
 	}
 
 	// Get target database
-	targetDB, err := h.dbManager.GetConnection(targetTable.DatabaseName)
+	targetDB, err := h.resolveConnection(targetTable.DatabaseName)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Target database connection error"})
 		return
@@ -245,7 +300,7 @@ func (h *MultiTableExportHandler) ExportJoinedDataToTable(c *gin.Context) {
 
 	// Build JOIN query
 	query := fmt.Sprintf(
-		"SELECT %s FROM %s AS left_table %s JOIN %s AS right_table ON %s",
+		"SELECT %s FROM %s %s JOIN %s ON %s",
 		strings.Join(selectColumns, ", "),
 		tableJoin.LeftTable.Table,
 		tableJoin.JoinType,
@@ -410,6 +465,50 @@ func (h *MultiTableExportHandler) buildWhereClause(filters map[string]interface{
 		}
 	}
 	return strings.Join(conditions, " AND ")
+}
+
+func (h *MultiTableExportHandler) resolveConnection(requestedName string) (*gorm.DB, error) {
+	normalized := strings.ToLower(strings.TrimSpace(requestedName))
+	if normalized == "" {
+		normalized = "default"
+	}
+
+	if db, err := h.dbManager.GetConnection(normalized); err == nil {
+		return db, nil
+	}
+
+	connectionDetails := h.dbManager.ListConnectionDetails()
+
+	for _, conn := range connectionDetails {
+		if conn == nil {
+			continue
+		}
+		if strings.EqualFold(conn.DBName, normalized) {
+			return h.dbManager.GetConnection(conn.Name)
+		}
+	}
+
+	if normalized == "postgres" || normalized == "mysql" {
+		for _, conn := range connectionDetails {
+			if conn == nil {
+				continue
+			}
+			if strings.EqualFold(conn.Type, normalized) && strings.EqualFold(conn.Name, "default") {
+				return h.dbManager.GetConnection(conn.Name)
+			}
+		}
+
+		for _, conn := range connectionDetails {
+			if conn == nil {
+				continue
+			}
+			if strings.EqualFold(conn.Type, normalized) {
+				return h.dbManager.GetConnection(conn.Name)
+			}
+		}
+	}
+
+	return nil, fmt.Errorf("database connection '%s' not found", requestedName)
 }
 
 // convertOperator converts MongoDB-style operators to SQL

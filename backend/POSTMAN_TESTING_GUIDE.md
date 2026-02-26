@@ -1,12 +1,12 @@
-# Postman Testing Guide
+﻿# Postman Testing Guide
 
-Complete guide to test the Data Import Dashboard Backend API using Postman.
+Complete guide to test the DataBridge Backend API using Postman.
 
 ## Prerequisites
 
-1. ✅ Backend server is running on `http://localhost:8080`
-2. ✅ Postman installed (Download: https://www.postman.com/downloads/)
-3. ✅ Database is configured and connected
+1. âœ… Backend server is running on `http://localhost:8080`
+2. âœ… Postman installed (Download: https://www.postman.com/downloads/)
+3. âœ… Database is configured and connected
 
 ---
 
@@ -19,7 +19,7 @@ Complete guide to test the Data Import Dashboard Backend API using Postman.
 
 Wait for:
 ```
-✓ Server is ready and running!
+âœ“ Server is ready and running!
 URL: http://localhost:8080
 ```
 
@@ -355,7 +355,7 @@ For detailed JSON format requirements, see: `JSON_IMPORT_GUIDE.md`
 2. Set method to `GET`
 3. Enter URL: `http://localhost:8080/download/csv`
 4. Click **Send**
-5. Click **Save Response** → **Save to a file**
+5. Click **Save Response** â†’ **Save to a file**
 
 **Expected Response:**
 - CSV file download
@@ -381,7 +381,7 @@ URL: `http://localhost:8080/download/csv?category=electronics`
 2. Set method to `GET`
 3. Enter URL: `http://localhost:8080/download/json`
 4. Click **Send**
-5. Click **Save Response** → **Save to a file**
+5. Click **Save Response** â†’ **Save to a file**
 
 **Expected Response:**
 - JSON file download
@@ -405,7 +405,7 @@ URL: `http://localhost:8080/download/csv?category=electronics`
 4. Go to **Body** tab
 5. Select **form-data**
 6. Add keys:
-   - Key: `file`, Type: **File** → Select any file (PDF, image, video, etc.)
+   - Key: `file`, Type: **File** â†’ Select any file (PDF, image, video, etc.)
    - Key: `category`, Type: Text, Value: `reports`
    - Key: `description`, Type: Text, Value: `Test document upload`
 7. Click **Send**
@@ -494,7 +494,7 @@ URL: `http://localhost:8080/download/csv?category=electronics`
 3. Enter URL: `http://localhost:8080/documents/1/download`
    - Replace `1` with your document ID
 4. Click **Send**
-5. Click **Save Response** → **Save to a file**
+5. Click **Save Response** â†’ **Save to a file**
 
 **Expected Response:**
 - File download with original filename
@@ -557,9 +557,9 @@ URL: `http://localhost:8080/download/csv?category=electronics`
 ### Save as Collection:
 1. Click **Collections** in left sidebar
 2. Click **+** to create new collection
-3. Name it: "Data Import Dashboard API"
+3. Name it: "DataBridge API"
 4. Add all requests to this collection
-5. Click **...** → **Export** to save
+5. Click **...** â†’ **Export** to save
 
 ### Environment Variables:
 1. Click **Environments** in left sidebar
@@ -677,11 +677,11 @@ All routes are now simple, intuitive, and easy to remember!
 
 ## Next Steps
 
-1. ✅ Test all endpoints in Postman
-2. 📋 Export Postman collection for team use
-3. 🔄 Integrate with Laravel frontend
-4. 📊 Monitor import logs for any issues
-5. 🚀 Ready for production!
+1. âœ… Test all endpoints in Postman
+2. ðŸ“‹ Export Postman collection for team use
+3. ðŸ”„ Integrate with Laravel frontend
+4. ðŸ“Š Monitor import logs for any issues
+5. ðŸš€ Ready for production!
 
 ---
 
@@ -691,4 +691,5 @@ For detailed API documentation, see: `API_DOCUMENTATION.md`
 
 ---
 
-**Happy Testing! 🚀**
+**Happy Testing! ðŸš€**
+

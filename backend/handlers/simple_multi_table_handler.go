@@ -31,16 +31,98 @@ var (
 
 type SimpleMultiTableHandler struct {
 	DB              *gorm.DB
+	DBManager       *config.MultiDatabaseManager
 	PermRepo        *repository.UserTablePermissionRepository
 	TableConfigRepo *repository.TableConfigRepository
 }
 
-func NewSimpleMultiTableHandler(db *gorm.DB, permRepo *repository.UserTablePermissionRepository, tableConfigRepo *repository.TableConfigRepository) *SimpleMultiTableHandler {
+func NewSimpleMultiTableHandler(db *gorm.DB, dbManager *config.MultiDatabaseManager, permRepo *repository.UserTablePermissionRepository, tableConfigRepo *repository.TableConfigRepository) *SimpleMultiTableHandler {
+	if dbManager == nil {
+		dbManager = config.GetMultiDatabaseManager()
+	}
+
 	return &SimpleMultiTableHandler{
 		DB:              db,
+		DBManager:       dbManager,
 		PermRepo:        permRepo,
 		TableConfigRepo: tableConfigRepo,
 	}
+}
+
+// ListDatabases returns databases available for the current user in simple-multi view
+func (h *SimpleMultiTableHandler) ListDatabases(c *gin.Context) {
+	userID := c.GetUint("user_id")
+	role := strings.ToLower(strings.TrimSpace(c.GetString("user_role")))
+	if role == "" {
+		role = strings.ToLower(strings.TrimSpace(c.Query("user_role")))
+	}
+	isAdmin := role == "admin"
+
+	type databaseItem struct {
+		Name   string `json:"name"`
+		Type   string `json:"type"`
+		DBName string `json:"db_name"`
+	}
+
+	databaseMap := map[string]databaseItem{}
+
+	if isAdmin {
+		if h.DBManager != nil {
+			for _, conn := range h.DBManager.ListConnectionDetails() {
+				databaseMap[conn.Name] = databaseItem{
+					Name:   conn.Name,
+					Type:   conn.Type,
+					DBName: conn.DBName,
+				}
+			}
+		}
+	} else {
+		if userID == 0 {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Missing user identity for database access"})
+			return
+		}
+
+		accessibleTables, err := h.PermRepo.GetAccessibleTables(userID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch user table permissions"})
+			return
+		}
+
+		for _, tableConfig := range accessibleTables {
+			databaseName := strings.TrimSpace(tableConfig.DatabaseName)
+			if databaseName == "" {
+				databaseName = "default"
+			}
+
+			item := databaseItem{Name: databaseName, Type: "unknown", DBName: databaseName}
+			if h.DBManager != nil {
+				if conn := h.DBManager.GetConnectionInfoSafe(databaseName); conn != nil {
+					item.Type = conn.Type
+					item.DBName = conn.DBName
+				}
+			}
+
+			databaseMap[databaseName] = item
+		}
+	}
+
+	if len(databaseMap) == 0 {
+		databaseMap["default"] = databaseItem{Name: "default", Type: "default", DBName: "default"}
+	}
+
+	databases := make([]databaseItem, 0, len(databaseMap))
+	for _, item := range databaseMap {
+		databases = append(databases, item)
+	}
+
+	sort.Slice(databases, func(i, j int) bool {
+		return strings.ToLower(databases[i].Name) < strings.ToLower(databases[j].Name)
+	})
+
+	c.JSON(http.StatusOK, gin.H{
+		"databases": databases,
+		"count":     len(databases),
+	})
 }
 
 // TableInfo represents a table in the database
@@ -77,6 +159,11 @@ type DeleteTableRowRequest struct {
 // ListTables returns all tables in the current database (with permission filtering)
 func (h *SimpleMultiTableHandler) ListTables(c *gin.Context) {
 	var tables []TableInfo
+	databaseName, dbConn, err := h.resolveRequestDatabase(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
 	//  Get user from context (set by AuthRequired middleware)
 	userID := c.GetUint("user_id")
@@ -116,7 +203,7 @@ func (h *SimpleMultiTableHandler) ListTables(c *gin.Context) {
 		ORDER BY table_name
 	`
 
-	rows, err := h.DB.Raw(query).Rows()
+	rows, err := dbConn.Raw(query).Rows()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch tables: " + err.Error()})
 		return
@@ -130,7 +217,13 @@ func (h *SimpleMultiTableHandler) ListTables(c *gin.Context) {
 		accessibleTables, err := h.PermRepo.GetAccessibleTables(userID)
 		if err == nil {
 			for _, tableConfig := range accessibleTables {
-				accessibleTableNames[tableConfig.Table] = true
+				cfgDB := strings.TrimSpace(tableConfig.DatabaseName)
+				if cfgDB == "" {
+					cfgDB = "default"
+				}
+				if strings.EqualFold(cfgDB, databaseName) {
+					accessibleTableNames[tableConfig.Table] = true
+				}
 			}
 		}
 	}
@@ -150,7 +243,7 @@ func (h *SimpleMultiTableHandler) ListTables(c *gin.Context) {
 
 		// Get row count for each table
 		var count int64
-		h.DB.Raw(fmt.Sprintf("SELECT COUNT(*) FROM %s", tableName)).Scan(&count)
+		dbConn.Raw(fmt.Sprintf("SELECT COUNT(*) FROM %s", tableName)).Scan(&count)
 
 		tables = append(tables, TableInfo{
 			TableName: tableName,
@@ -159,21 +252,27 @@ func (h *SimpleMultiTableHandler) ListTables(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"tables": tables,
-		"count":  len(tables),
+		"database": databaseName,
+		"tables":   tables,
+		"count":    len(tables),
 	})
 }
 
 // GetTableColumns returns column information for a specific table
 func (h *SimpleMultiTableHandler) GetTableColumns(c *gin.Context) {
 	tableName := c.Param("table")
+	_, dbConn, err := h.resolveRequestDatabase(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
 	if tableName == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Table name is required"})
 		return
 	}
 
-	columns, err := h.getTableColumnsMetadata(tableName)
+	columns, err := h.getTableColumnsMetadata(dbConn, tableName)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch columns: " + err.Error()})
 		return
@@ -190,6 +289,12 @@ func (h *SimpleMultiTableHandler) GetTableColumns(c *gin.Context) {
 // User: can create only in tables they are allowed to access
 func (h *SimpleMultiTableHandler) CreateTableRow(c *gin.Context) {
 	tableName := c.Param("table")
+	databaseName, dbConn, err := h.resolveRequestDatabase(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	if !isValidIdentifier(tableName) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid table name"})
 		return
@@ -203,7 +308,7 @@ func (h *SimpleMultiTableHandler) CreateTableRow(c *gin.Context) {
 			return
 		}
 
-		hasAccess, err := h.userCanAccessTable(userID, tableName)
+		hasAccess, err := h.userCanAccessTable(userID, tableName, databaseName)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to verify table access"})
 			return
@@ -225,7 +330,7 @@ func (h *SimpleMultiTableHandler) CreateTableRow(c *gin.Context) {
 		return
 	}
 
-	columns, err := h.getTableColumnsMetadata(tableName)
+	columns, err := h.getTableColumnsMetadata(dbConn, tableName)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read table columns"})
 		return
@@ -290,7 +395,7 @@ func (h *SimpleMultiTableHandler) CreateTableRow(c *gin.Context) {
 		strings.Join(placeholders, ", "),
 	)
 
-	if err := h.DB.Exec(query, insertValues...).Error; err != nil {
+	if err := dbConn.Exec(query, insertValues...).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create row: " + err.Error()})
 		return
 	}
@@ -302,6 +407,12 @@ func (h *SimpleMultiTableHandler) CreateTableRow(c *gin.Context) {
 func (h *SimpleMultiTableHandler) UpdateTableRow(c *gin.Context) {
 	if !h.isAdminRequest(c) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Only admin can update table rows"})
+		return
+	}
+
+	_, dbConn, err := h.resolveRequestDatabase(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -322,7 +433,7 @@ func (h *SimpleMultiTableHandler) UpdateTableRow(c *gin.Context) {
 		return
 	}
 
-	pkColumns, err := h.getPrimaryKeyColumns(tableName)
+	pkColumns, err := h.getPrimaryKeyColumns(dbConn, tableName)
 	if err != nil || len(pkColumns) == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Primary key not found for this table"})
 		return
@@ -338,7 +449,7 @@ func (h *SimpleMultiTableHandler) UpdateTableRow(c *gin.Context) {
 		return
 	}
 
-	columns, err := h.getTableColumnsMetadata(tableName)
+	columns, err := h.getTableColumnsMetadata(dbConn, tableName)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read table columns"})
 		return
@@ -383,7 +494,7 @@ func (h *SimpleMultiTableHandler) UpdateTableRow(c *gin.Context) {
 	setValues = append(setValues, request.PrimaryKeyValue)
 	query := fmt.Sprintf("UPDATE %s SET %s WHERE %s = ?", quoteIdentifier(tableName), strings.Join(setParts, ", "), quoteIdentifier(pkColumn))
 
-	result := h.DB.Exec(query, setValues...)
+	result := dbConn.Exec(query, setValues...)
 	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update row: " + result.Error.Error()})
 		return
@@ -404,6 +515,12 @@ func (h *SimpleMultiTableHandler) DeleteTableRow(c *gin.Context) {
 		return
 	}
 
+	_, dbConn, err := h.resolveRequestDatabase(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	tableName := c.Param("table")
 	if !isValidIdentifier(tableName) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid table name"})
@@ -416,7 +533,7 @@ func (h *SimpleMultiTableHandler) DeleteTableRow(c *gin.Context) {
 		return
 	}
 
-	pkColumns, err := h.getPrimaryKeyColumns(tableName)
+	pkColumns, err := h.getPrimaryKeyColumns(dbConn, tableName)
 	if err != nil || len(pkColumns) == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Primary key not found for this table"})
 		return
@@ -433,7 +550,7 @@ func (h *SimpleMultiTableHandler) DeleteTableRow(c *gin.Context) {
 	}
 
 	query := fmt.Sprintf("DELETE FROM %s WHERE %s = ?", quoteIdentifier(tableName), quoteIdentifier(pkColumn))
-	result := h.DB.Exec(query, request.PrimaryKeyValue)
+	result := dbConn.Exec(query, request.PrimaryKeyValue)
 	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete row: " + result.Error.Error()})
 		return
@@ -450,6 +567,11 @@ func (h *SimpleMultiTableHandler) DeleteTableRow(c *gin.Context) {
 // GetTableData returns paginated data from a specific table
 func (h *SimpleMultiTableHandler) GetTableData(c *gin.Context) {
 	tableName := c.Param("table")
+	databaseName, dbConn, err := h.resolveRequestDatabase(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "50"))
 
@@ -492,7 +614,12 @@ func (h *SimpleMultiTableHandler) GetTableData(c *gin.Context) {
 
 		hasAccess := false
 		for _, tableConfig := range accessibleTables {
-			if tableConfig.Table == tableName {
+			cfgDB := strings.TrimSpace(tableConfig.DatabaseName)
+			if cfgDB == "" {
+				cfgDB = "default"
+			}
+
+			if tableConfig.Table == tableName && strings.EqualFold(cfgDB, databaseName) {
 				hasAccess = true
 				break
 			}
@@ -518,7 +645,7 @@ func (h *SimpleMultiTableHandler) GetTableData(c *gin.Context) {
 			WHERE table_schema = 'public' AND table_name = ?
 		)
 	`
-	if err := h.DB.Raw(query, tableName).Scan(&exists).Error; err != nil {
+	if err := dbConn.Raw(query, tableName).Scan(&exists).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to validate table: " + err.Error()})
 		return
 	}
@@ -539,10 +666,10 @@ func (h *SimpleMultiTableHandler) GetTableData(c *gin.Context) {
 
 	// Get total count
 	var totalCount int64
-	h.DB.Raw(fmt.Sprintf("SELECT COUNT(*) FROM %s", tableName)).Scan(&totalCount)
+	dbConn.Raw(fmt.Sprintf("SELECT COUNT(*) FROM %s", tableName)).Scan(&totalCount)
 
 	// Get paginated data
-	rows, err := h.DB.Raw(fmt.Sprintf("SELECT * FROM %s LIMIT ? OFFSET ?", tableName), pageSize, offset).Rows()
+	rows, err := dbConn.Raw(fmt.Sprintf("SELECT * FROM %s LIMIT ? OFFSET ?", tableName), pageSize, offset).Rows()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch data: " + err.Error()})
 		return
@@ -588,6 +715,7 @@ func (h *SimpleMultiTableHandler) GetTableData(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
+		"database":    databaseName,
 		"table":       tableName,
 		"data":        data,
 		"page":        page,
@@ -913,7 +1041,7 @@ func (h *SimpleMultiTableHandler) importCSVToTablePostgresCopyStream(file io.Rea
 		quotedColumns[i] = quoteIdentifier(col)
 	}
 
-copyOptions := "FORMAT csv, HEADER true"
+	copyOptions := "FORMAT csv, HEADER true"
 	if truncateBeforeImport {
 		copyOptions += ", FREEZE true"
 	}
@@ -1360,14 +1488,19 @@ func (h *SimpleMultiTableHandler) isAdminRequest(c *gin.Context) bool {
 	return role == "admin"
 }
 
-func (h *SimpleMultiTableHandler) userCanAccessTable(userID uint, tableName string) (bool, error) {
+func (h *SimpleMultiTableHandler) userCanAccessTable(userID uint, tableName string, databaseName string) (bool, error) {
 	accessibleTables, err := h.PermRepo.GetAccessibleTables(userID)
 	if err != nil {
 		return false, err
 	}
 
 	for _, tableConfig := range accessibleTables {
-		if strings.EqualFold(tableConfig.Table, tableName) {
+		cfgDB := strings.TrimSpace(tableConfig.DatabaseName)
+		if cfgDB == "" {
+			cfgDB = "default"
+		}
+
+		if strings.EqualFold(tableConfig.Table, tableName) && strings.EqualFold(cfgDB, databaseName) {
 			return true, nil
 		}
 	}
@@ -1375,7 +1508,7 @@ func (h *SimpleMultiTableHandler) userCanAccessTable(userID uint, tableName stri
 	return false, nil
 }
 
-func (h *SimpleMultiTableHandler) getPrimaryKeyColumns(tableName string) ([]string, error) {
+func (h *SimpleMultiTableHandler) getPrimaryKeyColumns(db *gorm.DB, tableName string) ([]string, error) {
 	query := `
 		SELECT kcu.column_name
 		FROM information_schema.table_constraints tc
@@ -1388,7 +1521,7 @@ func (h *SimpleMultiTableHandler) getPrimaryKeyColumns(tableName string) ([]stri
 		ORDER BY kcu.ordinal_position
 	`
 
-	rows, err := h.DB.Raw(query, tableName).Rows()
+	rows, err := db.Raw(query, tableName).Rows()
 	if err != nil {
 		return nil, err
 	}
@@ -1406,7 +1539,7 @@ func (h *SimpleMultiTableHandler) getPrimaryKeyColumns(tableName string) ([]stri
 	return columns, nil
 }
 
-func (h *SimpleMultiTableHandler) getTableColumnsMetadata(tableName string) ([]ColumnInfo, error) {
+func (h *SimpleMultiTableHandler) getTableColumnsMetadata(db *gorm.DB, tableName string) ([]ColumnInfo, error) {
 	query := `
 		SELECT
 			c.column_name,
@@ -1429,7 +1562,7 @@ func (h *SimpleMultiTableHandler) getTableColumnsMetadata(tableName string) ([]C
 		ORDER BY c.ordinal_position
 	`
 
-	rows, err := h.DB.Raw(query, tableName).Rows()
+	rows, err := db.Raw(query, tableName).Rows()
 	if err != nil {
 		return nil, err
 	}
@@ -1445,6 +1578,26 @@ func (h *SimpleMultiTableHandler) getTableColumnsMetadata(tableName string) ([]C
 	}
 
 	return columns, nil
+}
+
+func (h *SimpleMultiTableHandler) resolveRequestDatabase(c *gin.Context) (string, *gorm.DB, error) {
+	databaseName := strings.TrimSpace(c.Query("database"))
+	if databaseName == "" {
+		databaseName = "default"
+	}
+
+	if h.DBManager != nil {
+		dbConn, err := h.DBManager.GetConnection(databaseName)
+		if err == nil {
+			return databaseName, dbConn, nil
+		}
+	}
+
+	if databaseName == "default" {
+		return databaseName, h.DB, nil
+	}
+
+	return "", nil, fmt.Errorf("database '%s' not found", databaseName)
 }
 
 func qualifyFilterWithAlias(filterExpr string, alias string, tableColumns []string) string {

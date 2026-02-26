@@ -1,11 +1,11 @@
-# Quick Start Guide
+﻿# Quick Start Guide
 
 ## Prerequisites Check
 
 Before starting, ensure you have:
-- ✅ Go 1.21 or higher installed
-- ✅ MySQL or PostgreSQL database server (local or remote)
-- ✅ Database created and credentials ready
+- âœ… Go 1.21 or higher installed
+- âœ… MySQL or PostgreSQL database server (local or remote)
+- âœ… Database created and credentials ready
 
 ## Step-by-Step Setup
 
@@ -226,7 +226,7 @@ go mod download
 When the server starts successfully, you'll see:
 ```
 =========================================
-Data Import Dashboard - Backend Server
+DataBridge - Backend Server
 =========================================
 
 Configuration loaded successfully
@@ -236,10 +236,10 @@ Database Host: localhost:3306
 
 Connecting to database...
 Running database migrations...
-✓ Database migration completed successfully
+âœ“ Database migration completed successfully
 
 =========================================
-✓ Server is ready and running!
+âœ“ Server is ready and running!
 =========================================
   URL:         http://localhost:8080
   Health:      http://localhost:8080/health
@@ -252,11 +252,11 @@ Press Ctrl+C to stop the server
 
 ## Next Steps
 
-1. ✅ Server is running
-2. 📖 Read [API_DOCUMENTATION.md](API_DOCUMENTATION.md) for all endpoints
-3. 🧪 Test with sample data (sample_data.csv and sample_data.json)
-4. 🚀 Build your Laravel frontend to connect to this API
-5. 📝 Customize data models in `/models` if needed
+1. âœ… Server is running
+2. ðŸ“– Read [API_DOCUMENTATION.md](API_DOCUMENTATION.md) for all endpoints
+3. ðŸ§ª Test with sample data (sample_data.csv and sample_data.json)
+4. ðŸš€ Build your Laravel frontend to connect to this API
+5. ðŸ“ Customize data models in `/models` if needed
 
 ## Production Deployment
 
@@ -284,3 +284,4 @@ When ready for production:
 For detailed API documentation, see [API_DOCUMENTATION.md](API_DOCUMENTATION.md)
 
 For project structure and features, see [README.md](README.md)
+

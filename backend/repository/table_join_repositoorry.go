@@ -17,21 +17,21 @@ func NewTableJoinRepository(db *gorm.DB) *TableJoinRepository {
 // FindAll retrieves all table join configurations
 func (r *TableJoinRepository) FindAll() ([]*models.TableJoin, error) {
 	var joins []*models.TableJoin
-	err := r.db.Find(&joins).Error
+	err := r.db.Preload("LeftTable").Preload("RightTable").Preload("TargetTable").Find(&joins).Error
 	return joins, err
 }
 
 // FindByID retrieves a table join by ID
 func (r *TableJoinRepository) FindByID(id uint) (*models.TableJoin, error) {
 	var join models.TableJoin
-	err := r.db.First(&join, id).Error
+	err := r.db.Preload("LeftTable").Preload("RightTable").Preload("TargetTable").First(&join, id).Error
 	return &join, err
 }
 
 // FindByName retrieves a table join by name
 func (r *TableJoinRepository) FindByName(name string) (*models.TableJoin, error) {
 	var join models.TableJoin
-	err := r.db.Where("name = ?", name).First(&join).Error
+	err := r.db.Preload("LeftTable").Preload("RightTable").Preload("TargetTable").Where("name = ?", name).First(&join).Error
 	return &join, err
 }
 

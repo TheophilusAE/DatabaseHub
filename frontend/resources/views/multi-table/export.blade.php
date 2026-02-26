@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Multi-Table Export - Data Import Dashboard')
+@section('title', 'Multi-Table Export - DataBridge')
 
 @section('content')
 <div class="container mx-auto px-3 sm:px-4 py-6 sm:py-8 max-w-7xl">
@@ -221,8 +221,10 @@ async function loadJoins() {
             if (this.value) {
                 const join = joinsData.find(j => j.name === this.value);
                 if (join) {
-                    document.getElementById('join-left-table').textContent = join.left_table?.table_name || 'N/A';
-                    document.getElementById('join-right-table').textContent = join.right_table?.table_name || 'N/A';
+                    const leftTable = join.left_table?.table_name || join.left_table_name || 'N/A';
+                    const rightTable = join.right_table?.table_name || join.right_table_name || 'N/A';
+                    document.getElementById('join-left-table').textContent = leftTable;
+                    document.getElementById('join-right-table').textContent = rightTable;
                     document.getElementById('join-type').textContent = join.join_type;
                     document.getElementById('join-details').classList.remove('hidden');
                 }
@@ -266,9 +268,8 @@ async function exportJoinToFile() {
     const join = joinsData.find(j => j.name === joinName);
     if (!join) return;
 
-    // Create a temporary export config for the join
     try {
-        window.open(`${window.API_BASE_URL}/multi-export/table?config_name=${encodeURIComponent(joinName)}`, '_blank');
+        window.open(`${window.API_BASE_URL}/multi-export/join-file?join_name=${encodeURIComponent(joinName)}`, '_blank');
         showAlert('Export started! Check your downloads folder.', 'success');
     } catch (error) {
         showAlert('Export failed', 'error');

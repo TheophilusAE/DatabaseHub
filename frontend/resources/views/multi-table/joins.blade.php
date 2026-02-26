@@ -78,7 +78,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Left Table</label>
-                    <select id="leftTableId" required onchange="updateTargetTableOptions()"
+                    <select id="leftTableId" required onchange="updateTargetTableOptions(); updateJoinColumnSelects();"
                             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         <option value="">Select left table...</option>
                     </select>
@@ -86,7 +86,7 @@
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Right Table</label>
-                    <select id="rightTableId" required onchange="updateTargetTableOptions()"
+                    <select id="rightTableId" required onchange="updateTargetTableOptions(); updateJoinColumnSelects();"
                             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         <option value="">Select right table...</option>
                     </select>
@@ -106,10 +106,30 @@
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Join Condition</label>
-                <input type="text" id="joinCondition" required
-                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                       placeholder="e.g., users.id = orders.user_id">
-                <p class="mt-1 text-xs text-gray-500">Specify the condition to join the tables (e.g., table1.column = table2.column)</p>
+                <input type="hidden" id="joinCondition" required>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <select id="leftJoinColumn" onchange="updateJoinConditionValue()"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">Select left column...</option>
+                    </select>
+                    <select id="joinOperator" onchange="updateJoinConditionValue()"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="=">=</option>
+                        <option value="!=">!=</option>
+                        <option value=">">&gt;</option>
+                        <option value="<">&lt;</option>
+                        <option value=">=">&gt;=</option>
+                        <option value="<=">&lt;=</option>
+                    </select>
+                    <select id="rightJoinColumn" onchange="updateJoinConditionValue()"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">Select right column...</option>
+                    </select>
+                </div>
+                <div id="joinConditionPreview" class="mt-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded text-sm font-mono text-gray-700">
+                    Condition will appear here...
+                </div>
+                <p class="mt-1 text-xs text-gray-500">Choose columns from each table. The join condition is generated automatically.</p>
             </div>
 
             <div>
@@ -141,6 +161,7 @@ const API_BASE = 'http://localhost:8080';
 
 let allJoins = [];
 let allTables = [];
+const tableColumnsCache = {};
 const currentUserId = {{ session('user')['id'] ?? 'null' }};
 const currentUserRole = '{{ session('user')['role'] ?? '' }}';
 
@@ -195,13 +216,14 @@ function updateTableSelects() {
     const rightSelect = document.getElementById('rightTableId');
     
     const options = allTables.map(table => 
-        `<option value="${table.id}">${table.database_config_name} - ${table.table_name}</option>`
+        `<option value="${table.id}">${getTableDatabaseName(table)} - ${table.table_name}</option>`
     ).join('');
     
     leftSelect.innerHTML = '<option value="">Select left table...</option>' + options;
     rightSelect.innerHTML = '<option value="">Select right table...</option>' + options;
     
     updateTargetTableOptions();
+    updateJoinColumnSelects();
 }
 
 function updateTargetTableOptions() {
@@ -215,15 +237,185 @@ function updateTargetTableOptions() {
     
     let filteredTables = allTables;
     if (leftTable && rightTable) {
-        const dbNames = new Set([leftTable.database_config_name, rightTable.database_config_name]);
-        filteredTables = allTables.filter(t => dbNames.has(t.database_config_name));
+        const dbNames = new Set([getTableDatabaseName(leftTable), getTableDatabaseName(rightTable)]);
+        filteredTables = allTables.filter(t => dbNames.has(getTableDatabaseName(t)));
     }
     
     const options = filteredTables.map(table => 
-        `<option value="${table.id}">${table.database_config_name} - ${table.table_name}</option>`
+        `<option value="${table.id}">${getTableDatabaseName(table)} - ${table.table_name}</option>`
     ).join('');
     
     targetSelect.innerHTML = '<option value="">Select target table for combined data...</option>' + options;
+}
+
+function getTableDatabaseName(table) {
+    return table?.database_name || table?.database_config_name || 'default';
+}
+
+function getTableDatabaseKey(table) {
+    return table?.database_name || table?.database_config_name || 'default';
+}
+
+function getTableColumns(table) {
+    if (!table || !table.columns) return [];
+
+    try {
+        const parsed = typeof table.columns === 'string' ? JSON.parse(table.columns) : table.columns;
+        if (!Array.isArray(parsed)) return [];
+
+        return parsed
+            .map(col => (typeof col === 'string' ? col : col?.name))
+            .filter(Boolean)
+            .map(name => String(name));
+    } catch (error) {
+        return [];
+    }
+}
+
+async function fetchTableColumns(table) {
+    if (!table || !table.table_name) {
+        return [];
+    }
+
+    const databaseKey = getTableDatabaseKey(table);
+    const cacheKey = `${databaseKey}::${table.table_name}`;
+    if (tableColumnsCache[cacheKey]) {
+        return tableColumnsCache[cacheKey];
+    }
+
+    const localColumns = getTableColumns(table);
+    if (localColumns.length > 0) {
+        tableColumnsCache[cacheKey] = localColumns;
+        return localColumns;
+    }
+
+    try {
+        const response = await fetch(buildApiUrl(`/simple-multi/tables/${encodeURIComponent(table.table_name)}/columns`, {
+            database: databaseKey,
+        }), {
+            headers: authHeaders(),
+        });
+
+        if (!response.ok) {
+            return [];
+        }
+
+        const data = await response.json();
+        const fetched = Array.isArray(data.columns)
+            ? data.columns.map(col => String(col?.name || '')).filter(Boolean)
+            : [];
+
+        tableColumnsCache[cacheKey] = fetched;
+        return fetched;
+    } catch (error) {
+        return [];
+    }
+}
+
+async function updateJoinColumnSelects() {
+    const leftTableId = parseInt(document.getElementById('leftTableId').value);
+    const rightTableId = parseInt(document.getElementById('rightTableId').value);
+    const leftColumnSelect = document.getElementById('leftJoinColumn');
+    const rightColumnSelect = document.getElementById('rightJoinColumn');
+
+    const leftTable = allTables.find(t => t.id === leftTableId);
+    const rightTable = allTables.find(t => t.id === rightTableId);
+
+    const [leftColumns, rightColumns] = await Promise.all([
+        fetchTableColumns(leftTable),
+        fetchTableColumns(rightTable),
+    ]);
+
+    leftColumnSelect.innerHTML = '<option value="">Select left column...</option>' +
+        leftColumns.map(col => `<option value="${col}">${col}</option>`).join('');
+    rightColumnSelect.innerHTML = '<option value="">Select right column...</option>' +
+        rightColumns.map(col => `<option value="${col}">${col}</option>`).join('');
+
+    suggestCommonJoinColumns(leftColumns, rightColumns);
+    updateJoinConditionValue();
+}
+
+function suggestCommonJoinColumns(leftColumns, rightColumns) {
+    if (!leftColumns.length || !rightColumns.length) return;
+
+    const leftSelect = document.getElementById('leftJoinColumn');
+    const rightSelect = document.getElementById('rightJoinColumn');
+
+    if (leftSelect.value && rightSelect.value) return;
+
+    const rightLower = new Map(rightColumns.map(col => [col.toLowerCase(), col]));
+    let suggestedLeft = '';
+    let suggestedRight = '';
+
+    for (const leftCol of leftColumns) {
+        const exact = rightLower.get(leftCol.toLowerCase());
+        if (exact) {
+            suggestedLeft = leftCol;
+            suggestedRight = exact;
+            break;
+        }
+    }
+
+    if (!suggestedLeft) {
+        const commonPairs = [
+            ['id', 'id'],
+            ['user_id', 'id'],
+            ['customer_id', 'id'],
+            ['product_id', 'id'],
+        ];
+
+        for (const [leftCandidate, rightCandidate] of commonPairs) {
+            const leftFound = leftColumns.find(c => c.toLowerCase() === leftCandidate);
+            const rightFound = rightColumns.find(c => c.toLowerCase() === rightCandidate);
+            if (leftFound && rightFound) {
+                suggestedLeft = leftFound;
+                suggestedRight = rightFound;
+                break;
+            }
+        }
+    }
+
+    if (suggestedLeft && !leftSelect.value) leftSelect.value = suggestedLeft;
+    if (suggestedRight && !rightSelect.value) rightSelect.value = suggestedRight;
+}
+
+function updateJoinConditionValue() {
+    const leftTableId = parseInt(document.getElementById('leftTableId').value);
+    const rightTableId = parseInt(document.getElementById('rightTableId').value);
+    const leftColumn = document.getElementById('leftJoinColumn').value;
+    const rightColumn = document.getElementById('rightJoinColumn').value;
+    const operator = document.getElementById('joinOperator').value;
+    const joinConditionInput = document.getElementById('joinCondition');
+    const preview = document.getElementById('joinConditionPreview');
+
+    const leftTable = allTables.find(t => t.id === leftTableId);
+    const rightTable = allTables.find(t => t.id === rightTableId);
+
+    if (!leftTable || !rightTable || !leftColumn || !rightColumn) {
+        joinConditionInput.value = '';
+        preview.textContent = 'Condition will appear here...';
+        return;
+    }
+
+    const condition = `${leftTable.table_name}.${leftColumn} ${operator} ${rightTable.table_name}.${rightColumn}`;
+    joinConditionInput.value = condition;
+    preview.textContent = condition;
+}
+
+function parseConditionParts(condition) {
+    if (!condition) return null;
+
+    const pattern = /^\s*([a-zA-Z_][\w]*)\.([a-zA-Z_][\w]*)\s*(=|!=|>=|<=|>|<)\s*([a-zA-Z_][\w]*)\.([a-zA-Z_][\w]*)\s*$/;
+    const match = String(condition).match(pattern);
+    if (!match) return null;
+
+    return {
+        leftTable: match[1],
+        leftColumn: match[2],
+        operator: match[3],
+        rightTable: match[4],
+        rightColumn: match[5],
+    };
 }
 
 async function loadJoins() {
@@ -272,10 +464,10 @@ function renderJoinsTable() {
                     <div class="text-sm font-medium text-gray-900">${join.name}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-600">${leftTable ? `${leftTable.database_config_name}.${leftTable.table_name}` : 'N/A'}</div>
+                    <div class="text-sm text-gray-600">${leftTable ? `${getTableDatabaseName(leftTable)}.${leftTable.table_name}` : 'N/A'}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-600">${rightTable ? `${rightTable.database_config_name}.${rightTable.table_name}` : 'N/A'}</div>
+                    <div class="text-sm text-gray-600">${rightTable ? `${getTableDatabaseName(rightTable)}.${rightTable.table_name}` : 'N/A'}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
@@ -286,7 +478,7 @@ function renderJoinsTable() {
                     <div class="text-sm text-gray-600 font-mono">${join.join_condition}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-600">${targetTable ? `${targetTable.database_config_name}.${targetTable.table_name}` : '-'}</div>
+                    <div class="text-sm text-gray-600">${targetTable ? `${getTableDatabaseName(targetTable)}.${targetTable.table_name}` : '-'}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                     <button onclick="editJoin(${join.id})" class="text-blue-600 hover:text-blue-900">Edit</button>
@@ -301,6 +493,8 @@ function openAddJoinModal() {
     document.getElementById('modalTitle').textContent = 'Add Table Join';
     document.getElementById('joinForm').reset();
     document.getElementById('joinId').value = '';
+    document.getElementById('joinCondition').value = '';
+    document.getElementById('joinConditionPreview').textContent = 'Condition will appear here...';
     updateTableSelects();
     document.getElementById('joinModal').classList.remove('hidden');
 }
@@ -309,7 +503,7 @@ function closeJoinModal() {
     document.getElementById('joinModal').classList.add('hidden');
 }
 
-function editJoin(id) {
+async function editJoin(id) {
     const join = allJoins.find(j => j.id === id);
     if (!join) return;
     
@@ -319,10 +513,24 @@ function editJoin(id) {
     document.getElementById('leftTableId').value = join.left_table_id;
     document.getElementById('rightTableId').value = join.right_table_id;
     document.getElementById('joinType').value = join.join_type;
-    document.getElementById('joinCondition').value = join.join_condition;
     document.getElementById('targetTableId').value = join.target_table_id || '';
     
     updateTargetTableOptions();
+    await updateJoinColumnSelects();
+
+    const parsed = parseConditionParts(join.join_condition);
+    if (parsed) {
+        document.getElementById('leftJoinColumn').value = parsed.leftColumn;
+        document.getElementById('joinOperator').value = parsed.operator;
+        document.getElementById('rightJoinColumn').value = parsed.rightColumn;
+    }
+    updateJoinConditionValue();
+
+    if (!parsed) {
+        document.getElementById('joinCondition').value = join.join_condition;
+        document.getElementById('joinConditionPreview').textContent = join.join_condition || 'Condition will appear here...';
+    }
+
     document.getElementById('joinModal').classList.remove('hidden');
 }
 
@@ -338,6 +546,11 @@ document.getElementById('joinForm').addEventListener('submit', async function(e)
         join_condition: document.getElementById('joinCondition').value,
         target_table_id: document.getElementById('targetTableId').value ? parseInt(document.getElementById('targetTableId').value) : null
     };
+
+    if (!joinData.join_condition) {
+        showAlert('Please select left and right join columns to build the join condition', 'error');
+        return;
+    }
     
     try {
         const url = joinId ? buildApiUrl(`/joins/${joinId}`) : buildApiUrl('/joins');

@@ -1,7 +1,7 @@
-# Dokumentasi Lengkap Halaman dan Fitur - Data Import Dashboard
+﻿# Dokumentasi Lengkap Halaman dan Fitur - DataBridge
 
 ## Ringkasan Sistem
-**Data Import Dashboard** adalah aplikasi web berbasis Laravel (frontend) dan Go (backend) yang dirancang untuk mengelola import/export data berskala besar, manajemen dokumen, dan kontrol akses berbasis peran (Admin dan User).
+**DataBridge** adalah aplikasi web berbasis Laravel (frontend) dan Go (backend) yang dirancang untuk mengelola import/export data berskala besar, manajemen dokumen, dan kontrol akses berbasis peran (Admin dan User).
 
 ---
 
@@ -569,7 +569,7 @@
 4. Preview data
 5. Mapping kolom (opsional)
 6. Submit import
-7. Backend: parse → validate → batch → workers → database
+7. Backend: parse â†’ validate â†’ batch â†’ workers â†’ database
 8. View hasil: total, success, failed
 9. Check import history untuk detail log
 
@@ -580,7 +580,7 @@
 4. Set filters (opsional)
 5. Pilih format (CSV/JSON)
 6. Click export
-7. Backend: query → stream → flush → download
+7. Backend: query â†’ stream â†’ flush â†’ download
 
 ### Alur Permission Assignment (Admin Only)
 1. Login sebagai admin
@@ -682,15 +682,15 @@
 
 ## KESIMPULAN
 
-**Data Import Dashboard** adalah sistem lengkap untuk:
-1. ✅ Import/Export data berskala besar (billions of rows)
-2. ✅ Manajemen multiple databases
-3. ✅ User management dengan RBAC
-4. ✅ Table-level permission control
-5. ✅ Document management
-6. ✅ Auto-discovery database schema
-7. ✅ High-performance dengan streaming & worker pools
-8. ✅ Audit trail lengkap
+**DataBridge** adalah sistem lengkap untuk:
+1. âœ… Import/Export data berskala besar (billions of rows)
+2. âœ… Manajemen multiple databases
+3. âœ… User management dengan RBAC
+4. âœ… Table-level permission control
+5. âœ… Document management
+6. âœ… Auto-discovery database schema
+7. âœ… High-performance dengan streaming & worker pools
+8. âœ… Audit trail lengkap
 
 **Total Halaman:** ~25 halaman (admin + user)  
 **Total API Endpoints:** ~80+ endpoints  
@@ -721,3 +721,4 @@
 - Sequence Diagram
 
 Semua sudah tersedia di file: `REPORT_CHARTS_MERMAID.md`
+

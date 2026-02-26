@@ -1,4 +1,4 @@
-# Data Import Dashboard — Report Charts (Mermaid)
+﻿# DataBridge â€” Report Charts (Mermaid)
 
 Paste these directly into Markdown editors that support Mermaid (VS Code preview, GitHub, Obsidian, etc.).
 
@@ -124,7 +124,7 @@ erDiagram
 
 ---
 
-## 2) Flowchart — Login and Authorization
+## 2) Flowchart â€” Login and Authorization
 
 ```mermaid
 flowchart TD
@@ -146,7 +146,7 @@ flowchart TD
 
 ---
 
-## 3) Flowchart — CSV/JSON Import (Batch + Workers)
+## 3) Flowchart â€” CSV/JSON Import (Batch + Workers)
 
 ```mermaid
 flowchart TD
@@ -179,7 +179,7 @@ flowchart TD
 
 ---
 
-## 4) Flowchart — Admin Table Permission Assignment
+## 4) Flowchart â€” Admin Table Permission Assignment
 
 ```mermaid
 flowchart TD
@@ -208,7 +208,7 @@ flowchart TD
 flowchart LR
     U[User]
     A[Admin]
-    S((Data Import Dashboard System))
+    S((DataBridge System))
     DB[(Application Database)]
     FS[(File Storage)]
 
@@ -298,7 +298,7 @@ flowchart LR
 
 ---
 
-## 8) Sequence Diagram — Import CSV
+## 8) Sequence Diagram â€” Import CSV
 
 ```mermaid
 sequenceDiagram
@@ -327,5 +327,6 @@ sequenceDiagram
 
 - Keep ERD focused on persistent entities (`users`, `table_configs`, `user_table_permissions`, `import_logs`, etc.).
 - If your reviewer asks about `documents.category` vs `document_categories`, note that current model links by name, not FK ID.
-- For “System Design” chapter, use DFD Level 0 + Level 1 + one sequence diagram.
-- For “Database Design” chapter, use ERD and explain 1:N relationships and permission control via junction table.
+- For â€œSystem Designâ€ chapter, use DFD Level 0 + Level 1 + one sequence diagram.
+- For â€œDatabase Designâ€ chapter, use ERD and explain 1:N relationships and permission control via junction table.
+

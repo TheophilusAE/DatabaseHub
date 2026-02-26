@@ -1,8 +1,8 @@
-# 🔐 Role-Based Access Control (RBAC) System
+﻿# ðŸ” Role-Based Access Control (RBAC) System
 
 ## Overview
 
-The Data Import Dashboard now features a complete **Role-Based Access Control** system where:
+The DataBridge now features a complete **Role-Based Access Control** system where:
 
 - **New users** are automatically assigned the `user` role when they register
 - **Only Administrators** can manage user roles and access all features
@@ -10,9 +10,9 @@ The Data Import Dashboard now features a complete **Role-Based Access Control** 
 
 ---
 
-## 🎭 User Roles
+## ðŸŽ­ User Roles
 
-### 👑 Administrator (admin)
+### ðŸ‘‘ Administrator (admin)
 **Full access to everything in the system**
 
 #### Permissions:
@@ -47,7 +47,7 @@ The Data Import Dashboard now features a complete **Role-Based Access Control** 
 
 ---
 
-### 👤 Regular User (user)
+### ðŸ‘¤ Regular User (user)
 **View-only access to data**
 
 #### Permissions:
@@ -55,14 +55,14 @@ The Data Import Dashboard now features a complete **Role-Based Access Control** 
 -   View documents (read-only)
 -   Download documents
 -   User dashboard with limited statistics
-- ❌ Cannot create, edit, or delete anything
-- ❌ Cannot import/export data
-- ❌ Cannot manage users
-- ❌ Cannot change roles
+- âŒ Cannot create, edit, or delete anything
+- âŒ Cannot import/export data
+- âŒ Cannot manage users
+- âŒ Cannot change roles
 
 ---
 
-## 📋 User Registration Flow
+## ðŸ“‹ User Registration Flow
 
 ### New User Registration
 
@@ -79,10 +79,10 @@ The Data Import Dashboard now features a complete **Role-Based Access Control** 
 
 ---
 
-## 👥 User Management (Admin Only)
+## ðŸ‘¥ User Management (Admin Only)
 
 ### Access User Management
-Navigate to: **Admin Dashboard → Users**
+Navigate to: **Admin Dashboard â†’ Users**
 
 Or directly: `http://localhost:8000/admin/users`
 
@@ -124,7 +124,7 @@ Or directly: `http://localhost:8000/admin/users`
 
 ---
 
-## 🔒 Security Features
+## ðŸ”’ Security Features
 
 ### 1. Default Role Protection
 ```php
@@ -153,7 +153,7 @@ All role changes are validated to ensure only `admin` or `user` values.
 
 ---
 
-## 🛣️ Route Structure
+## ðŸ›£ï¸ Route Structure
 
 ### Admin Routes (Protected)
 ```
@@ -184,7 +184,7 @@ All role changes are validated to ensure only `admin` or `user` values.
 
 ---
 
-## 📊 User Statistics
+## ðŸ“Š User Statistics
 
 The User Management page displays:
 
@@ -194,7 +194,7 @@ The User Management page displays:
 
 ---
 
-## 🎯 Use Cases
+## ðŸŽ¯ Use Cases
 
 ### Use Case 1: Create First Admin
 When setting up the system:
@@ -207,28 +207,28 @@ When setting up the system:
 
 ### Use Case 2: Promote User to Admin
 1. Login as admin
-2. Go to Users → Edit user
+2. Go to Users â†’ Edit user
 3. Change role from "User" to "Administrator"
 4. Save changes
 5. User now has full admin access
 
 ### Use Case 3: Create Admin Accounts
 1. Login as admin
-2. Go to Users → Add New User
-3. Select "👑 Administrator" role
+2. Go to Users â†’ Add New User
+3. Select "ðŸ‘‘ Administrator" role
 4. Fill in details and create
 5. New admin can now login with full access
 
 ### Use Case 4: Downgrade Admin to User
 1. Login as admin
-2. Go to Users → Edit admin user
+2. Go to Users â†’ Edit admin user
 3. Change role from "Administrator" to "User"
 4. Save changes
 5. User now has view-only access
 
 ---
 
-## 🚨 Important Notes
+## ðŸš¨ Important Notes
 
 1. **First Admin Setup**: The system doesn't create a default admin. You must manually set the first admin via database or create one through the user interface after registering.
 
@@ -240,7 +240,7 @@ When setting up the system:
 
 ---
 
-## 🔧 Technical Implementation
+## ðŸ”§ Technical Implementation
 
 ### Database Schema
 ```php
@@ -272,7 +272,7 @@ if (!auth()->user()->isAdmin()) {
 
 ---
 
-## 📝 Testing
+## ðŸ“ Testing
 
 ### Test Admin Access
 1. Create user with admin role
@@ -296,16 +296,16 @@ if (!auth()->user()->isAdmin()) {
 
 ---
 
-## 🎨 UI Indicators
+## ðŸŽ¨ UI Indicators
 
-- Admin users see: **👑 Admin** badge
-- Regular users see: **👤 User** badge
+- Admin users see: **ðŸ‘‘ Admin** badge
+- Regular users see: **ðŸ‘¤ User** badge
 - Navigation shows different menu items based on role
 - "Users" menu only visible to admins
 
 ---
 
-## 🔄 Migration Path
+## ðŸ”„ Migration Path
 
 If you have existing users without roles:
 ```bash
@@ -327,3 +327,4 @@ The RBAC system provides:
 -   Clean separation between admin and user capabilities
 
 **Result**: A secure, user-friendly system where admins have complete control while regular users have safe, read-only access.
+

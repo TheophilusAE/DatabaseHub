@@ -1,21 +1,21 @@
-# 🔍 Auto-Discovery Guide - Automatic Database & Table Configuration
+﻿# ðŸ” Auto-Discovery Guide - Automatic Database & Table Configuration
 
 ## Overview
 
-The Data Import Dashboard features **automatic database and table discovery**, eliminating the need for manual configuration! Simply select a database, and the system will automatically discover and sync all tables with their complete schemas.
+The DataBridge features **automatic database and table discovery**, eliminating the need for manual configuration! Simply select a database, and the system will automatically discover and sync all tables with their complete schemas.
 
-## 🔒 Admin-Only Feature
+## ðŸ”’ Admin-Only Feature
 
 **Important:** Database and table configuration features are restricted to **administrator accounts only**. Regular users can view and use configured tables but cannot modify configurations.
 
 -   **Admins**: Full access to discovery, sync, and configuration
-- ❌ **Regular Users**: Read-only access, cannot configure tables
+- âŒ **Regular Users**: Read-only access, cannot configure tables
 
 See [ADMIN_ONLY_RESTRICTIONS.md](ADMIN_ONLY_RESTRICTIONS.md) for complete details.
 
 ---
 
-## 🎯 Key Features
+## ðŸŽ¯ Key Features
 
 ###   What's Automated
 - **Database Detection**: Automatically lists all available database connections
@@ -31,13 +31,13 @@ See [ADMIN_ONLY_RESTRICTIONS.md](ADMIN_ONLY_RESTRICTIONS.md) for complete detail
 - **Re-sync Support**: Update table configurations if schema changes
 - **Status Indicators**: See which tables are already configured
 
-### 🚀 How to Use
+### ðŸš€ How to Use
 
 #### Step 1: Add a Database Connection (One-Time Setup)
 
 If you haven't already, add your database connection:
 
-1. Navigate to **Multi-Table → Database Connections**
+1. Navigate to **Multi-Table â†’ Database Connections**
 2. Click **Add Database Connection**
 3. Enter connection details:
    - **Name**: A friendly name (e.g., "production_db")
@@ -51,7 +51,7 @@ If you haven't already, add your database connection:
 
 #### Step 2: Auto-Discover Tables
 
-1. Go to **Multi-Table → Table Configurations**
+1. Go to **Multi-Table â†’ Table Configurations**
 2. You'll see the **Auto-Discover Tables** section at the top
 3. Select a database from the dropdown
 4. Click **Discover Tables**
@@ -79,7 +79,7 @@ Once synced, tables are ready to use for:
 - **Multi-Table Operations**: Join tables, configure mappings
 - **RBAC**: Assign user permissions per table
 
-## 🔧 Technical Details
+## ðŸ”§ Technical Details
 
 ### Backend Implementation
 
@@ -101,16 +101,16 @@ Once synced, tables are ready to use for:
 The system automatically maps database-specific types to generic types:
 
 **PostgreSQL Mappings:**
-- `character varying` → `varchar`
-- `integer` → `int`
-- `timestamp without time zone` → `datetime`
-- `jsonb` → `json`
+- `character varying` â†’ `varchar`
+- `integer` â†’ `int`
+- `timestamp without time zone` â†’ `datetime`
+- `jsonb` â†’ `json`
 - And more...
 
 **MySQL Mappings:**
-- `tinyint`, `smallint`, `mediumint` → `int`
-- `tinytext`, `mediumtext`, `longtext` → `text`
-- `double` → `float`
+- `tinyint`, `smallint`, `mediumint` â†’ `int`
+- `tinytext`, `mediumtext`, `longtext` â†’ `text`
+- `double` â†’ `float`
 - And more...
 
 ### Excluded System Tables
@@ -126,7 +126,7 @@ The discovery automatically excludes internal system tables:
 - `data_records`
 - `user_table_permissions`
 
-## 📝 Configuration Details
+## ðŸ“ Configuration Details
 
 ### What Gets Configured
 
@@ -159,7 +159,7 @@ For each column:
 }
 ```
 
-## 🔄 Re-syncing Tables
+## ðŸ”„ Re-syncing Tables
 
 If your database schema changes:
 
@@ -174,7 +174,7 @@ The system will:
 - Update primary keys
 - Preserve existing table configuration name and settings
 
-## 💡 Benefits
+## ðŸ’¡ Benefits
 
 ### For Users
 -   **Zero Manual Configuration**: No need to manually define schemas
@@ -189,16 +189,16 @@ The system will:
 -   **Clean Code**: Well-structured handler and repository pattern
 -   **Type Safe**: Proper type mapping between database systems
 
-## 🎨 UI Features
+## ðŸŽ¨ UI Features
 
 The new interface includes:
-- 🌈 **Gradient Header**: Beautiful purple/pink gradient discovery section
+- ðŸŒˆ **Gradient Header**: Beautiful purple/pink gradient discovery section
 -   **Status Badges**: Green badges show already-synced tables
-- 📊 **Statistics**: Row counts and column counts displayed
-- 🔍 **Smart Filtering**: Checkbox selection for bulk operations
-- 🔄 **Action Buttons**: Individual sync or bulk sync options
+- ðŸ“Š **Statistics**: Row counts and column counts displayed
+- ðŸ” **Smart Filtering**: Checkbox selection for bulk operations
+- ðŸ”„ **Action Buttons**: Individual sync or bulk sync options
 
-## ⚠️ Important Notes
+## âš ï¸ Important Notes
 
 1. **Database Connection Required**: You must add a database connection before discovery
 2. **Permissions**: The database user must have read access to `information_schema`
@@ -206,16 +206,16 @@ The new interface includes:
 4. **Naming Convention**: Synced tables are named as `database_tablename`
 5. **Primary Key Detection**: If no primary key is found, defaults to "id"
 
-## 🔐 Security
+## ðŸ” Security
 
 - Database passwords are never exposed in API responses
 - Only users with proper permissions can discover and sync tables
 - Read-only access to information_schema is sufficient
 
-## 🐛 Troubleshooting
+## ðŸ› Troubleshooting
 
 **"No databases available"**
-- Add a database connection first at Multi-Table → Database Connections
+- Add a database connection first at Multi-Table â†’ Database Connections
 
 **"No tables found"**
 - Verify the database has tables
@@ -227,36 +227,36 @@ The new interface includes:
 - Verify network connectivity
 - Check database server is running
 
-## 📚 Related Guides
+## ðŸ“š Related Guides
 
 - [QUICK_START_MASSIVE_SCALE.md](QUICK_START_MASSIVE_SCALE.md) - Getting started
 - [MULTI_TABLE_GUIDE.md](MULTI_TABLE_GUIDE.md) - Multi-table operations
 - [RBAC_GUIDE.md](RBAC_GUIDE.md) - Role-based access control
 - [POSTGRES_SETUP.md](POSTGRES_SETUP.md) - PostgreSQL setup
 
-## 🎉 Example Workflow
+## ðŸŽ‰ Example Workflow
 
 ```
 1. Add database connection "production_db"
-   ↓
+   â†“
 2. Navigate to Table Configurations
-   ↓
+   â†“
 3. Select "production_db" from dropdown
-   ↓
+   â†“
 4. Click "Discover Tables"
-   ↓
+   â†“
 5. System finds: users, orders, products, inventory (50 tables total)
-   ↓
+   â†“
 6. Review discovered tables (shows row counts, columns)
-   ↓
+   â†“
 7. Click "Sync All Tables" or sync individually
-   ↓
-8. ✓ All 50 tables configured in 10 seconds!
-   ↓
+   â†“
+8. âœ“ All 50 tables configured in 10 seconds!
+   â†“
 9. Tables ready for import/export operations
 ```
 
-## 🚀 Future Enhancements
+## ðŸš€ Future Enhancements
 
 Planned features:
 - Auto-discovery scheduling (periodic sync)
@@ -270,4 +270,5 @@ Planned features:
 
 ---
 
-**You're now ready to use auto-discovery! No more manual table configuration needed! 🎊**
+**You're now ready to use auto-discovery! No more manual table configuration needed! ðŸŽŠ**
+

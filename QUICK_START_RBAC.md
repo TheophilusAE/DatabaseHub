@@ -1,7 +1,7 @@
-# 🚀 Quick Start Guide - RBAC System
+﻿# ðŸš€ Quick Start Guide - RBAC System
 
 ##   System Status
-Your Data Import Dashboard is now fully configured with API-based authentication!
+Your DataBridge is now fully configured with API-based authentication!
 
 ### What We Built
 -   Go Backend authentication API (login, register, logout)
@@ -12,7 +12,7 @@ Your Data Import Dashboard is now fully configured with API-based authentication
 -   Automatic 'user' role assignment on registration
 -   Admin-only user management interface
 
-## 🎯 Quick Start
+## ðŸŽ¯ Quick Start
 
 ### 1. Start Both Servers (Already Running!)
 ```bash
@@ -52,7 +52,7 @@ Admin User:
    - Delete users
    - View statistics
 
-## 📋 Available Routes
+## ðŸ“‹ Available Routes
 
 ### Public
 - `/login` - Login page
@@ -66,7 +66,7 @@ Admin User:
 ### Admin Only
 - `/admin/users` - User management interface
 
-## 🔧 API Endpoints
+## ðŸ”§ API Endpoints
 
 ### Authentication
 ```
@@ -86,7 +86,7 @@ PUT    http://localhost:8080/users/:id    - Update user/role
 DELETE http://localhost:8080/users/:id    - Delete user
 ```
 
-## 🧪 Test Commands
+## ðŸ§ª Test Commands
 
 ### Check User Statistics
 ```powershell
@@ -112,7 +112,7 @@ $body = @{role = 'admin'} | ConvertTo-Json
 Invoke-RestMethod -Uri http://localhost:8080/users/1 -Method Put -Body $body -ContentType 'application/json'
 ```
 
-## 🔐 Security Features
+## ðŸ” Security Features
 
 1. **Bcrypt Password Hashing** - All passwords securely hashed in Go backend
 2. **Default User Role** - Registration always creates 'user' role (safe)
@@ -120,7 +120,7 @@ Invoke-RestMethod -Uri http://localhost:8080/users/1 -Method Put -Body $body -Co
 4. **Session-Based Auth** - File sessions, no database dependency
 5. **Role Verification** - Middleware checks role on every admin request
 
-## 📁 Key Files
+## ðŸ“ Key Files
 
 ### Backend (Go)
 - `backend/models/user.go` - User model with role field
@@ -136,7 +136,7 @@ Invoke-RestMethod -Uri http://localhost:8080/users/1 -Method Put -Body $body -Co
 - `frontend/resources/views/admin/users/` - User management views
 - `frontend/.env` - API_BASE_URL configuration
 
-## 🐛 Troubleshooting
+## ðŸ› Troubleshooting
 
 ### Can't Login
 - Verify backend is running on port 8080
@@ -153,14 +153,14 @@ Invoke-RestMethod -Uri http://localhost:8080/users/1 -Method Put -Body $body -Co
 - Verify PostgreSQL is running
 - Test health endpoint: http://localhost:8080/health
 
-## 📚 Documentation
+## ðŸ“š Documentation
 
 For more details, see:
 - `RBAC_GUIDE.md` - Complete RBAC documentation
 - `backend/API_DOCUMENTATION.md` - API endpoint reference
 - `AUTHENTICATION_GUIDE.md` - Authentication flow details
 
-## 🎉 Next Steps
+## ðŸŽ‰ Next Steps
 
 1. **Test the system** - Try both user and admin logins
 2. **Customize roles** - Add more roles if needed
@@ -169,4 +169,5 @@ For more details, see:
 
 ---
 
-**System Architecture**: Go backend (data + auth) → PostgreSQL (remote Docker) → Laravel frontend (UI only)
+**System Architecture**: Go backend (data + auth) â†’ PostgreSQL (remote Docker) â†’ Laravel frontend (UI only)
+

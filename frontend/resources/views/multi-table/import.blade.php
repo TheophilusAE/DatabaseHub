@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Multi-Table Import - Data Import Dashboard')
+@section('title', 'Multi-Table Import - DataBridge')
 
 @section('content')
 <div class="container mx-auto px-3 sm:px-4 py-6 sm:py-8 max-w-7xl">
