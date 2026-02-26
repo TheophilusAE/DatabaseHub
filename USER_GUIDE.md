@@ -269,8 +269,9 @@ Product 2,Another item,furniture,149.99,active
 ## ðŸ“ž Getting Help
 
 1. **Check Documentation**
-   - Backend: `backend/README.md`
-   - Frontend: `frontend/FRONTEND_README.md`
+   - Backend: `backend/QUICK_START.md`
+   - Frontend: `frontend/QUICK_START.md`
+   - Main Guide: `README.md`
    - API: `backend/API_DOCUMENTATION.md`
 
 2. **Check Browser Console**

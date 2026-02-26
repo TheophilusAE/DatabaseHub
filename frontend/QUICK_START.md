@@ -320,5 +320,5 @@ php artisan serve --host=0.0.0.0 --port=8000
 
 **Happy Coding! ðŸš€**
 
-Need help? Check the `FRONTEND_README.md` for detailed documentation.
+Need help? Check the root `README.md` and `USER_GUIDE.md` for full documentation.
 
