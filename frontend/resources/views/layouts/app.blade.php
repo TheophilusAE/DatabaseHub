@@ -54,9 +54,8 @@
     <!-- Navigation -->
     <nav class="glass-effect sticky top-0 z-50 shadow-lg backdrop-blur-md">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between min-h-16 py-2 md:py-0">
-                <div class="flex">
-                    <div class="flex-shrink-0 flex items-center">
+            <div class="flex items-center justify-between min-h-16 py-2 md:py-0 md:grid md:grid-cols-[auto_1fr_auto] md:items-center md:gap-6">
+                <div class="flex-shrink-0 flex items-center">
                         <a href="{{ $hasUser ? ($sessionRole === 'admin' ? route('admin.dashboard') : route('user.dashboard')) : route('login') }}" class="flex items-center space-x-3 group">
                             <div class="bg-gradient-to-r from-blue-700 to-green-600 p-2 rounded-lg shadow-md group-hover:shadow-lg transition-shadow">
                                 <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -67,10 +66,10 @@
                                 DataBridge
                             </span>
                         </a>
-                    </div>
-                    
-                    @if($hasUser)
-                    <div class="hidden md:ml-8 md:flex md:space-x-3">
+                </div>
+
+                @if($hasUser)
+                    <div class="hidden md:flex md:space-x-3 md:justify-self-center">
                         <a href="{{ $sessionRole === 'admin' ? route('admin.dashboard') : route('user.dashboard') }}" 
                            class="nav-link text-gray-700 hover:text-blue-600 inline-flex items-center px-3 pt-1 text-sm font-medium transition-colors">
                             <svg class="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -119,8 +118,7 @@
                             History
                         </a>
                     </div>
-                    @endif
-                </div>
+                @endif
                 
                 <!-- User Menu -->
                 <div class="flex items-center space-x-2 md:space-x-3">
