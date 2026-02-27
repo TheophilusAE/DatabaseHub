@@ -93,13 +93,13 @@
     <!-- Table Data Viewer Modal -->
     <div id="table-viewer" class="hidden fixed z-50 inset-0 overflow-y-auto">
         <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div class="fixed inset-0 bg-green-700 bg-opacity-75 transition-opacity" onclick="closeTableViewer()"></div>
+            <div class="fixed inset-0 bg-gray-900/45 backdrop-blur-[1px] transition-opacity" onclick="closeTableViewer()"></div>
             
             <!-- Centering trick -->
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
             
-            <div class="relative inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-7xl sm:w-full z-50">
-                <div class="bg-gradient-to-r from-blue-600 to-green-600 px-6 py-4">
+            <div class="relative inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-[95vw] sm:w-full z-50">
+                <div class="bg-gradient-to-r from-blue-700 to-cyan-600 px-6 py-4">
                     <div class="flex items-center justify-between">
                         <h3 class="text-2xl font-bold text-white flex items-center space-x-3">
                             <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -115,8 +115,8 @@
                     </div>
                 </div>
                 
-                <div class="bg-white px-6 py-4 max-h-[70vh] overflow-y-auto">
-                    <div class="mb-4 flex items-center justify-between">
+                <div class="bg-white px-6 py-4 max-h-[78vh] overflow-hidden">
+                    <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                         <div class="flex items-center space-x-3">
                             <label class="text-sm font-semibold text-gray-700">Rows per page:</label>
                             <select id="page-size" onchange="changePageSize()" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -127,12 +127,21 @@
                                 <option value="1000">1000</option>
                             </select>
                         </div>
-                        <div id="table-pagination" class="flex items-center space-x-2"></div>
+
+                        <div id="table-pagination" class="flex items-center flex-wrap gap-2"></div>
+
+                        <div class="flex items-center gap-2 w-full lg:w-auto lg:justify-end lg:ml-auto">
+                            <input id="table-search" type="text" oninput="onTableSearch(this.value)" placeholder="Search rows on this page..."
+                                   class="w-full sm:w-80 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                            <button type="button" onclick="clearTableSearch()" class="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-semibold">
+                                Clear
+                            </button>
+                        </div>
                     </div>
                     
-                    <div class="overflow-x-auto">
-                        <table id="table-data" class="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">
-                            <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
+                    <div class="overflow-auto max-h-[66vh] border border-gray-200 rounded-lg">
+                        <table id="table-data" class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gradient-to-r from-gray-50 to-gray-100 sticky top-0 z-10">
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-100">
                             </tbody>
@@ -160,6 +169,105 @@ let currentPageNum = 1;
 let currentPageSize = 25;
 let selectedDatabase = 'default';
 let availableDatabases = [];
+let currentColumns = [];
+let currentRows = [];
+let currentSearchTerm = '';
+const tableDataCache = new Map();
+
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function formatCellValue(value) {
+    if (value === null || value === undefined) {
+        return { display: 'null', title: 'null', muted: true };
+    }
+
+    if (typeof value === 'boolean') {
+        const text = value ? 'true' : 'false';
+        return { display: text, title: text, muted: false };
+    }
+
+    const text = typeof value === 'object' ? JSON.stringify(value) : String(value);
+    return { display: text, title: text, muted: false };
+}
+
+function getTableCacheKey() {
+    return `${selectedDatabase}::${currentTableName}::${currentPageNum}::${currentPageSize}`;
+}
+
+function onTableSearch(value) {
+    currentSearchTerm = (value || '').trim().toLowerCase();
+    renderCurrentRows();
+}
+
+function clearTableSearch() {
+    currentSearchTerm = '';
+    const searchInput = document.getElementById('table-search');
+    if (searchInput) searchInput.value = '';
+    renderCurrentRows();
+}
+
+function renderCurrentRows() {
+    const tableData = document.getElementById('table-data');
+    const tbody = tableData.querySelector('tbody');
+    const columns = currentColumns;
+
+    if (!columns.length) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="100" class="px-6 py-12 text-center">
+                    <p class="text-gray-500 font-semibold">No data found in this table</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    let filteredRows = currentRows;
+    if (currentSearchTerm) {
+        filteredRows = currentRows.filter(row =>
+            columns.some(col => {
+                const formatted = formatCellValue(row[col]);
+                return formatted.display.toLowerCase().includes(currentSearchTerm);
+            })
+        );
+    }
+
+    if (!filteredRows.length) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="100" class="px-6 py-12 text-center">
+                    <p class="text-gray-500 font-semibold">No matching rows on this page</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = filteredRows.map((row, index) => {
+        const rowNumber = ((currentPageNum - 1) * currentPageSize) + index + 1;
+        const rowClass = index % 2 === 0 ? 'bg-white' : 'bg-gray-50/60';
+
+        return `
+        <tr class="${rowClass} hover:bg-blue-50 transition-colors">
+            <td class="px-4 py-3 text-sm font-semibold text-gray-600 bg-inherit sticky left-0 whitespace-nowrap">${rowNumber}</td>
+            ${columns.map(col => {
+                const formatted = formatCellValue(row[col]);
+                const escapedDisplay = escapeHtml(formatted.display);
+                const escapedTitle = escapeHtml(formatted.title);
+                const textClass = formatted.muted ? 'text-gray-400 italic' : 'text-gray-900';
+                return `<td class="px-4 py-3 text-sm ${textClass} whitespace-nowrap max-w-[240px] truncate" title="${escapedTitle}">${escapedDisplay}</td>`;
+            }).join('')}
+        </tr>
+        `;
+    }).join('');
+}
 
 // Helper function to build authenticated API URL
 function buildApiUrl(endpoint, params = {}) {
@@ -301,7 +409,10 @@ async function loadDatabaseTables() {
 async function viewTableData(tableName) {
     currentTableName = tableName;
     currentPageNum = 1;
+    currentSearchTerm = '';
     document.getElementById('viewer-table-name').textContent = tableName;
+    const searchInput = document.getElementById('table-search');
+    if (searchInput) searchInput.value = '';
     document.getElementById('table-viewer').classList.remove('hidden');
     await loadTableData();
 }
@@ -329,6 +440,17 @@ async function loadTableData() {
     `;
     
     try {
+        const cacheKey = getTableCacheKey();
+        if (tableDataCache.has(cacheKey)) {
+            const cachedData = tableDataCache.get(cacheKey);
+            currentColumns = cachedData.columns;
+            currentRows = cachedData.rows;
+            thead.innerHTML = cachedData.headerHtml;
+            renderCurrentRows();
+            updateTablePagination(cachedData.totalCount, cachedData.totalPages, currentRows.length);
+            return;
+        }
+
         // Build authenticated URL with pagination
         const apiUrl = buildApiUrl(`/simple-multi/tables/${currentTableName}`, {
             page: currentPageNum,
@@ -355,35 +477,38 @@ async function loadTableData() {
         // Extract column names from the first row of data
         if (data.data && data.data.length > 0) {
             const columns = Object.keys(data.data[0]);
+            currentColumns = columns;
+            currentRows = data.data;
             
             // Build table header
-            thead.innerHTML = `
+            const headerHtml = `
                 <tr>
+                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider bg-gray-100 sticky left-0 z-20 whitespace-nowrap">#</th>
                     ${columns.map(col => `
-                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                            ${col}
+                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">
+                            ${escapeHtml(col)}
                         </th>
                     `).join('')}
                 </tr>
             `;
+            thead.innerHTML = headerHtml;
             
-            // Build table body
-            tbody.innerHTML = data.data.map((row, index) => `
-                <tr class="hover:bg-blue-50 transition-colors" style="animation: fadeIn 0.3s ease-out ${index * 0.03}s both">
-                    ${columns.map(col => {
-                        let value = row[col];
-                        if (value === null) value = '<span class="text-gray-400 italic">null</span>';
-                        else if (typeof value === 'boolean') value = value ? '✅ true' : '❌ false';
-                        else if (typeof value === 'object') value = JSON.stringify(value);
-                        return `<td class="px-4 py-3 text-sm text-gray-900">${value}</td>`;
-                    }).join('')}
-                </tr>
-            `).join('');
+            renderCurrentRows();
+
+            tableDataCache.set(cacheKey, {
+                columns,
+                rows: data.data,
+                headerHtml,
+                totalCount: data.total_count,
+                totalPages: data.total_pages
+            });
             
             // Update pagination using total_count from backend
-            updateTablePagination(data.total_count, data.total_pages);
+            updateTablePagination(data.total_count, data.total_pages, currentRows.length);
         } else {
             // No data in table
+            currentColumns = [];
+            currentRows = [];
             tbody.innerHTML = `
                 <tr>
                     <td colspan="100" class="px-6 py-12 text-center">
@@ -407,15 +532,18 @@ async function loadTableData() {
     }
 }
 
-function updateTablePagination(totalCount, totalPages) {
+function updateTablePagination(totalCount, totalPages, pageRows = 0) {
     const pagination = document.getElementById('table-pagination');
+    const filterNote = currentSearchTerm
+        ? `<span class="text-xs text-blue-700 bg-blue-50 px-2 py-1 rounded">Showing ${pageRows.toLocaleString()} filtered rows (current page)</span>`
+        : '';
     
     if (totalPages <= 1) {
-        pagination.innerHTML = '';
+        pagination.innerHTML = filterNote;
         return;
     }
     
-    let html = `<span class="text-sm text-gray-600 mr-3">Page ${currentPageNum} of ${totalPages} (${totalCount.toLocaleString()} total rows)</span>`;
+    let html = `<span class="text-sm text-gray-600 mr-3">Page ${currentPageNum} of ${totalPages} (${totalCount.toLocaleString()} total rows)</span>${filterNote}`;
     
     if (currentPageNum > 1) {
         html += `<button onclick="changePage(${currentPageNum - 1})" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm font-medium">Previous</button>`;
@@ -441,6 +569,7 @@ function changePageSize() {
 
 function closeTableViewer() {
     document.getElementById('table-viewer').classList.add('hidden');
+    clearTableSearch();
 }
 
 // Helper function to get user role
